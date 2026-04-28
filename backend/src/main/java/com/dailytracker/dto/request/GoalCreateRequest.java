@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * 创建/更新目标请求 DTO
@@ -48,4 +49,7 @@ public class GoalCreateRequest {
 
     /** 排序 */
     private Integer sortOrder = 0;
+
+    /** 关键结果列表 */
+    private List<GoalKrRequest> keyResults;
 }

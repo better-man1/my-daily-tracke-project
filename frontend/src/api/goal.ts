@@ -1,5 +1,15 @@
 import request from './request'
 
+export interface GoalKr {
+  id?: number
+  title: string
+  targetValue: number
+  currentValue: number
+  unit: string
+  progress?: number
+  sortOrder?: number
+}
+
 export interface GoalItem {
   id: number
   parentId: number | null
@@ -14,11 +24,12 @@ export interface GoalItem {
   priority: number
   sortOrder: number
   children?: GoalItem[]
+  keyResults?: GoalKr[]
   createdAt: string
 }
 
 export interface CreateGoalRequest {
-  parentId?: number
+  parentId?: number | null
   title: string
   description?: string
   goalType: string
@@ -29,6 +40,7 @@ export interface CreateGoalRequest {
   status?: string
   priority?: number
   sortOrder?: number
+  keyResults?: GoalKr[]
 }
 
 export const goalApi = {

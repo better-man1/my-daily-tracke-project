@@ -30,4 +30,7 @@ public class GoalResponse {
 
     /** 子目标列表（树形展示时使用） */
     private List<GoalResponse> children;
+
+    /** 关键结果列表 */
+    private List<GoalKrResponse> keyResults;
 }

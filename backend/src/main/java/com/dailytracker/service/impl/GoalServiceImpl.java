@@ -3,9 +3,11 @@ package com.dailytracker.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.dailytracker.common.exception.BusinessException;
 import com.dailytracker.common.result.ResultCode;
-import com.dailytracker.dto.request.GoalCreateRequest;
-import com.dailytracker.dto.response.GoalResponse;
+import com.dailytracker.dto.request.GoalKrRequest;
+import com.dailytracker.dto.response.GoalKrResponse;
+import com.dailytracker.entity.GoalKr;
 import com.dailytracker.entity.GoalPlan;
+import com.dailytracker.mapper.GoalKrMapper;
 import com.dailytracker.mapper.GoalPlanMapper;
 import com.dailytracker.service.GoalService;
 import com.dailytracker.util.SecurityUtils;
@@ -15,6 +17,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,6 +31,7 @@ import java.util.stream.Collectors;
 public class GoalServiceImpl implements GoalService {
 
     private final GoalPlanMapper goalPlanMapper;
+    private final GoalKrMapper goalKrMapper;
 
     @Override
     @Transactional
@@ -48,6 +53,10 @@ public class GoalServiceImpl implements GoalService {
         BeanUtils.copyProperties(request, goal);
         goal.setUserId(userId);
         goalPlanMapper.insert(goal);
+        
+        // 保存关键结果
+        saveKeyResults(goal.getId(), userId, request.getKeyResults());
+        
         log.info("创建目标成功: userId={}, title={}", userId, goal.getTitle());
         return toResponse(goal);
     }
@@ -77,6 +86,11 @@ public class GoalServiceImpl implements GoalService {
         GoalPlan goal = getAndValidate(id);
         BeanUtils.copyProperties(request, goal, "id", "userId");
         goalPlanMapper.updateById(goal);
+        
+        // 更新关键结果：简单处理，先删后增
+        goalKrMapper.delete(new LambdaQueryWrapper<GoalKr>().eq(GoalKr::getGoalId, id));
+        saveKeyResults(id, goal.getUserId(), request.getKeyResults());
+        
         return toResponse(goal);
     }
 
@@ -85,6 +99,8 @@ public class GoalServiceImpl implements GoalService {
     public void delete(Long id) {
         getAndValidate(id);
         goalPlanMapper.deleteById(id);
+        // 删除关联的关键结果
+        goalKrMapper.delete(new LambdaQueryWrapper<GoalKr>().eq(GoalKr::getGoalId, id));
     }
 
     @Override
@@ -177,6 +193,41 @@ public class GoalServiceImpl implements GoalService {
     private GoalResponse toResponse(GoalPlan goal) {
         GoalResponse response = new GoalResponse();
         BeanUtils.copyProperties(goal, response);
+        
+        // 查询关联的关键结果
+        List<GoalKr> krs = goalKrMapper.selectList(new LambdaQueryWrapper<GoalKr>()
+                .eq(GoalKr::getGoalId, goal.getId())
+                .orderByAsc(GoalKr::getSortOrder));
+        if (!krs.isEmpty()) {
+            response.setKeyResults(krs.stream().map(kr -> {
+                GoalKrResponse krResp = new GoalKrResponse();
+                BeanUtils.copyProperties(kr, krResp);
+                return krResp;
+            }).collect(Collectors.toList()));
+        }
+        
         return response;
+    }
+
+    private void saveKeyResults(Long goalId, Long userId, List<GoalKrRequest> keyResults) {
+        if (keyResults == null || keyResults.isEmpty()) {
+            return;
+        }
+        for (GoalKrRequest krRequest : keyResults) {
+            GoalKr kr = new GoalKr();
+            BeanUtils.copyProperties(krRequest, kr);
+            kr.setGoalId(goalId);
+            kr.setUserId(userId);
+            // 计算进度
+            if (kr.getTargetValue() != null && kr.getTargetValue().compareTo(BigDecimal.ZERO) > 0) {
+                BigDecimal current = kr.getCurrentValue() != null ? kr.getCurrentValue() : BigDecimal.ZERO;
+                int progress = current.divide(kr.getTargetValue(), 4, RoundingMode.HALF_UP)
+                        .multiply(BigDecimal.valueOf(100)).intValue();
+                kr.setProgress(Math.min(100, progress));
+            } else {
+                kr.setProgress(0);
+            }
+            goalKrMapper.insert(kr);
+        }
     }
 }

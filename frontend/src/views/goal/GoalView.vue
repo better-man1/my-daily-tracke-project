@@ -26,6 +26,9 @@
             <span class="goal-type-badge">{{ typeLabel(goal.goalType) }}</span>
             <h3 class="goal-title">{{ goal.title }}</h3>
           </div>
+          <div v-if="goal.parentId" class="parent-info text-xs text-muted">
+            属于父目标: {{ getParentTitle(goal.parentId) }}
+          </div>
           <div class="goal-status-area">
             <span class="goal-status" :class="goal.status.toLowerCase()">{{
               statusLabel(goal.status)
@@ -65,6 +68,18 @@
           />
         </div>
 
+        <!-- 关键结果 OKR -->
+        <div v-if="goal.keyResults && goal.keyResults.length > 0" class="goal-krs">
+          <div class="kr-header text-xs text-secondary mb-xs">关键结果 (KR)</div>
+          <div v-for="kr in goal.keyResults" :key="kr.id" class="kr-item">
+            <div class="flex justify-between text-xs mb-1">
+              <span>{{ kr.title }}</span>
+              <span>{{ kr.currentValue }}/{{ kr.targetValue }} {{ kr.unit }}</span>
+            </div>
+            <el-progress :percentage="kr.progress" :show-text="false" :stroke-width="4" />
+          </div>
+        </div>
+
         <!-- 时间线 -->
         <div class="goal-timeline text-xs text-muted">
           <span>📅 {{ goal.startDate }}</span>
@@ -99,8 +114,19 @@
             <el-option label="周计划" value="WEEKLY" />
           </el-select>
         </el-form-item>
-        <el-form-item label="描述">
-          <el-input v-model="form.description" type="textarea" :rows="2" />
+        <el-form-item label="目标描述">
+          <el-input v-model="form.description" type="textarea" :rows="2" placeholder="目标的具体背景或意义" />
+        </el-form-item>
+        <el-form-item label="父级目标">
+          <el-select v-model="form.parentId" clearable placeholder="选择上级目标（可选）" style="width: 100%">
+            <el-option
+              v-for="g in allGoals"
+              :key="g.id"
+              :label="`[${typeLabel(g.goalType)}] ${g.title}`"
+              :value="g.id"
+              :disabled="editing?.id === g.id"
+            />
+          </el-select>
         </el-form-item>
         <div class="flex gap-md">
           <el-form-item label="开始日期" prop="startDate" style="flex: 1">
@@ -123,6 +149,21 @@
         <el-form-item label="初始进度">
           <el-slider v-model="form.progress" :min="0" :max="100" :step="5" show-input />
         </el-form-item>
+
+        <!-- 关键结果管理 -->
+        <el-divider content-position="left">关键结果 (OKR KRs)</el-divider>
+        <div v-for="(kr, idx) in form.keyResults" :key="idx" class="kr-form-item mb-md">
+          <div class="flex gap-sm items-center mb-xs">
+            <el-input v-model="kr.title" placeholder="KR 描述" style="flex: 3" />
+            <el-button type="danger" link :icon="Delete" @click="removeKr(idx)" />
+          </div>
+          <div class="flex gap-sm">
+            <el-input-number v-model="kr.currentValue" placeholder="当前" style="flex: 1" />
+            <el-input-number v-model="kr.targetValue" placeholder="目标" style="flex: 1" />
+            <el-input v-model="kr.unit" placeholder="单位" style="width: 80px" />
+          </div>
+        </div>
+        <el-button type="primary" link :icon="Plus" @click="addKr">添加关键结果</el-button>
       </el-form>
       <template #footer>
         <el-button @click="showDialog = false">取消</el-button>
@@ -133,15 +174,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
-import { Plus, MoreFilled } from '@element-plus/icons-vue'
+import { Plus, MoreFilled, Delete } from '@element-plus/icons-vue'
 import { goalApi } from '@/api/goal'
-import type { GoalItem } from '@/api/goal'
+import type { GoalItem, GoalKr } from '@/api/goal'
 import dayjs from 'dayjs'
 
 const goals = ref<GoalItem[]>([])
+const allGoals = ref<GoalItem[]>([])
 const activeType = ref('')
 const loading = ref(false)
 const saving = ref(false)
@@ -150,12 +192,14 @@ const editing = ref<GoalItem | null>(null)
 const formRef = ref<FormInstance>()
 
 const form = reactive({
+  parentId: null as number | null,
   title: '',
   description: '',
   goalType: 'YEARLY',
   startDate: dayjs().startOf('year').format('YYYY-MM-DD'),
   endDate: dayjs().endOf('year').format('YYYY-MM-DD'),
-  progress: 0
+  progress: 0,
+  keyResults: [] as GoalKr[]
 })
 
 const rules = {
@@ -194,10 +238,31 @@ function progressColor(p: number) {
 async function loadGoals() {
   loading.value = true
   try {
-    goals.value = await goalApi.list({ goalType: activeType.value || undefined })
+    const res = await goalApi.list({ goalType: activeType.value || undefined })
+    goals.value = res
+    // 同时加载全量列表用于父级选择
+    const all = await goalApi.list({})
+    allGoals.value = all
   } finally {
     loading.value = false
   }
+}
+
+function getParentTitle(parentId: number) {
+  return allGoals.value.find(g => g.id === parentId)?.title || '未知'
+}
+
+function addKr() {
+  form.keyResults.push({
+    title: '',
+    targetValue: 100,
+    currentValue: 0,
+    unit: '%'
+  })
+}
+
+function removeKr(index: number) {
+  form.keyResults.splice(index, 1)
 }
 
 async function updateProgress(id: number, progress: number) {
@@ -207,12 +272,14 @@ async function updateProgress(id: number, progress: number) {
 function openAdd() {
   editing.value = null
   Object.assign(form, {
+    parentId: null,
     title: '',
     description: '',
     goalType: 'YEARLY',
     startDate: dayjs().startOf('year').format('YYYY-MM-DD'),
     endDate: dayjs().endOf('year').format('YYYY-MM-DD'),
-    progress: 0
+    progress: 0,
+    keyResults: []
   })
   showDialog.value = true
 }
@@ -221,12 +288,14 @@ function handleCommand(cmd: string, goal: GoalItem) {
   if (cmd === 'edit') {
     editing.value = goal
     Object.assign(form, {
+      parentId: goal.parentId,
       title: goal.title,
       description: goal.description ?? '',
       goalType: goal.goalType,
       startDate: goal.startDate,
       endDate: goal.endDate,
-      progress: goal.progress
+      progress: goal.progress,
+      keyResults: goal.keyResults ? JSON.parse(JSON.stringify(goal.keyResults)) : []
     })
     showDialog.value = true
   } else if (cmd === 'delete') {
@@ -296,6 +365,12 @@ onMounted(loadGoals)
         }
       }
 
+      .parent-info {
+        margin-top: 4px;
+        font-size: 11px;
+        color: $text-muted;
+      }
+
       .goal-status-area {
         display: flex;
         align-items: center;
@@ -348,7 +423,6 @@ onMounted(loadGoals)
 
     .goal-progress {
       margin-bottom: 10px;
-
       .progress-header {
         display: flex;
         justify-content: space-between;
@@ -356,11 +430,31 @@ onMounted(loadGoals)
       }
     }
 
+    .goal-krs {
+      margin-top: 12px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: $radius-sm;
+      .kr-item {
+        margin-bottom: 8px;
+        &:last-child { margin-bottom: 0; }
+      }
+    }
+
     .goal-timeline {
       display: flex;
-      align-items: center;
-      gap: 0;
+      justify-content: space-between;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 10px;
+      margin-top: auto;
     }
+  }
+
+  .kr-form-item {
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: $radius-sm;
+    border: 1px solid $border;
   }
 
   .empty-state {

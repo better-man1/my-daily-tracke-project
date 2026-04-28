@@ -35,6 +35,35 @@
       </div>
     </div>
 
+    <!-- 预算卡片 -->
+    <div class="budget-card card mb-md">
+      <div v-if="budgetInfo && budgetInfo.totalBudget">
+        <div class="flex items-center justify-between mb-sm">
+          <span class="font-bold">本月总预算</span>
+          <div class="text-sm">
+            已用: <span class="text-danger font-bold">¥{{ formatAmount(budgetInfo.budgetUsed) }}</span>
+            / 共 ¥{{ formatAmount(budgetInfo.totalBudget) }}
+            <el-button type="primary" link size="small" style="margin-left: 8px" @click="openBudgetDialog">修改</el-button>
+          </div>
+        </div>
+        <el-progress
+          :percentage="budgetInfo.budgetRate > 100 ? 100 : Number(budgetInfo.budgetRate)"
+          :status="budgetInfo.budgetRate >= 100 ? 'exception' : budgetInfo.budgetRate > 80 ? 'warning' : 'success'"
+          :stroke-width="10"
+        />
+        <div v-if="budgetInfo.budgetRemaining >= 0" class="text-xs text-muted mt-xs text-right">
+          剩余 ¥{{ formatAmount(budgetInfo.budgetRemaining) }}
+        </div>
+        <div v-else class="text-xs text-danger mt-xs text-right">
+          超支 ¥{{ formatAmount(Math.abs(budgetInfo.budgetRemaining)) }}
+        </div>
+      </div>
+      <div v-else class="flex items-center justify-between">
+        <span class="text-muted text-sm">尚未设置本月预算，合理规划财务从预算开始</span>
+        <el-button type="primary" plain size="small" @click="openBudgetDialog">设置预算</el-button>
+      </div>
+    </div>
+
     <!-- 筛选 -->
     <div class="filter-bar flex items-center gap-md mb-md">
       <el-date-picker
@@ -132,6 +161,28 @@
         <el-button type="primary" :loading="saving" @click="saveItem">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 设置预算弹窗 -->
+    <el-dialog v-model="showBudgetDialog" title="设置总预算" width="400px" destroy-on-close>
+      <el-form :model="budgetForm" label-width="100px">
+        <el-form-item label="预算月份">
+          <el-date-picker
+            v-model="budgetForm.month"
+            type="month"
+            format="YYYY-MM"
+            value-format="YYYY-MM"
+            placeholder="选择月份"
+          />
+        </el-form-item>
+        <el-form-item label="总预算金额">
+          <el-input-number v-model="budgetForm.amount" :min="1" :step="100" style="width: 100%" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="showBudgetDialog = false">取消</el-button>
+        <el-button type="primary" :loading="savingBudget" @click="saveBudget">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -146,13 +197,21 @@ import dayjs from 'dayjs'
 
 const list = ref<AccountingItem[]>([])
 const monthStats = ref<Record<string, any>>({ totalIncome: 0, totalExpense: 0, balance: 0 })
+const budgetInfo = ref<Record<string, any> | null>(null)
 const loading = ref(false)
 const saving = ref(false)
 const showAddDialog = ref(false)
+const showBudgetDialog = ref(false)
+const savingBudget = ref(false)
 const filterType = ref('')
 const dateRange = ref<[string, string] | null>(null)
 const formRef = ref<FormInstance>()
 const categoryOptions = ref<any[]>([])
+
+const budgetForm = reactive({
+  month: dayjs().format('YYYY-MM'),
+  amount: 3000
+})
 
 const form = reactive({
   type: 'EXPENSE' as 'EXPENSE' | 'INCOME',
@@ -193,6 +252,35 @@ async function loadList() {
 async function loadMonthStats() {
   const now = dayjs()
   monthStats.value = await accountingApi.monthlyStats(now.year(), now.month() + 1)
+  try {
+    budgetInfo.value = await accountingApi.getBudget(now.year(), now.month() + 1)
+  } catch {
+    budgetInfo.value = null
+  }
+}
+
+function openBudgetDialog() {
+  budgetForm.month = dayjs().format('YYYY-MM')
+  budgetForm.amount = budgetInfo.value?.totalBudget || 3000
+  showBudgetDialog.value = true
+}
+
+async function saveBudget() {
+  savingBudget.value = true
+  try {
+    const year = Number(budgetForm.month.split('-')[0])
+    const month = Number(budgetForm.month.split('-')[1])
+    await accountingApi.setBudget({
+      budgetYear: year,
+      budgetMonth: month,
+      amount: budgetForm.amount
+    })
+    ElMessage.success('设置预算成功')
+    showBudgetDialog.value = false
+    loadMonthStats()
+  } finally {
+    savingBudget.value = false
+  }
 }
 
 async function saveItem() {
@@ -234,6 +322,10 @@ onMounted(() => {
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
     margin-bottom: 20px;
+  }
+
+  .budget-card {
+    padding: 16px 20px;
   }
 
   .accounting-list {
