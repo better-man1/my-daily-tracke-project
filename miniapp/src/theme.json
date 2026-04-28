@@ -1,0 +1,34 @@
+{
+  "page": {
+    "navigationBarBackgroundColor": {
+      "@dark": "#0f1117",
+      "@light": "#0f1117"
+    },
+    "navigationBarTextStyle": {
+      "@dark": "white",
+      "@light": "white"
+    },
+    "backgroundColor": {
+      "@dark": "#0f1117",
+      "@light": "#0f1117"
+    }
+  },
+  "tabBar": {
+    "backgroundColor": {
+      "@dark": "#13151f",
+      "@light": "#13151f"
+    },
+    "borderStyle": {
+      "@dark": "black",
+      "@light": "black"
+    },
+    "color": {
+      "@dark": "#64748b",
+      "@light": "#64748b"
+    },
+    "selectedColor": {
+      "@dark": "#6366f1",
+      "@light": "#6366f1"
+    }
+  }
+}
