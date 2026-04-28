@@ -1,0 +1,224 @@
+// ==============================
+// DailyTracker 小程序全局样式
+// ==============================
+
+// 基础颜色变量（使用 CSS vars，小程序支持）
+page {
+  background-color: #0f1117;
+  color: #e2e8f0;
+  font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif;
+  font-size: 28rpx;
+  line-height: 1.6;
+}
+
+// 通用卡片
+.card {
+  background: #1a1d27;
+  border-radius: 24rpx;
+  padding: 32rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.08);
+}
+
+// 页面容器
+.page-container {
+  min-height: 100vh;
+  background: #0f1117;
+  padding: 24rpx;
+  padding-bottom: 120rpx;
+}
+
+// 标题栏
+.page-header {
+  margin-bottom: 32rpx;
+
+  .page-title {
+    font-size: 44rpx;
+    font-weight: 700;
+    color: #e2e8f0;
+    letter-spacing: -0.5rpx;
+  }
+
+  .page-subtitle {
+    font-size: 24rpx;
+    color: #94a3b8;
+    margin-top: 6rpx;
+  }
+}
+
+// 统计卡片
+.stat-card {
+  background: #1a1d27;
+  border-radius: 24rpx;
+  padding: 28rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4rpx;
+    background: var(--stat-color, #6366f1);
+    opacity: 0.8;
+  }
+
+  .stat-icon {
+    font-size: 48rpx;
+    margin-bottom: 16rpx;
+  }
+
+  .stat-value {
+    font-size: 56rpx;
+    font-weight: 700;
+    color: #e2e8f0;
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 24rpx;
+    color: #94a3b8;
+    margin-top: 8rpx;
+  }
+}
+
+// 进度条
+.progress-bar {
+  height: 8rpx;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4rpx;
+  overflow: hidden;
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 4rpx;
+    background: #6366f1;
+    transition: width 0.3s ease;
+  }
+}
+
+// 标签
+.tag {
+  display: inline-block;
+  padding: 4rpx 16rpx;
+  border-radius: 100rpx;
+  font-size: 22rpx;
+  background: rgba(99, 102, 241, 0.12);
+  color: #818cf8;
+  border: 1rpx solid rgba(99, 102, 241, 0.2);
+}
+
+// 优先级徽章
+.priority-p0 { color: #ef4444; }
+.priority-p1 { color: #f59e0b; }
+.priority-p2 { color: #818cf8; }
+.priority-p3 { color: #64748b; }
+
+// 状态点
+.status-dot {
+  display: inline-block;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+
+  &.todo       { background: #64748b; }
+  &.in-progress { background: #f59e0b; }
+  &.done       { background: #10b981; }
+  &.cancelled  { background: #ef4444; }
+}
+
+// 分割线
+.divider {
+  height: 1rpx;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 24rpx 0;
+}
+
+// 按钮
+.btn-primary {
+  background: linear-gradient(135deg, #6366f1, #7c3aed);
+  color: white;
+  border-radius: 16rpx;
+  padding: 24rpx 48rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  text-align: center;
+  border: none;
+}
+
+.btn-outline {
+  background: transparent;
+  color: #818cf8;
+  border: 1rpx solid #6366f1;
+  border-radius: 16rpx;
+  padding: 20rpx 40rpx;
+  font-size: 28rpx;
+  text-align: center;
+}
+
+// 文字颜色
+.text-primary   { color: #e2e8f0; }
+.text-secondary { color: #94a3b8; }
+.text-muted     { color: #64748b; }
+.text-success   { color: #10b981; }
+.text-danger    { color: #ef4444; }
+.text-warning   { color: #f59e0b; }
+.text-purple    { color: #818cf8; }
+
+// 字体大小
+.text-xs   { font-size: 22rpx; }
+.text-sm   { font-size: 26rpx; }
+.text-base { font-size: 28rpx; }
+.text-lg   { font-size: 32rpx; }
+.text-xl   { font-size: 36rpx; }
+.text-2xl  { font-size: 44rpx; }
+.text-3xl  { font-size: 56rpx; }
+.font-bold   { font-weight: 700; }
+.font-medium { font-weight: 500; }
+
+// 间距工具
+.mt-sm { margin-top: 16rpx; }
+.mt-md { margin-top: 24rpx; }
+.mt-lg { margin-top: 32rpx; }
+.mb-sm { margin-bottom: 16rpx; }
+.mb-md { margin-bottom: 24rpx; }
+.mb-lg { margin-bottom: 32rpx; }
+
+// 渐变文字 (H5支持，小程序需要图片)
+.gradient-text {
+  background: linear-gradient(135deg, #818cf8, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+// 动画 (H5)
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20rpx); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: fadeInUp 0.3s ease both;
+}
+
+// 空状态
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100rpx 40rpx;
+
+  .empty-icon {
+    font-size: 100rpx;
+    margin-bottom: 24rpx;
+  }
+
+  .empty-text {
+    font-size: 28rpx;
+    color: #64748b;
+    text-align: center;
+  }
+}
