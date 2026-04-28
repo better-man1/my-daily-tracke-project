@@ -23,24 +23,6 @@
         </router-link>
       </nav>
 
-      <!-- 底部操作 -->
-      <div class="sidebar-footer">
-        <button class="nav-item" @click="appStore.toggleSidebar" title="收缩/展开">
-          <el-icon class="nav-icon">
-            <component :is="appStore.sidebarCollapsed ? iconMap.Expand : iconMap.Fold" />
-          </el-icon>
-          <span class="nav-label" v-show="!appStore.sidebarCollapsed">收缩</span>
-        </button>
-        <router-link to="/profile" class="nav-item user-item">
-          <div class="user-avatar">
-            <img v-if="userStore.avatar" :src="userStore.avatar" alt="avatar" />
-            <span v-else>{{ (userStore.nickname || 'U')[0].toUpperCase() }}</span>
-          </div>
-          <span class="nav-label" v-show="!appStore.sidebarCollapsed">{{
-            userStore.nickname
-          }}</span>
-        </router-link>
-      </div>
     </aside>
 
     <!-- 主内容区 -->
@@ -48,6 +30,9 @@
       <!-- 顶部栏 -->
       <header class="top-bar glass">
         <div class="top-bar-left">
+          <el-button link class="top-action-btn" @click="appStore.toggleSidebar" title="收缩/展开侧边栏">
+            <el-icon size="20"><component :is="appStore.sidebarCollapsed ? iconMap.Expand : iconMap.Fold" /></el-icon>
+          </el-button>
           <h1 class="current-page-title">{{ currentPageTitle }}</h1>
           <span class="current-date">{{ today }}</span>
         </div>
@@ -59,10 +44,27 @@
             :inactive-icon="iconMap.Sunny"
             style="--el-switch-on-color: #2c2c2c; margin-right: 16px"
           />
-          <el-button link class="logout-btn" @click="handleLogout">
-            <el-icon><component :is="iconMap.SwitchButton" /></el-icon>
-            退出
-          </el-button>
+          
+          <el-dropdown trigger="click" @command="handleUserCommand">
+            <div class="user-profile-link">
+              <div class="user-avatar">
+                <img v-if="userStore.avatar" :src="userStore.avatar" alt="avatar" />
+                <span v-else>{{ (userStore.nickname || 'U')[0].toUpperCase() }}</span>
+              </div>
+              <span class="nickname">{{ userStore.nickname }}</span>
+              <el-icon class="el-icon--right"><component :is="iconMap.ArrowDown" /></el-icon>
+            </div>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="profile">
+                  <el-icon><component :is="iconMap.User" /></el-icon>个人中心
+                </el-dropdown-item>
+                <el-dropdown-item command="logout" divided class="danger">
+                  <el-icon><component :is="iconMap.SwitchButton" /></el-icon>退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
       </header>
 
@@ -99,7 +101,9 @@ import {
   Fold,
   SwitchButton,
   Moon,
-  Sunny
+  Sunny,
+  ArrowDown,
+  User
 } from '@element-plus/icons-vue'
 
 const iconMap: Record<string, any> = {
@@ -113,7 +117,9 @@ const iconMap: Record<string, any> = {
   Fold,
   SwitchButton,
   Moon,
-  Sunny
+  Sunny,
+  ArrowDown,
+  User
 }
 
 dayjs.locale('zh-cn')
@@ -142,6 +148,14 @@ const currentPageTitle = computed(
 
 function isActive(path: string) {
   return route.path.startsWith(path)
+}
+
+function handleUserCommand(command: string) {
+  if (command === 'profile') {
+    router.push('/profile')
+  } else if (command === 'logout') {
+    handleLogout()
+  }
 }
 
 async function handleLogout() {
@@ -251,37 +265,6 @@ async function handleLogout() {
     }
   }
 
-  .sidebar-footer {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding-top: 12px;
-    border-top: 1px solid $border;
-  }
-
-  .user-item {
-    .user-avatar {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, $primary, #a78bfa);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 700;
-      color: white;
-      flex-shrink: 0;
-      overflow: hidden;
-
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-    }
-  }
-
   .main-content {
     flex: 1;
     display: flex;
@@ -302,8 +285,14 @@ async function handleLogout() {
 
     .top-bar-left {
       display: flex;
-      align-items: baseline;
+      align-items: center;
       gap: 12px;
+    }
+
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .current-page-title {
@@ -317,12 +306,53 @@ async function handleLogout() {
       color: $text-muted;
     }
 
-    .logout-btn {
-      color: $text-muted;
-      font-size: 13px;
+    .top-action-btn {
+      color: $text-secondary;
+      margin-right: 12px;
+      &:hover {
+        color: $text-primary;
+      }
+    }
+
+    .user-profile-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px;
+      border-radius: $radius-full;
+      cursor: pointer;
+      transition: $transition-fast;
+      outline: none;
 
       &:hover {
-        color: $danger;
+        background: var(--nav-hover-bg);
+      }
+
+      .user-avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, $primary, #a78bfa);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        color: white;
+        flex-shrink: 0;
+        overflow: hidden;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+
+      .nickname {
+        font-size: 14px;
+        font-weight: 500;
+        color: $text-primary;
       }
     }
   }
