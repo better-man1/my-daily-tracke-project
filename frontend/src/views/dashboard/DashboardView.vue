@@ -16,60 +16,84 @@
     <!-- 统计卡片 -->
     <div class="stat-grid">
       <!-- 计划完成率 -->
-      <div class="stat-card card--glow" style="--stat-color: #6366f1; --stat-bg: rgba(99,102,241,0.12)">
-        <div class="stat-badge">{{ period === 'today' ? '今日' : period === 'week' ? '本周' : '本月' }}</div>
+      <div
+        class="stat-card card--glow"
+        style="--stat-color: #6366f1; --stat-bg: rgba(99, 102, 241, 0.12)"
+      >
+        <div class="stat-badge">
+          {{ period === 'today' ? '今日' : period === 'week' ? '本周' : '本月' }}
+        </div>
         <div class="stat-icon">📋</div>
-        <div class="stat-value">{{ planStats.completionRate ?? 0 }}<span style="font-size:16px">%</span></div>
+        <div class="stat-value">
+          {{ planStats.completionRate ?? 0 }}<span style="font-size: 16px">%</span>
+        </div>
         <div class="stat-label">计划完成率</div>
-        <div style="margin-top:8px;font-size:12px;color:#94a3b8">
+        <div style="margin-top: 8px; font-size: 12px; color: #94a3b8">
           已完成 {{ planStats.done ?? 0 }} / 共 {{ planStats.total ?? 0 }} 个
         </div>
       </div>
 
       <!-- 支出 -->
-      <div class="stat-card card--glow" style="--stat-color: #ef4444; --stat-bg: rgba(239,68,68,0.12)">
+      <div
+        class="stat-card card--glow"
+        style="--stat-color: #ef4444; --stat-bg: rgba(239, 68, 68, 0.12)"
+      >
         <div class="stat-badge">支出</div>
         <div class="stat-icon">💸</div>
         <div class="stat-value">¥{{ formatAmount(accountingStats.totalExpense) }}</div>
         <div class="stat-label">支出金额</div>
-        <div style="margin-top:8px;font-size:12px;color:#94a3b8">
+        <div style="margin-top: 8px; font-size: 12px; color: #94a3b8">
           收入 ¥{{ formatAmount(accountingStats.totalIncome) }}
         </div>
       </div>
 
       <!-- 摘录数 -->
-      <div class="stat-card card--glow" style="--stat-color: #f59e0b; --stat-bg: rgba(245,158,11,0.12)">
+      <div
+        class="stat-card card--glow"
+        style="--stat-color: #f59e0b; --stat-bg: rgba(245, 158, 11, 0.12)"
+      >
         <div class="stat-icon">📖</div>
         <div class="stat-value">{{ excerptCount }}</div>
         <div class="stat-label">摘录条数</div>
       </div>
 
       <!-- 总结天数 -->
-      <div class="stat-card card--glow" style="--stat-color: #ec4899; --stat-bg: rgba(236,72,153,0.12)">
+      <div
+        class="stat-card card--glow"
+        style="--stat-color: #ec4899; --stat-bg: rgba(236, 72, 153, 0.12)"
+      >
         <div class="stat-icon">✍️</div>
         <div class="stat-value">{{ summaryInfo.hasSummary ? '已完成' : '未完成' }}</div>
         <div class="stat-label">今日总结</div>
-        <div v-if="summaryInfo.mood" style="margin-top:8px;font-size:12px;color:#94a3b8">
+        <div v-if="summaryInfo.mood" style="margin-top: 8px; font-size: 12px; color: #94a3b8">
           心情：{{ moodEmoji[summaryInfo.mood - 1] }}
         </div>
       </div>
 
       <!-- 目标进度 -->
-      <div class="stat-card card--glow" style="--stat-color: #3b82f6; --stat-bg: rgba(59,130,246,0.12)">
+      <div
+        class="stat-card card--glow"
+        style="--stat-color: #3b82f6; --stat-bg: rgba(59, 130, 246, 0.12)"
+      >
         <div class="stat-icon">🎯</div>
-        <div class="stat-value">{{ goalStats.avgProgress ?? 0 }}<span style="font-size:16px">%</span></div>
+        <div class="stat-value">
+          {{ goalStats.avgProgress ?? 0 }}<span style="font-size: 16px">%</span>
+        </div>
         <div class="stat-label">目标平均进度</div>
-        <div style="margin-top:8px;font-size:12px;color:#94a3b8">
+        <div style="margin-top: 8px; font-size: 12px; color: #94a3b8">
           进行中 {{ goalStats.activeCount ?? 0 }} 个
         </div>
       </div>
 
       <!-- 连续打卡 -->
-      <div class="stat-card card--glow" style="--stat-color: #10b981; --stat-bg: rgba(16,185,129,0.12)">
+      <div
+        class="stat-card card--glow"
+        style="--stat-color: #10b981; --stat-bg: rgba(16, 185, 129, 0.12)"
+      >
         <div class="stat-icon">🔥</div>
         <div class="stat-value">{{ streak.currentStreak ?? 0 }}</div>
         <div class="stat-label">连续总结天数</div>
-        <div style="margin-top:8px;font-size:12px;color:#94a3b8">
+        <div style="margin-top: 8px; font-size: 12px; color: #94a3b8">
           历史最长 {{ streak.longestStreak ?? 0 }} 天
         </div>
       </div>
@@ -120,8 +144,26 @@ import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { dashboardApi } from '@/api/dashboard'
 import { summaryApi } from '@/api/summary'
-import * as echarts from 'echarts'
+import * as echarts from 'echarts/core'
+import { BarChart, LineChart } from 'echarts/charts'
+import {
+  TooltipComponent,
+  GridComponent,
+  LegendComponent,
+  GraphicComponent
+} from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
 import dayjs from 'dayjs'
+
+echarts.use([
+  BarChart,
+  LineChart,
+  TooltipComponent,
+  GridComponent,
+  LegendComponent,
+  GraphicComponent,
+  CanvasRenderer
+])
 
 const userStore = useUserStore()
 const period = ref<'today' | 'week' | 'month'>('today')
@@ -146,7 +188,7 @@ const moodEmoji = ['😢', '😔', '😐', '😊', '😄']
 
 const greeting = computed(() => {
   const h = new Date().getHours()
-  if (h < 6)  return '凌晨好'
+  if (h < 6) return '凌晨好'
   if (h < 12) return '早上好'
   if (h < 14) return '中午好'
   if (h < 18) return '下午好'
@@ -155,9 +197,7 @@ const greeting = computed(() => {
 
 function formatAmount(val: any) {
   const n = Number(val ?? 0)
-  return n >= 10000
-    ? (n / 10000).toFixed(1) + 'w'
-    : n.toFixed(2)
+  return n >= 10000 ? (n / 10000).toFixed(1) + 'w' : n.toFixed(2)
 }
 
 async function loadData() {
@@ -180,7 +220,9 @@ async function loadData() {
   try {
     const s = await summaryApi.getStreak()
     streak.value = s as any
-  } catch { streak.value = {} }
+  } catch {
+    streak.value = {}
+  }
 
   await nextTick()
   renderPlanChart()
@@ -198,7 +240,11 @@ function renderPlanChart() {
   for (let i = 6; i >= 0; i--) {
     days.push(dayjs().subtract(i, 'day').format('MM-DD'))
   }
-  const dates = days.map(d => dayjs().subtract(6 - days.indexOf(d), 'day').format('YYYY-MM-DD'))
+  const dates = days.map((d) =>
+    dayjs()
+      .subtract(6 - days.indexOf(d), 'day')
+      .format('YYYY-MM-DD')
+  )
 
   planChart.setOption({
     backgroundColor: 'transparent',
@@ -221,13 +267,13 @@ function renderPlanChart() {
       {
         name: '任务数',
         type: 'bar',
-        data: dates.map(d => planByDate[d] ?? 0),
+        data: dates.map((d) => planByDate[d] ?? 0),
         itemStyle: { color: 'rgba(99,102,241,0.6)', borderRadius: [4, 4, 0, 0] }
       },
       {
         name: '已完成',
         type: 'bar',
-        data: dates.map(d => donePlanByDate[d] ?? 0),
+        data: dates.map((d) => donePlanByDate[d] ?? 0),
         itemStyle: { color: '#6366f1', borderRadius: [4, 4, 0, 0] }
       }
     ]
@@ -268,21 +314,23 @@ function renderMoodChart() {
       },
       splitLine: { lineStyle: { color: 'rgba(255,255,255,0.04)' } }
     },
-    series: [{
-      type: 'line',
-      data: data.map((d: any) => d.mood),
-      smooth: true,
-      symbol: 'circle',
-      symbolSize: 6,
-      lineStyle: { color: '#ec4899', width: 2 },
-      itemStyle: { color: '#ec4899' },
-      areaStyle: {
-        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: 'rgba(236,72,153,0.3)' },
-          { offset: 1, color: 'rgba(236,72,153,0)' }
-        ])
+    series: [
+      {
+        type: 'line',
+        data: data.map((d: any) => d.mood),
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: { color: '#ec4899', width: 2 },
+        itemStyle: { color: '#ec4899' },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(236,72,153,0.3)' },
+            { offset: 1, color: 'rgba(236,72,153,0)' }
+          ])
+        }
       }
-    }]
+    ]
   })
 }
 

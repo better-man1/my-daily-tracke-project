@@ -39,8 +39,16 @@ export const useUserStore = defineStore('user', () => {
   }
 
   return {
-    userInfo, accessToken, refreshToken,
-    isLoggedIn, userId, username, nickname, avatar,
-    setLoginData, logout, updateUserInfo
+    userInfo,
+    accessToken,
+    refreshToken,
+    isLoggedIn,
+    userId,
+    username,
+    nickname,
+    avatar,
+    setLoginData,
+    logout,
+    updateUserInfo
   }
 })

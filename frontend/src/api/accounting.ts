@@ -58,29 +58,35 @@ export const accountingApi = {
     type?: string
   }) => request.get<any, PageResult<AccountingItem>>('/accounting', { params }),
 
-  create: (data: CreateAccountingRequest) =>
-    request.post<any, AccountingItem>('/accounting', data),
+  create: (data: CreateAccountingRequest) => request.post<any, AccountingItem>('/accounting', data),
 
   update: (id: number, data: CreateAccountingRequest) =>
     request.put<any, AccountingItem>(`/accounting/${id}`, data),
 
-  delete: (id: number) =>
-    request.delete<any, void>(`/accounting/${id}`),
+  delete: (id: number) => request.delete<any, void>(`/accounting/${id}`),
 
   dailyStats: (date?: string) =>
     request.get<any, AccountingStats>('/accounting/statistics/daily', { params: { date } }),
 
   monthlyStats: (year: number, month: number) =>
-    request.get<any, AccountingStats>('/accounting/statistics/monthly', { params: { year, month } }),
+    request.get<any, AccountingStats>('/accounting/statistics/monthly', {
+      params: { year, month }
+    }),
 
   yearlyStats: (year: number) =>
     request.get<any, AccountingStats>('/accounting/statistics/yearly', { params: { year } }),
 
   categoryStats: (params: { startDate?: string; endDate?: string; type?: string }) =>
-    request.get<any, AccountingStats['categoryStats']>('/accounting/statistics/category', { params }),
+    request.get<any, AccountingStats['categoryStats']>('/accounting/statistics/category', {
+      params
+    }),
 
-  setBudget: (data: { categoryId?: number; budgetYear: number; budgetMonth: number; amount: number }) =>
-    request.post<any, void>('/accounting/budget', data),
+  setBudget: (data: {
+    categoryId?: number
+    budgetYear: number
+    budgetMonth: number
+    amount: number
+  }) => request.post<any, void>('/accounting/budget', data),
 
   getBudget: (year: number, month: number) =>
     request.get<any, Record<string, any>>('/accounting/budget', { params: { year, month } }),

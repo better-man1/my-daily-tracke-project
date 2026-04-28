@@ -27,7 +27,9 @@
             <h3 class="goal-title">{{ goal.title }}</h3>
           </div>
           <div class="goal-status-area">
-            <span class="goal-status" :class="goal.status.toLowerCase()">{{ statusLabel(goal.status) }}</span>
+            <span class="goal-status" :class="goal.status.toLowerCase()">{{
+              statusLabel(goal.status)
+            }}</span>
             <el-dropdown trigger="click" @command="(cmd: string) => handleCommand(cmd, goal)">
               <el-icon class="icon-btn"><MoreFilled /></el-icon>
               <template #dropdown>
@@ -41,17 +43,26 @@
         </div>
 
         <!-- 描述 -->
-        <p v-if="goal.description" class="goal-desc text-secondary text-sm">{{ goal.description }}</p>
+        <p v-if="goal.description" class="goal-desc text-secondary text-sm">
+          {{ goal.description }}
+        </p>
 
         <!-- 进度条 -->
         <div class="goal-progress">
           <div class="progress-header">
             <span class="text-sm text-secondary">完成进度</span>
-            <span class="text-sm font-bold" :style="{ color: progressColor(goal.progress) }">{{ goal.progress }}%</span>
+            <span class="text-sm font-bold" :style="{ color: progressColor(goal.progress) }"
+              >{{ goal.progress }}%</span
+            >
           </div>
-          <el-slider v-model="goal.progress" :min="0" :max="100" :step="5"
+          <el-slider
+            v-model="goal.progress"
+            :min="0"
+            :max="100"
+            :step="5"
             @change="(v: number) => updateProgress(goal.id, v)"
-            :color="progressColor(goal.progress)" />
+            :color="progressColor(goal.progress)"
+          />
         </div>
 
         <!-- 时间线 -->
@@ -70,13 +81,18 @@
     </div>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="showDialog" :title="editing ? '编辑目标' : '新增目标'" width="560px" destroy-on-close>
+    <el-dialog
+      v-model="showDialog"
+      :title="editing ? '编辑目标' : '新增目标'"
+      width="560px"
+      destroy-on-close
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
         <el-form-item label="目标标题" prop="title">
           <el-input v-model="form.title" placeholder="输入目标标题" />
         </el-form-item>
         <el-form-item label="目标类型" prop="goalType">
-          <el-select v-model="form.goalType" style="width:100%">
+          <el-select v-model="form.goalType" style="width: 100%">
             <el-option label="五年目标" value="FIVE_YEAR" />
             <el-option label="年度目标" value="YEARLY" />
             <el-option label="月度目标" value="MONTHLY" />
@@ -87,11 +103,21 @@
           <el-input v-model="form.description" type="textarea" :rows="2" />
         </el-form-item>
         <div class="flex gap-md">
-          <el-form-item label="开始日期" prop="startDate" style="flex:1">
-            <el-date-picker v-model="form.startDate" type="date" format="YYYY-MM-DD" value-format="YYYY-MM-DD" />
+          <el-form-item label="开始日期" prop="startDate" style="flex: 1">
+            <el-date-picker
+              v-model="form.startDate"
+              type="date"
+              format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD"
+            />
           </el-form-item>
-          <el-form-item label="截止日期" prop="endDate" style="flex:1">
-            <el-date-picker v-model="form.endDate" type="date" format="YYYY-MM-DD" value-format="YYYY-MM-DD" />
+          <el-form-item label="截止日期" prop="endDate" style="flex: 1">
+            <el-date-picker
+              v-model="form.endDate"
+              type="date"
+              format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD"
+            />
           </el-form-item>
         </div>
         <el-form-item label="初始进度">
@@ -124,7 +150,9 @@ const editing = ref<GoalItem | null>(null)
 const formRef = ref<FormInstance>()
 
 const form = reactive({
-  title: '', description: '', goalType: 'YEARLY',
+  title: '',
+  description: '',
+  goalType: 'YEARLY',
   startDate: dayjs().startOf('year').format('YYYY-MM-DD'),
   endDate: dayjs().endOf('year').format('YYYY-MM-DD'),
   progress: 0
@@ -137,11 +165,25 @@ const rules = {
   endDate: [{ required: true, message: '请选择截止日期' }]
 }
 
-const typeMap: Record<string, string> = { FIVE_YEAR: '五年', YEARLY: '年度', MONTHLY: '月度', WEEKLY: '周' }
-const statusMap: Record<string, string> = { NOT_STARTED: '未开始', IN_PROGRESS: '进行中', COMPLETED: '已完成', ABANDONED: '已放弃' }
+const typeMap: Record<string, string> = {
+  FIVE_YEAR: '五年',
+  YEARLY: '年度',
+  MONTHLY: '月度',
+  WEEKLY: '周'
+}
+const statusMap: Record<string, string> = {
+  NOT_STARTED: '未开始',
+  IN_PROGRESS: '进行中',
+  COMPLETED: '已完成',
+  ABANDONED: '已放弃'
+}
 
-function typeLabel(t: string) { return typeMap[t] ?? t }
-function statusLabel(s: string) { return statusMap[s] ?? s }
+function typeLabel(t: string) {
+  return typeMap[t] ?? t
+}
+function statusLabel(s: string) {
+  return statusMap[s] ?? s
+}
 function progressColor(p: number) {
   if (p >= 80) return '#10b981'
   if (p >= 50) return '#6366f1'
@@ -164,18 +206,35 @@ async function updateProgress(id: number, progress: number) {
 
 function openAdd() {
   editing.value = null
-  Object.assign(form, { title: '', description: '', goalType: 'YEARLY', startDate: dayjs().startOf('year').format('YYYY-MM-DD'), endDate: dayjs().endOf('year').format('YYYY-MM-DD'), progress: 0 })
+  Object.assign(form, {
+    title: '',
+    description: '',
+    goalType: 'YEARLY',
+    startDate: dayjs().startOf('year').format('YYYY-MM-DD'),
+    endDate: dayjs().endOf('year').format('YYYY-MM-DD'),
+    progress: 0
+  })
   showDialog.value = true
 }
 
 function handleCommand(cmd: string, goal: GoalItem) {
   if (cmd === 'edit') {
     editing.value = goal
-    Object.assign(form, { title: goal.title, description: goal.description ?? '', goalType: goal.goalType, startDate: goal.startDate, endDate: goal.endDate, progress: goal.progress })
+    Object.assign(form, {
+      title: goal.title,
+      description: goal.description ?? '',
+      goalType: goal.goalType,
+      startDate: goal.startDate,
+      endDate: goal.endDate,
+      progress: goal.progress
+    })
     showDialog.value = true
   } else if (cmd === 'delete') {
     ElMessageBox.confirm('确认删除此目标？', '提示', { type: 'warning' }).then(() => {
-      goalApi.delete(goal.id).then(() => { ElMessage.success('已删除'); loadGoals() })
+      goalApi.delete(goal.id).then(() => {
+        ElMessage.success('已删除')
+        loadGoals()
+      })
     })
   }
 }
@@ -248,10 +307,22 @@ onMounted(loadGoals)
           padding: 2px 8px;
           border-radius: $radius-full;
 
-          &.not_started  { background: rgba(100,116,139,0.15); color: $text-muted; }
-          &.in_progress  { background: rgba(245,158,11,0.15); color: $warning; }
-          &.completed    { background: rgba(16,185,129,0.15); color: $success; }
-          &.abandoned    { background: rgba(239,68,68,0.15); color: $danger; }
+          &.not_started {
+            background: rgba(100, 116, 139, 0.15);
+            color: $text-muted;
+          }
+          &.in_progress {
+            background: rgba(245, 158, 11, 0.15);
+            color: $warning;
+          }
+          &.completed {
+            background: rgba(16, 185, 129, 0.15);
+            color: $success;
+          }
+          &.abandoned {
+            background: rgba(239, 68, 68, 0.15);
+            color: $danger;
+          }
         }
 
         .icon-btn {
@@ -262,7 +333,10 @@ onMounted(loadGoals)
           border-radius: $radius-sm;
           transition: $transition-fast;
 
-          &:hover { color: $text-primary; background: rgba(255, 255, 255, 0.06); }
+          &:hover {
+            color: $text-primary;
+            background: rgba(255, 255, 255, 0.06);
+          }
         }
       }
     }
@@ -293,10 +367,17 @@ onMounted(loadGoals)
     text-align: center;
     padding: 60px 20px;
     color: $text-muted;
-    .empty-icon { font-size: 48px; margin-bottom: 12px; }
-    p { margin-bottom: 16px; }
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+    p {
+      margin-bottom: 16px;
+    }
   }
 }
 
-:deep(.danger) { color: $danger !important; }
+:deep(.danger) {
+  color: $danger !important;
+}
 </style>

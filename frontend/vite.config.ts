@@ -1,9 +1,42 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+import Icons from 'unplugin-icons/vite'
+import IconsResolver from 'unplugin-icons/resolver'
+import viteCompression from 'vite-plugin-compression'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    AutoImport({
+      imports: ['vue', 'vue-router', 'pinia'],
+      resolvers: [
+        ElementPlusResolver(),
+        IconsResolver({ prefix: 'Icon' }),
+      ],
+      dts: 'src/auto-imports.d.ts',
+    }),
+    Components({
+      resolvers: [
+        ElementPlusResolver(),
+        IconsResolver({ enabledCollections: ['ep'] }),
+      ],
+      dts: 'src/components.d.ts',
+    }),
+    Icons({
+      autoInstall: true,
+    }),
+    viteCompression({
+      verbose: true,
+      disable: false,
+      threshold: 10240,
+      algorithm: 'gzip',
+      ext: '.gz',
+    }),
+  ],
   resolve: {
     alias: {
       '@': resolve(__dirname, './src')
@@ -22,6 +55,17 @@ export default defineConfig({
     preprocessorOptions: {
       scss: {
         additionalData: `@use "@/styles/variables.scss" as *;`
+      }
+    }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vue-vendor': ['vue', 'vue-router', 'pinia'],
+          'element-plus': ['element-plus'],
+          'echarts': ['echarts']
+        }
       }
     }
   }

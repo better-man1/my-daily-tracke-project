@@ -195,7 +195,9 @@ async function handleLogin() {
     gap: 8px;
     margin-bottom: 20px;
 
-    .brand-icon { font-size: 28px; }
+    .brand-icon {
+      font-size: 28px;
+    }
 
     .brand-name {
       font-size: 22px;
@@ -280,7 +282,9 @@ async function handleLogin() {
     align-items: center;
     gap: 4px;
 
-    .feature-icon { font-size: 18px; }
+    .feature-icon {
+      font-size: 18px;
+    }
     .feature-label {
       font-size: 11px;
       color: $text-muted;

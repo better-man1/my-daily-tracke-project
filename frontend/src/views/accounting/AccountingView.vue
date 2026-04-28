@@ -5,22 +5,30 @@
         <h1 class="page-title">每日记账</h1>
         <p class="page-subtitle">记录每一笔收支，掌握财务状况</p>
       </div>
-      <el-button type="primary" size="small" :icon="Plus" @click="showAddDialog = true">新增账目</el-button>
+      <el-button type="primary" size="small" :icon="Plus" @click="showAddDialog = true"
+        >新增账目</el-button
+      >
     </div>
 
     <!-- 月度统计卡片 -->
     <div class="month-stats">
-      <div class="stat-card" style="--stat-color:#10b981;--stat-bg:rgba(16,185,129,0.12)">
+      <div class="stat-card" style="--stat-color: #10b981; --stat-bg: rgba(16, 185, 129, 0.12)">
         <div class="stat-icon">💰</div>
         <div class="stat-value">¥{{ formatAmount(monthStats.totalIncome) }}</div>
         <div class="stat-label">本月收入</div>
       </div>
-      <div class="stat-card" style="--stat-color:#ef4444;--stat-bg:rgba(239,68,68,0.12)">
+      <div class="stat-card" style="--stat-color: #ef4444; --stat-bg: rgba(239, 68, 68, 0.12)">
         <div class="stat-icon">💸</div>
         <div class="stat-value">¥{{ formatAmount(monthStats.totalExpense) }}</div>
         <div class="stat-label">本月支出</div>
       </div>
-      <div class="stat-card" :style="{ '--stat-color': monthStats.balance >= 0 ? '#10b981' : '#ef4444', '--stat-bg': monthStats.balance >= 0 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)' }">
+      <div
+        class="stat-card"
+        :style="{
+          '--stat-color': monthStats.balance >= 0 ? '#10b981' : '#ef4444',
+          '--stat-bg': monthStats.balance >= 0 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)'
+        }"
+      >
         <div class="stat-icon">📊</div>
         <div class="stat-value">¥{{ formatAmount(Math.abs(monthStats.balance)) }}</div>
         <div class="stat-label">{{ monthStats.balance >= 0 ? '结余' : '超支' }}</div>
@@ -29,9 +37,17 @@
 
     <!-- 筛选 -->
     <div class="filter-bar flex items-center gap-md mb-md">
-      <el-date-picker v-model="dateRange" type="daterange" range-separator="至"
-        start-placeholder="开始日期" end-placeholder="结束日期"
-        format="YYYY-MM-DD" value-format="YYYY-MM-DD" size="small" @change="loadList" />
+      <el-date-picker
+        v-model="dateRange"
+        type="daterange"
+        range-separator="至"
+        start-placeholder="开始日期"
+        end-placeholder="结束日期"
+        format="YYYY-MM-DD"
+        value-format="YYYY-MM-DD"
+        size="small"
+        @change="loadList"
+      />
       <el-radio-group v-model="filterType" size="small" @change="loadList">
         <el-radio-button label="">全部</el-radio-button>
         <el-radio-button label="INCOME">收入</el-radio-button>
@@ -44,7 +60,10 @@
       <div v-for="item in list" :key="item.id" class="accounting-card card">
         <div class="acc-type-dot" :class="item.type" />
         <div class="acc-info">
-          <div class="acc-category">{{ item.parentCategoryName ? `${item.parentCategoryName} / ` : '' }}{{ item.categoryName }}</div>
+          <div class="acc-category">
+            {{ item.parentCategoryName ? `${item.parentCategoryName} / ` : ''
+            }}{{ item.categoryName }}
+          </div>
           <div class="acc-remark text-muted text-sm">{{ item.remark || item.accountingDate }}</div>
         </div>
         <div class="acc-amount" :class="item.type">
@@ -71,14 +90,30 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="金额" prop="amount">
-          <el-input-number v-model="form.amount" :min="0.01" :precision="2" :step="1" style="width:200px" />
+          <el-input-number
+            v-model="form.amount"
+            :min="0.01"
+            :precision="2"
+            :step="1"
+            style="width: 200px"
+          />
         </el-form-item>
         <el-form-item label="分类" prop="categoryId">
-          <el-cascader v-model="form.categoryId" :options="categoryOptions" placeholder="选择分类"
-            :props="{ value: 'id', label: 'name', children: 'children', emitPath: false }" style="width:100%" />
+          <el-cascader
+            v-model="form.categoryId"
+            :options="categoryOptions"
+            placeholder="选择分类"
+            :props="{ value: 'id', label: 'name', children: 'children', emitPath: false }"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="日期" prop="accountingDate">
-          <el-date-picker v-model="form.accountingDate" type="date" format="YYYY-MM-DD" value-format="YYYY-MM-DD" />
+          <el-date-picker
+            v-model="form.accountingDate"
+            type="date"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+          />
         </el-form-item>
         <el-form-item label="账户">
           <el-select v-model="form.accountType">
@@ -143,7 +178,8 @@ async function loadList() {
   loading.value = true
   try {
     const res = await accountingApi.page({
-      pageNum: 1, pageSize: 50,
+      pageNum: 1,
+      pageSize: 50,
       startDate: dateRange.value?.[0],
       endDate: dateRange.value?.[1],
       type: filterType.value || undefined
@@ -184,7 +220,11 @@ async function loadCategories() {
   categoryOptions.value = await accountingApi.getCategories()
 }
 
-onMounted(() => { loadList(); loadMonthStats(); loadCategories() })
+onMounted(() => {
+  loadList()
+  loadMonthStats()
+  loadCategories()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -209,20 +249,30 @@ onMounted(() => { loadList(); loadMonthStats(); loadCategories() })
     padding: 14px 16px;
 
     .acc-type-dot {
-      width: 10px; height: 10px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
       flex-shrink: 0;
 
-      &.INCOME { background: $success; }
-      &.EXPENSE { background: $danger; }
+      &.INCOME {
+        background: $success;
+      }
+      &.EXPENSE {
+        background: $danger;
+      }
     }
 
     .acc-info {
       flex: 1;
       min-width: 0;
 
-      .acc-category { font-size: 14px; font-weight: 500; }
-      .acc-remark { margin-top: 2px; }
+      .acc-category {
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .acc-remark {
+        margin-top: 2px;
+      }
     }
 
     .acc-amount {
@@ -230,8 +280,12 @@ onMounted(() => { loadList(); loadMonthStats(); loadCategories() })
       font-weight: 700;
       white-space: nowrap;
 
-      &.INCOME { color: $success; }
-      &.EXPENSE { color: $danger; }
+      &.INCOME {
+        color: $success;
+      }
+      &.EXPENSE {
+        color: $danger;
+      }
     }
 
     .acc-actions {
@@ -242,7 +296,10 @@ onMounted(() => { loadList(); loadMonthStats(); loadCategories() })
         border-radius: $radius-sm;
         transition: $transition-fast;
 
-        &:hover { color: $danger; background: rgba($danger, 0.1); }
+        &:hover {
+          color: $danger;
+          background: rgba($danger, 0.1);
+        }
       }
     }
   }
@@ -251,7 +308,10 @@ onMounted(() => { loadList(); loadMonthStats(); loadCategories() })
     text-align: center;
     padding: 60px 20px;
     color: $text-muted;
-    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
   }
 }
 </style>

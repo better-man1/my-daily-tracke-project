@@ -18,7 +18,7 @@
           :class="{ active: isActive(item.path) }"
           :title="appStore.sidebarCollapsed ? item.name : ''"
         >
-          <el-icon class="nav-icon"><component :is="item.icon" /></el-icon>
+          <el-icon class="nav-icon"><component :is="iconMap[item.icon]" /></el-icon>
           <span class="nav-label" v-show="!appStore.sidebarCollapsed">{{ item.name }}</span>
         </router-link>
       </nav>
@@ -27,7 +27,7 @@
       <div class="sidebar-footer">
         <button class="nav-item" @click="appStore.toggleSidebar" title="收缩/展开">
           <el-icon class="nav-icon">
-            <component :is="appStore.sidebarCollapsed ? 'Expand' : 'Fold'" />
+            <component :is="appStore.sidebarCollapsed ? iconMap.Expand : iconMap.Fold" />
           </el-icon>
           <span class="nav-label" v-show="!appStore.sidebarCollapsed">收缩</span>
         </button>
@@ -36,7 +36,9 @@
             <img v-if="userStore.avatar" :src="userStore.avatar" alt="avatar" />
             <span v-else>{{ (userStore.nickname || 'U')[0].toUpperCase() }}</span>
           </div>
-          <span class="nav-label" v-show="!appStore.sidebarCollapsed">{{ userStore.nickname }}</span>
+          <span class="nav-label" v-show="!appStore.sidebarCollapsed">{{
+            userStore.nickname
+          }}</span>
         </router-link>
       </div>
     </aside>
@@ -50,12 +52,8 @@
           <span class="current-date">{{ today }}</span>
         </div>
         <div class="top-bar-right">
-          <el-button
-            link
-            class="logout-btn"
-            @click="handleLogout"
-          >
-            <el-icon><SwitchButton /></el-icon>
+          <el-button link class="logout-btn" @click="handleLogout">
+            <el-icon><component :is="iconMap.SwitchButton" /></el-icon>
             退出
           </el-button>
         </div>
@@ -81,6 +79,31 @@ import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
+
+import {
+  DataLine,
+  Calendar,
+  CreditCard,
+  Notebook,
+  EditPen,
+  TrophyBase,
+  Expand,
+  Fold,
+  SwitchButton
+} from '@element-plus/icons-vue'
+
+const iconMap: Record<string, any> = {
+  DataLine,
+  Calendar,
+  CreditCard,
+  Notebook,
+  EditPen,
+  TrophyBase,
+  Expand,
+  Fold,
+  SwitchButton
+}
+
 dayjs.locale('zh-cn')
 
 const appStore = useAppStore()
@@ -88,17 +111,15 @@ const userStore = useUserStore()
 const route = useRoute()
 const router = useRouter()
 
-const today = computed(() =>
-  dayjs().format('YYYY年MM月DD日 dddd')
-)
+const today = computed(() => dayjs().format('YYYY年MM月DD日 dddd'))
 
 const navItems = [
-  { path: '/dashboard',  name: '数据看板', icon: 'DataLine' },
-  { path: '/plan',       name: '每日计划', icon: 'Calendar' },
+  { path: '/dashboard', name: '数据看板', icon: 'DataLine' },
+  { path: '/plan', name: '每日计划', icon: 'Calendar' },
   { path: '/accounting', name: '每日记账', icon: 'CreditCard' },
-  { path: '/excerpt',    name: '每日摘录', icon: 'Notebook' },
-  { path: '/summary',    name: '每日总结', icon: 'EditPen' },
-  { path: '/goal',       name: '目标管理', icon: 'TrophyBase' },
+  { path: '/excerpt', name: '每日摘录', icon: 'Notebook' },
+  { path: '/summary', name: '每日总结', icon: 'EditPen' },
+  { path: '/goal', name: '目标管理', icon: 'TrophyBase' }
 ]
 
 const currentPageTitle = computed(

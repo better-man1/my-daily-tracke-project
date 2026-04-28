@@ -38,23 +38,18 @@ export const excerptApi = {
     isFavorite?: number
   }) => request.get<any, PageResult<ExcerptItem>>('/excerpts', { params }),
 
-  create: (data: CreateExcerptRequest) =>
-    request.post<any, ExcerptItem>('/excerpts', data),
+  create: (data: CreateExcerptRequest) => request.post<any, ExcerptItem>('/excerpts', data),
 
   update: (id: number, data: CreateExcerptRequest) =>
     request.put<any, ExcerptItem>(`/excerpts/${id}`, data),
 
-  delete: (id: number) =>
-    request.delete<any, void>(`/excerpts/${id}`),
+  delete: (id: number) => request.delete<any, void>(`/excerpts/${id}`),
 
-  toggleFavorite: (id: number) =>
-    request.put<any, void>(`/excerpts/${id}/favorite`),
+  toggleFavorite: (id: number) => request.put<any, void>(`/excerpts/${id}/favorite`),
 
-  getRandom: () =>
-    request.get<any, ExcerptItem>('/excerpts/random'),
+  getRandom: () => request.get<any, ExcerptItem>('/excerpts/random'),
 
-  getAllTags: () =>
-    request.get<any, any[]>('/excerpts/tags'),
+  getAllTags: () => request.get<any, any[]>('/excerpts/tags'),
 
   search: (keyword: string, pageNum = 1, pageSize = 20) =>
     request.get<any, PageResult<ExcerptItem>>('/excerpts/search', {

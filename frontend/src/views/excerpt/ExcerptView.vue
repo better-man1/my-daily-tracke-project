@@ -6,16 +6,26 @@
         <p class="page-subtitle">积累知识，沉淀思考</p>
       </div>
       <div class="flex items-center gap-md">
-        <el-input v-model="searchKeyword" placeholder="搜索摘录..." :prefix-icon="Search" size="small" style="width:200px" @keyup.enter="doSearch" />
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索摘录..."
+          :prefix-icon="Search"
+          size="small"
+          style="width: 200px"
+          @keyup.enter="doSearch"
+        />
         <el-button type="primary" size="small" :icon="Plus" @click="openAdd">新增摘录</el-button>
       </div>
     </div>
 
     <!-- 摘录卡片 -->
     <div v-loading="loading" class="excerpt-grid">
-      <div v-for="(item, idx) in list" :key="item.id"
+      <div
+        v-for="(item, idx) in list"
+        :key="item.id"
         class="excerpt-card card card--glow animate-fade-in-up"
-        :style="{ animationDelay: idx * 0.05 + 's' }">
+        :style="{ animationDelay: idx * 0.05 + 's' }"
+      >
         <!-- 顶部 -->
         <div class="excerpt-header">
           <span class="source-type-badge">{{ sourceTypeLabel(item.sourceType) }}</span>
@@ -32,19 +42,20 @@
         <div class="excerpt-content">"{{ item.content }}"</div>
 
         <!-- 来源 -->
-        <div v-if="item.sourceTitle" class="excerpt-source">
-          📌 {{ item.sourceTitle }}
-        </div>
+        <div v-if="item.sourceTitle" class="excerpt-source">📌 {{ item.sourceTitle }}</div>
 
         <!-- 感悟 -->
-        <div v-if="item.thought" class="excerpt-thought">
-          💭 {{ item.thought }}
-        </div>
+        <div v-if="item.thought" class="excerpt-thought">💭 {{ item.thought }}</div>
 
         <!-- 底部 -->
         <div class="excerpt-footer">
           <div class="excerpt-tags">
-            <span v-for="tag in item.tags" :key="tag.id" class="tag" :style="{ borderColor: tag.color, color: tag.color }">
+            <span
+              v-for="tag in item.tags"
+              :key="tag.id"
+              class="tag"
+              :style="{ borderColor: tag.color, color: tag.color }"
+            >
               {{ tag.name }}
             </span>
           </div>
@@ -60,35 +71,62 @@
     </div>
 
     <!-- 分页 -->
-    <el-pagination v-if="total > 0"
+    <el-pagination
+      v-if="total > 0"
       v-model:current-page="pageNum"
       :page-size="pageSize"
       :total="total"
       layout="prev, pager, next"
       class="mt-md"
-      @current-change="loadList" />
+      @current-change="loadList"
+    />
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="showDialog" :title="editing ? '编辑摘录' : '新增摘录'" width="600px" destroy-on-close>
+    <el-dialog
+      v-model="showDialog"
+      :title="editing ? '编辑摘录' : '新增摘录'"
+      width="600px"
+      destroy-on-close
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="内容" prop="content">
-          <el-input v-model="form.content" type="textarea" :rows="4" placeholder="输入摘录内容..." />
+          <el-input
+            v-model="form.content"
+            type="textarea"
+            :rows="4"
+            placeholder="输入摘录内容..."
+          />
         </el-form-item>
         <div class="flex gap-md">
-          <el-form-item label="来源类型" style="flex:1">
+          <el-form-item label="来源类型" style="flex: 1">
             <el-select v-model="form.sourceType">
-              <el-option v-for="s in sourceTypes" :key="s.value" :label="s.label" :value="s.value" />
+              <el-option
+                v-for="s in sourceTypes"
+                :key="s.value"
+                :label="s.label"
+                :value="s.value"
+              />
             </el-select>
           </el-form-item>
-          <el-form-item label="来源标题" style="flex:2">
+          <el-form-item label="来源标题" style="flex: 2">
             <el-input v-model="form.sourceTitle" placeholder="书名/文章/视频标题" />
           </el-form-item>
         </div>
         <el-form-item label="个人感悟">
-          <el-input v-model="form.thought" type="textarea" :rows="2" placeholder="写下你的感悟..." />
+          <el-input
+            v-model="form.thought"
+            type="textarea"
+            :rows="2"
+            placeholder="写下你的感悟..."
+          />
         </el-form-item>
         <el-form-item label="摘录日期" prop="excerptDate">
-          <el-date-picker v-model="form.excerptDate" type="date" format="YYYY-MM-DD" value-format="YYYY-MM-DD" />
+          <el-date-picker
+            v-model="form.excerptDate"
+            type="date"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -141,7 +179,7 @@ const rules = {
 }
 
 function sourceTypeLabel(val: string) {
-  return sourceTypes.find(s => s.value === val)?.label ?? val
+  return sourceTypes.find((s) => s.value === val)?.label ?? val
 }
 
 async function loadList() {
@@ -156,7 +194,10 @@ async function loadList() {
 }
 
 async function doSearch() {
-  if (!searchKeyword.value.trim()) { loadList(); return }
+  if (!searchKeyword.value.trim()) {
+    loadList()
+    return
+  }
   loading.value = true
   try {
     const res = await excerptApi.search(searchKeyword.value, 1, pageSize)
@@ -169,13 +210,25 @@ async function doSearch() {
 
 function openAdd() {
   editing.value = null
-  Object.assign(form, { content: '', sourceType: 'BOOK', sourceTitle: '', thought: '', excerptDate: dayjs().format('YYYY-MM-DD') })
+  Object.assign(form, {
+    content: '',
+    sourceType: 'BOOK',
+    sourceTitle: '',
+    thought: '',
+    excerptDate: dayjs().format('YYYY-MM-DD')
+  })
   showDialog.value = true
 }
 
 function editItem(item: ExcerptItem) {
   editing.value = item
-  Object.assign(form, { content: item.content, sourceType: item.sourceType, sourceTitle: item.sourceTitle ?? '', thought: item.thought ?? '', excerptDate: item.excerptDate })
+  Object.assign(form, {
+    content: item.content,
+    sourceType: item.sourceType,
+    sourceTitle: item.sourceTitle ?? '',
+    thought: item.thought ?? '',
+    excerptDate: item.excerptDate
+  })
   showDialog.value = true
 }
 
@@ -252,9 +305,17 @@ onMounted(loadList)
           font-size: 15px;
           transition: $transition-fast;
 
-          &:hover { color: $primary-light; background: $primary-100; }
-          &.active { color: $warning !important; }
-          &.danger:hover { color: $danger; background: rgba($danger, 0.1); }
+          &:hover {
+            color: $primary-light;
+            background: $primary-100;
+          }
+          &.active {
+            color: $warning !important;
+          }
+          &.danger:hover {
+            color: $danger;
+            background: rgba($danger, 0.1);
+          }
         }
       }
     }
@@ -302,8 +363,13 @@ onMounted(loadList)
     text-align: center;
     padding: 60px 20px;
     color: $text-muted;
-    .empty-icon { font-size: 48px; margin-bottom: 12px; }
-    p { margin-bottom: 16px; }
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+    p {
+      margin-bottom: 16px;
+    }
   }
 }
 </style>

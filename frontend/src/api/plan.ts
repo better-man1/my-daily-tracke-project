@@ -47,14 +47,12 @@ export const planApi = {
   list: (planDate?: string) =>
     request.get<any, PlanItem[]>('/daily-plans', { params: { planDate } }),
 
-  create: (data: CreatePlanRequest) =>
-    request.post<any, PlanItem>('/daily-plans', data),
+  create: (data: CreatePlanRequest) => request.post<any, PlanItem>('/daily-plans', data),
 
   update: (id: number, data: CreatePlanRequest) =>
     request.put<any, PlanItem>(`/daily-plans/${id}`, data),
 
-  delete: (id: number) =>
-    request.delete<any, void>(`/daily-plans/${id}`),
+  delete: (id: number) => request.delete<any, void>(`/daily-plans/${id}`),
 
   updateStatus: (id: number, status: string) =>
     request.put<any, void>(`/daily-plans/${id}/status`, null, { params: { status } }),
@@ -62,14 +60,12 @@ export const planApi = {
   batchSort: (sortMap: Record<number, number>) =>
     request.put<any, void>('/daily-plans/batch-sort', sortMap),
 
-  postpone: (id: number) =>
-    request.post<any, PlanItem>(`/daily-plans/${id}/postpone`),
+  postpone: (id: number) => request.post<any, PlanItem>(`/daily-plans/${id}/postpone`),
 
   statistics: (planDate?: string) =>
     request.get<any, PlanStatistics>('/daily-plans/statistics', { params: { planDate } }),
 
-  listTemplates: () =>
-    request.get<any, PlanItem[]>('/daily-plans/templates'),
+  listTemplates: () => request.get<any, PlanItem[]>('/daily-plans/templates'),
 
   saveAsTemplate: (id: number, templateName: string) =>
     request.post<any, void>(`/daily-plans/${id}/templates`, null, { params: { templateName } })

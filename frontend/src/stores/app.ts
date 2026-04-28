@@ -19,7 +19,11 @@ export const useAppStore = defineStore('app', () => {
   }
 
   return {
-    sidebarCollapsed, loading, currentDate,
-    toggleSidebar, setLoading, setCurrentDate
+    sidebarCollapsed,
+    loading,
+    currentDate,
+    toggleSidebar,
+    setLoading,
+    setCurrentDate
   }
 })

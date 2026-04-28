@@ -4,7 +4,9 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">每日计划</h1>
-        <p class="page-subtitle">{{ selectedDate }} · {{ stats.total ?? 0 }} 个任务，已完成 {{ stats.done ?? 0 }} 个</p>
+        <p class="page-subtitle">
+          {{ selectedDate }} · {{ stats.total ?? 0 }} 个任务，已完成 {{ stats.done ?? 0 }} 个
+        </p>
       </div>
       <div class="flex items-center gap-md">
         <el-date-picker
@@ -16,7 +18,9 @@
           size="small"
           @change="loadPlans"
         />
-        <el-button type="primary" size="small" :icon="Plus" @click="showAddDialog = true">新增任务</el-button>
+        <el-button type="primary" size="small" :icon="Plus" @click="showAddDialog = true"
+          >新增任务</el-button
+        >
       </div>
     </div>
 
@@ -29,7 +33,7 @@
       </div>
       <div class="stat-pill ml-auto">
         <span class="label">完成率</span>
-        <span class="value" style="color:#6366f1">{{ stats.completionRate ?? 0 }}%</span>
+        <span class="value" style="color: #6366f1">{{ stats.completionRate ?? 0 }}%</span>
       </div>
     </div>
 
@@ -37,7 +41,9 @@
     <div class="filter-bar">
       <el-radio-group v-model="filterCategory" size="small" @change="filterPlans">
         <el-radio-button label="">全部</el-radio-button>
-        <el-radio-button v-for="cat in categories" :key="cat.value" :label="cat.value">{{ cat.label }}</el-radio-button>
+        <el-radio-button v-for="cat in categories" :key="cat.value" :label="cat.value">{{
+          cat.label
+        }}</el-radio-button>
       </el-radio-group>
     </div>
 
@@ -62,9 +68,13 @@
           <div class="task-title">{{ plan.title }}</div>
           <div v-if="plan.description" class="task-desc">{{ plan.description }}</div>
           <div class="task-meta">
-            <span class="priority-badge" :class="plan.priority.toLowerCase()">{{ plan.priority }}</span>
+            <span class="priority-badge" :class="plan.priority.toLowerCase()">{{
+              plan.priority
+            }}</span>
             <span class="tag">{{ categoryLabel(plan.category) }}</span>
-            <span v-if="plan.estimatedMins" class="text-muted text-xs">⏱ {{ plan.estimatedMins }}min</span>
+            <span v-if="plan.estimatedMins" class="text-muted text-xs"
+              >⏱ {{ plan.estimatedMins }}min</span
+            >
           </div>
         </div>
 
@@ -76,8 +86,12 @@
               <el-dropdown-menu>
                 <el-dropdown-item command="edit">编辑</el-dropdown-item>
                 <el-dropdown-item command="postpone">顺延至明天</el-dropdown-item>
-                <el-dropdown-item v-if="plan.status !== 'IN_PROGRESS'" command="inprogress">标记进行中</el-dropdown-item>
-                <el-dropdown-item v-if="plan.status !== 'CANCELLED'" command="cancel">取消</el-dropdown-item>
+                <el-dropdown-item v-if="plan.status !== 'IN_PROGRESS'" command="inprogress"
+                  >标记进行中</el-dropdown-item
+                >
+                <el-dropdown-item v-if="plan.status !== 'CANCELLED'" command="cancel"
+                  >取消</el-dropdown-item
+                >
                 <el-dropdown-item command="delete" divided class="danger">删除</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -108,22 +122,33 @@
           <el-input v-model="form.description" type="textarea" :rows="2" placeholder="可选" />
         </el-form-item>
         <el-form-item label="计划日期" prop="planDate">
-          <el-date-picker v-model="form.planDate" type="date" format="YYYY-MM-DD" value-format="YYYY-MM-DD" />
+          <el-date-picker
+            v-model="form.planDate"
+            type="date"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+          />
         </el-form-item>
         <div class="flex gap-md">
-          <el-form-item label="优先级" style="flex:1">
+          <el-form-item label="优先级" style="flex: 1">
             <el-select v-model="form.priority">
               <el-option v-for="p in priorities" :key="p.value" :label="p.label" :value="p.value" />
             </el-select>
           </el-form-item>
-          <el-form-item label="分类" style="flex:1">
+          <el-form-item label="分类" style="flex: 1">
             <el-select v-model="form.category">
               <el-option v-for="c in categories" :key="c.value" :label="c.label" :value="c.value" />
             </el-select>
           </el-form-item>
         </div>
         <el-form-item label="预估时间">
-          <el-input-number v-model="form.estimatedMins" :min="0" :step="15" placeholder="分钟" style="width:140px" />
+          <el-input-number
+            v-model="form.estimatedMins"
+            :min="0"
+            :step="15"
+            placeholder="分钟"
+            style="width: 140px"
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -168,8 +193,12 @@ const priorities = [
 ]
 
 const form = reactive({
-  title: '', description: '', planDate: selectedDate.value,
-  priority: 'P2', category: 'WORK', estimatedMins: undefined as number | undefined
+  title: '',
+  description: '',
+  planDate: selectedDate.value,
+  priority: 'P2',
+  category: 'WORK',
+  estimatedMins: undefined as number | undefined
 })
 
 const rules = {
@@ -179,25 +208,41 @@ const rules = {
 
 const filteredPlans = computed(() =>
   filterCategory.value
-    ? plans.value.filter(p => p.category === filterCategory.value)
+    ? plans.value.filter((p) => p.category === filterCategory.value)
     : plans.value
 )
 
 const statusStats = computed(() => [
-  { label: '待完成', count: plans.value.filter(p => p.status === 'TODO').length, color: '#64748b' },
-  { label: '进行中', count: plans.value.filter(p => p.status === 'IN_PROGRESS').length, color: '#f59e0b' },
-  { label: '已完成', count: plans.value.filter(p => p.status === 'DONE').length, color: '#10b981' },
-  { label: '已取消', count: plans.value.filter(p => p.status === 'CANCELLED').length, color: '#ef4444' }
+  {
+    label: '待完成',
+    count: plans.value.filter((p) => p.status === 'TODO').length,
+    color: '#64748b'
+  },
+  {
+    label: '进行中',
+    count: plans.value.filter((p) => p.status === 'IN_PROGRESS').length,
+    color: '#f59e0b'
+  },
+  {
+    label: '已完成',
+    count: plans.value.filter((p) => p.status === 'DONE').length,
+    color: '#10b981'
+  },
+  {
+    label: '已取消',
+    count: plans.value.filter((p) => p.status === 'CANCELLED').length,
+    color: '#ef4444'
+  }
 ])
 
 function categoryLabel(val: string) {
-  return categories.find(c => c.value === val)?.label ?? val
+  return categories.find((c) => c.value === val)?.label ?? val
 }
 
 async function loadPlans() {
   loading.value = true
   try {
-    [plans.value, stats.value] = await Promise.all([
+    ;[plans.value, stats.value] = await Promise.all([
       planApi.list(selectedDate.value),
       planApi.statistics(selectedDate.value)
     ])
@@ -207,15 +252,16 @@ async function loadPlans() {
 }
 
 async function toggleStatus(plan: PlanItem) {
-  const next = plan.status === 'TODO' ? 'IN_PROGRESS'
-    : plan.status === 'IN_PROGRESS' ? 'DONE'
-    : 'TODO'
+  const next =
+    plan.status === 'TODO' ? 'IN_PROGRESS' : plan.status === 'IN_PROGRESS' ? 'DONE' : 'TODO'
   await planApi.updateStatus(plan.id, next)
   plan.status = next as any
   stats.value = await planApi.statistics(selectedDate.value)
 }
 
-function filterPlans() { /* reactive */ }
+function filterPlans() {
+  /* reactive */
+}
 
 function handleCommand(cmd: string, plan: PlanItem) {
   if (cmd === 'edit') {
@@ -235,9 +281,13 @@ function handleCommand(cmd: string, plan: PlanItem) {
       loadPlans()
     })
   } else if (cmd === 'inprogress') {
-    planApi.updateStatus(plan.id, 'IN_PROGRESS').then(() => { plan.status = 'IN_PROGRESS' })
+    planApi.updateStatus(plan.id, 'IN_PROGRESS').then(() => {
+      plan.status = 'IN_PROGRESS'
+    })
   } else if (cmd === 'cancel') {
-    planApi.updateStatus(plan.id, 'CANCELLED').then(() => { plan.status = 'CANCELLED' })
+    planApi.updateStatus(plan.id, 'CANCELLED').then(() => {
+      plan.status = 'CANCELLED'
+    })
   } else if (cmd === 'delete') {
     ElMessageBox.confirm('确认删除此任务？', '提示', { type: 'warning' }).then(() => {
       planApi.delete(plan.id).then(() => {
@@ -261,7 +311,14 @@ async function savePlan() {
     }
     showAddDialog.value = false
     editingPlan.value = null
-    Object.assign(form, { title: '', description: '', planDate: selectedDate.value, priority: 'P2', category: 'WORK', estimatedMins: undefined })
+    Object.assign(form, {
+      title: '',
+      description: '',
+      planDate: selectedDate.value,
+      priority: 'P2',
+      category: 'WORK',
+      estimatedMins: undefined
+    })
     loadPlans()
   } finally {
     saving.value = false
@@ -295,11 +352,18 @@ onMounted(loadPlans)
         border-radius: 50%;
       }
 
-      .label { color: $text-secondary; }
-      .value { font-weight: 600; color: $text-primary; }
+      .label {
+        color: $text-secondary;
+      }
+      .value {
+        font-weight: 600;
+        color: $text-primary;
+      }
     }
 
-    .ml-auto { margin-left: auto; }
+    .ml-auto {
+      margin-left: auto;
+    }
   }
 
   .filter-bar {
@@ -321,12 +385,17 @@ onMounted(loadPlans)
 
     &.done {
       opacity: 0.6;
-      .task-title { text-decoration: line-through; color: $text-muted; }
+      .task-title {
+        text-decoration: line-through;
+        color: $text-muted;
+      }
     }
 
     &.cancelled {
       opacity: 0.4;
-      .task-title { text-decoration: line-through; }
+      .task-title {
+        text-decoration: line-through;
+      }
     }
 
     .task-check {
@@ -419,10 +488,17 @@ onMounted(loadPlans)
     padding: 60px 20px;
     color: $text-muted;
 
-    .empty-icon { font-size: 48px; margin-bottom: 12px; }
-    p { margin-bottom: 16px; }
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+    p {
+      margin-bottom: 16px;
+    }
   }
 }
 
-:deep(.danger) { color: $danger !important; }
+:deep(.danger) {
+  color: $danger !important;
+}
 </style>

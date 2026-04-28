@@ -62,31 +62,67 @@
     </div>
 
     <!-- 编辑弹窗 -->
-    <el-dialog v-model="showDialog" :title="editing ? '编辑总结' : '今日总结'" width="600px" destroy-on-close>
+    <el-dialog
+      v-model="showDialog"
+      :title="editing ? '编辑总结' : '今日总结'"
+      width="600px"
+      destroy-on-close
+    >
       <el-form ref="formRef" :model="form" label-width="90px">
         <el-form-item label="总结日期">
-          <el-date-picker v-model="form.summaryDate" type="date" format="YYYY-MM-DD" value-format="YYYY-MM-DD" />
+          <el-date-picker
+            v-model="form.summaryDate"
+            type="date"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+          />
         </el-form-item>
         <div class="flex gap-md">
-          <el-form-item label="今日心情" style="flex:1">
-            <el-rate v-model="form.mood" :max="5" :texts="moodEmoji" show-text style="height:32px" />
+          <el-form-item label="今日心情" style="flex: 1">
+            <el-rate
+              v-model="form.mood"
+              :max="5"
+              :texts="moodEmoji"
+              show-text
+              style="height: 32px"
+            />
           </el-form-item>
-          <el-form-item label="今日评分" style="flex:1">
-            <el-input-number v-model="form.score" :min="1" :max="10" style="width:120px" />
-            <span class="text-muted text-sm" style="margin-left:8px">/ 10</span>
+          <el-form-item label="今日评分" style="flex: 1">
+            <el-input-number v-model="form.score" :min="1" :max="10" style="width: 120px" />
+            <span class="text-muted text-sm" style="margin-left: 8px">/ 10</span>
           </el-form-item>
         </div>
         <el-form-item label="今日成就">
-          <el-input v-model="form.achievement" type="textarea" :rows="2" placeholder="今天做到了什么值得骄傲的事？" />
+          <el-input
+            v-model="form.achievement"
+            type="textarea"
+            :rows="2"
+            placeholder="今天做到了什么值得骄傲的事？"
+          />
         </el-form-item>
         <el-form-item label="待改进">
-          <el-input v-model="form.improvement" type="textarea" :rows="2" placeholder="哪些方面可以做得更好？" />
+          <el-input
+            v-model="form.improvement"
+            type="textarea"
+            :rows="2"
+            placeholder="哪些方面可以做得更好？"
+          />
         </el-form-item>
         <el-form-item label="明日计划">
-          <el-input v-model="form.tomorrowPlan" type="textarea" :rows="2" placeholder="明天的主要任务是什么？" />
+          <el-input
+            v-model="form.tomorrowPlan"
+            type="textarea"
+            :rows="2"
+            placeholder="明天的主要任务是什么？"
+          />
         </el-form-item>
         <el-form-item label="自由日记">
-          <el-input v-model="form.freeWriting" type="textarea" :rows="3" placeholder="随意写写今天的感受..." />
+          <el-input
+            v-model="form.freeWriting"
+            type="textarea"
+            :rows="3"
+            placeholder="随意写写今天的感受..."
+          />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -135,18 +171,36 @@ async function loadList() {
 }
 
 async function loadStreak() {
-  try { streak.value = await summaryApi.getStreak() as any } catch {}
+  try {
+    streak.value = (await summaryApi.getStreak()) as any
+  } catch {}
 }
 
 function openToday() {
   editing.value = null
-  Object.assign(form, { summaryDate: dayjs().format('YYYY-MM-DD'), mood: 3, score: 7, achievement: '', improvement: '', tomorrowPlan: '', freeWriting: '' })
+  Object.assign(form, {
+    summaryDate: dayjs().format('YYYY-MM-DD'),
+    mood: 3,
+    score: 7,
+    achievement: '',
+    improvement: '',
+    tomorrowPlan: '',
+    freeWriting: ''
+  })
   showDialog.value = true
 }
 
 function editItem(item: SummaryItem) {
   editing.value = item
-  Object.assign(form, { summaryDate: item.summaryDate, mood: item.mood ?? 3, score: item.score ?? 7, achievement: item.achievement ?? '', improvement: item.improvement ?? '', tomorrowPlan: item.tomorrowPlan ?? '', freeWriting: item.freeWriting ?? '' })
+  Object.assign(form, {
+    summaryDate: item.summaryDate,
+    mood: item.mood ?? 3,
+    score: item.score ?? 7,
+    achievement: item.achievement ?? '',
+    improvement: item.improvement ?? '',
+    tomorrowPlan: item.tomorrowPlan ?? '',
+    freeWriting: item.freeWriting ?? ''
+  })
   showDialog.value = true
 }
 
@@ -173,7 +227,10 @@ async function save() {
   }
 }
 
-onMounted(() => { loadList(); loadStreak() })
+onMounted(() => {
+  loadList()
+  loadStreak()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -190,8 +247,16 @@ onMounted(() => { loadList(); loadStreak() })
       flex: 1;
       text-align: center;
 
-      .streak-num { font-size: 24px; font-weight: 700; color: $text-primary; }
-      .streak-label { font-size: 12px; color: $text-muted; margin-top: 4px; }
+      .streak-num {
+        font-size: 24px;
+        font-weight: 700;
+        color: $text-primary;
+      }
+      .streak-label {
+        font-size: 12px;
+        color: $text-muted;
+        margin-top: 4px;
+      }
     }
 
     .streak-divider {
@@ -217,22 +282,40 @@ onMounted(() => { loadList(); loadStreak() })
       justify-content: space-between;
       margin-bottom: 12px;
 
-      .summary-date { font-size: 15px; font-weight: 600; }
+      .summary-date {
+        font-size: 15px;
+        font-weight: 600;
+      }
       .summary-scores {
         display: flex;
         align-items: center;
         gap: 10px;
 
-        .mood { font-size: 20px; }
-        .score { font-size: 16px; font-weight: 700; color: $primary-light; }
+        .mood {
+          font-size: 20px;
+        }
+        .score {
+          font-size: 16px;
+          font-weight: 700;
+          color: $primary-light;
+        }
       }
     }
 
     .summary-section {
       margin-bottom: 8px;
 
-      .section-title { font-size: 12px; font-weight: 600; color: $text-secondary; margin-bottom: 4px; }
-      .section-content { font-size: 14px; color: $text-primary; line-height: 1.6; }
+      .section-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: $text-secondary;
+        margin-bottom: 4px;
+      }
+      .section-content {
+        font-size: 14px;
+        color: $text-primary;
+        line-height: 1.6;
+      }
     }
 
     .summary-actions {
@@ -252,20 +335,33 @@ onMounted(() => { loadList(); loadStreak() })
         font-size: 15px;
         transition: $transition-fast;
 
-        &:hover { color: $primary-light; background: $primary-100; }
-        &.danger:hover { color: $danger; background: rgba($danger, 0.1); }
+        &:hover {
+          color: $primary-light;
+          background: $primary-100;
+        }
+        &.danger:hover {
+          color: $danger;
+          background: rgba($danger, 0.1);
+        }
       }
     }
 
-    &:hover .summary-actions { opacity: 1; }
+    &:hover .summary-actions {
+      opacity: 1;
+    }
   }
 
   .empty-state {
     text-align: center;
     padding: 60px 20px;
     color: $text-muted;
-    .empty-icon { font-size: 48px; margin-bottom: 12px; }
-    p { margin-bottom: 16px; }
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+    p {
+      margin-bottom: 16px;
+    }
   }
 }
 </style>

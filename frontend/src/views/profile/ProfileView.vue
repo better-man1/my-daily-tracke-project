@@ -3,7 +3,7 @@
     <div class="page-header">
       <h1 class="page-title">个人中心</h1>
     </div>
-    <div class="card" style="max-width:480px">
+    <div class="card" style="max-width: 480px">
       <div class="profile-avatar">
         <div class="avatar-circle">{{ (userStore.nickname || 'U')[0].toUpperCase() }}</div>
         <div>
@@ -55,7 +55,10 @@ async function handleLogout() {
       color: white;
     }
 
-    .profile-name { font-size: 18px; font-weight: 600; }
+    .profile-name {
+      font-size: 18px;
+      font-weight: 600;
+    }
   }
 }
 </style>

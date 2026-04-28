@@ -35,14 +35,11 @@ export const goalApi = {
   list: (params: { goalType?: string; category?: string; status?: string }) =>
     request.get<any, GoalItem[]>('/goals', { params }),
 
-  create: (data: CreateGoalRequest) =>
-    request.post<any, GoalItem>('/goals', data),
+  create: (data: CreateGoalRequest) => request.post<any, GoalItem>('/goals', data),
 
-  update: (id: number, data: CreateGoalRequest) =>
-    request.put<any, GoalItem>(`/goals/${id}`, data),
+  update: (id: number, data: CreateGoalRequest) => request.put<any, GoalItem>(`/goals/${id}`, data),
 
-  delete: (id: number) =>
-    request.delete<any, void>(`/goals/${id}`),
+  delete: (id: number) => request.delete<any, void>(`/goals/${id}`),
 
   updateProgress: (id: number, progress: number) =>
     request.put<any, void>(`/goals/${id}/progress`, null, { params: { progress } }),
@@ -50,6 +47,5 @@ export const goalApi = {
   getTree: (goalType?: string) =>
     request.get<any, GoalItem[]>('/goals/tree', { params: { goalType } }),
 
-  getStatistics: () =>
-    request.get<any, Record<string, any>>('/goals/statistics')
+  getStatistics: () => request.get<any, Record<string, any>>('/goals/statistics')
 }

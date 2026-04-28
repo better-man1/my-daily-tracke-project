@@ -32,23 +32,25 @@ export const summaryApi = {
   list: (params: { pageNum?: number; pageSize?: number; startDate?: string; endDate?: string }) =>
     request.get<any, SummaryItem[]>('/summaries', { params }),
 
-  create: (data: CreateSummaryRequest) =>
-    request.post<any, SummaryItem>('/summaries', data),
+  create: (data: CreateSummaryRequest) => request.post<any, SummaryItem>('/summaries', data),
 
   update: (id: number, data: CreateSummaryRequest) =>
     request.put<any, SummaryItem>(`/summaries/${id}`, data),
 
-  delete: (id: number) =>
-    request.delete<any, void>(`/summaries/${id}`),
+  delete: (id: number) => request.delete<any, void>(`/summaries/${id}`),
 
-  getToday: () =>
-    request.get<any, SummaryItem | null>('/summaries/today'),
+  getToday: () => request.get<any, SummaryItem | null>('/summaries/today'),
 
   getStreak: () =>
-    request.get<any, { currentStreak: number; longestStreak: number; totalDays: number }>('/summaries/streak'),
+    request.get<any, { currentStreak: number; longestStreak: number; totalDays: number }>(
+      '/summaries/streak'
+    ),
 
   getMoodTrend: (days = 30) =>
-    request.get<any, Array<{ date: string; mood: number; score: number }>>('/summaries/mood-trend', {
-      params: { days }
-    })
+    request.get<any, Array<{ date: string; mood: number; score: number }>>(
+      '/summaries/mood-trend',
+      {
+        params: { days }
+      }
+    )
 }

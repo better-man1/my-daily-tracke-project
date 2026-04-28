@@ -13,12 +13,7 @@
         <p class="login-subtitle">开启你的成长之旅</p>
       </div>
 
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="rules"
-        class="login-form"
-      >
+      <el-form ref="formRef" :model="form" :rules="rules" class="login-form">
         <el-form-item prop="username">
           <el-input
             v-model="form.username"
@@ -163,14 +158,18 @@ async function handleRegister() {
   pointer-events: none;
 
   &.orb-1 {
-    width: 350px; height: 350px;
+    width: 350px;
+    height: 350px;
     background: radial-gradient(circle, rgba(99, 102, 241, 0.25), transparent);
-    top: -80px; right: -80px;
+    top: -80px;
+    right: -80px;
   }
   &.orb-2 {
-    width: 250px; height: 250px;
+    width: 250px;
+    height: 250px;
     background: radial-gradient(circle, rgba(167, 139, 250, 0.18), transparent);
-    bottom: -80px; left: -40px;
+    bottom: -80px;
+    left: -40px;
   }
 }
 
@@ -196,8 +195,13 @@ async function handleRegister() {
     justify-content: center;
     gap: 8px;
     margin-bottom: 18px;
-    .brand-icon { font-size: 28px; }
-    .brand-name { font-size: 22px; font-weight: 800; }
+    .brand-icon {
+      font-size: 28px;
+    }
+    .brand-name {
+      font-size: 22px;
+      font-weight: 800;
+    }
   }
 
   .login-title {
@@ -214,7 +218,9 @@ async function handleRegister() {
 }
 
 .login-form {
-  .el-form-item { margin-bottom: 14px; }
+  .el-form-item {
+    margin-bottom: 14px;
+  }
   :deep(.el-input__wrapper) {
     padding: 4px 16px;
     border-radius: $radius-md;
@@ -244,6 +250,9 @@ async function handleRegister() {
   font-size: 13px;
   color: $text-secondary;
 
-  a { color: $primary-light; font-weight: 500; }
+  a {
+    color: $primary-light;
+    font-weight: 500;
+  }
 }
 </style>

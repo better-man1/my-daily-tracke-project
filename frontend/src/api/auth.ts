@@ -22,11 +22,9 @@ export interface LoginResponse {
 }
 
 export const authApi = {
-  login: (data: LoginRequest) =>
-    request.post<any, LoginResponse>('/auth/login', data),
+  login: (data: LoginRequest) => request.post<any, LoginResponse>('/auth/login', data),
 
-  register: (data: RegisterRequest) =>
-    request.post<any, void>('/auth/register', data),
+  register: (data: RegisterRequest) => request.post<any, void>('/auth/register', data),
 
   refresh: (refreshToken: string) =>
     request.post<any, LoginResponse>('/auth/refresh', { refreshToken }),

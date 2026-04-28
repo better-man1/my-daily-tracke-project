@@ -148,10 +148,22 @@
   font-size: $font-size-xs;
   font-weight: 600;
 
-  &.p0 { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
-  &.p1 { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-  &.p2 { background: rgba(99, 102, 241, 0.15); color: $primary-light; }
-  &.p3 { background: rgba(100, 116, 139, 0.15); color: $text-muted; }
+  &.p0 {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+  }
+  &.p1 {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+  }
+  &.p2 {
+    background: rgba(99, 102, 241, 0.15);
+    color: $primary-light;
+  }
+  &.p3 {
+    background: rgba(100, 116, 139, 0.15);
+    color: $text-muted;
+  }
 }
 
 // -------- 状态点 --------
@@ -161,30 +173,40 @@
   height: 8px;
   border-radius: 50%;
 
-  &.todo        { background: $text-muted; }
-  &.in-progress { background: $warning; box-shadow: 0 0 6px rgba(245, 158, 11, 0.5); }
-  &.done        { background: $success; box-shadow: 0 0 6px rgba(16, 185, 129, 0.5); }
-  &.cancelled   { background: $danger; }
+  &.todo {
+    background: $text-muted;
+  }
+  &.in-progress {
+    background: $warning;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
+  }
+  &.done {
+    background: $success;
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+  }
+  &.cancelled {
+    background: $danger;
+  }
 }
 
 // -------- Element Plus 暗色主题覆盖 --------
 :root {
-  --el-color-primary:       #{$primary};
+  --el-color-primary: #{$primary};
   --el-color-primary-light-3: #{$primary-light};
   --el-color-primary-dark-2: #{$primary-dark};
-  --el-bg-color:            #{$bg-card};
-  --el-bg-color-overlay:    #{$bg-card};
-  --el-bg-color-page:       #{$bg-page};
-  --el-text-color-primary:  #{$text-primary};
-  --el-text-color-regular:  #{$text-secondary};
+  --el-bg-color: #{$bg-card};
+  --el-bg-color-overlay: #{$bg-card};
+  --el-bg-color-page: #{$bg-page};
+  --el-text-color-primary: #{$text-primary};
+  --el-text-color-regular: #{$text-secondary};
   --el-text-color-secondary: #{$text-secondary};
   --el-text-color-placeholder: #{$text-muted};
-  --el-border-color:        #{$border};
-  --el-border-color-light:  #{$border-light};
-  --el-fill-color:          #{$bg-input};
-  --el-fill-color-light:    #{$bg-card};
-  --el-fill-color-blank:    #{$bg-card};
-  --el-mask-color:          rgba(0, 0, 0, 0.7);
+  --el-border-color: #{$border};
+  --el-border-color-light: #{$border-light};
+  --el-fill-color: #{$bg-input};
+  --el-fill-color-light: #{$bg-card};
+  --el-fill-color-blank: #{$bg-card};
+  --el-mask-color: rgba(0, 0, 0, 0.7);
 }
 
 // 弹窗
@@ -250,24 +272,61 @@
 }
 
 // -------- 工具类 --------
-.flex { display: flex; }
-.flex-col { display: flex; flex-direction: column; }
-.items-center { align-items: center; }
-.justify-between { justify-content: space-between; }
-.justify-center { justify-content: center; }
-.gap-sm { gap: $space-sm; }
-.gap-md { gap: $space-md; }
-.gap-lg { gap: $space-lg; }
-.w-full { width: 100%; }
-.mt-md { margin-top: $space-md; }
-.mb-md { margin-bottom: $space-md; }
-.text-muted { color: $text-muted; }
-.text-secondary { color: $text-secondary; }
-.font-bold { font-weight: 700; }
-.font-medium { font-weight: 500; }
-.text-sm { font-size: $font-size-sm; }
-.text-xs { font-size: $font-size-xs; }
-.rounded { border-radius: $radius-md; }
+.flex {
+  display: flex;
+}
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+.items-center {
+  align-items: center;
+}
+.justify-between {
+  justify-content: space-between;
+}
+.justify-center {
+  justify-content: center;
+}
+.gap-sm {
+  gap: $space-sm;
+}
+.gap-md {
+  gap: $space-md;
+}
+.gap-lg {
+  gap: $space-lg;
+}
+.w-full {
+  width: 100%;
+}
+.mt-md {
+  margin-top: $space-md;
+}
+.mb-md {
+  margin-bottom: $space-md;
+}
+.text-muted {
+  color: $text-muted;
+}
+.text-secondary {
+  color: $text-secondary;
+}
+.font-bold {
+  font-weight: 700;
+}
+.font-medium {
+  font-weight: 500;
+}
+.text-sm {
+  font-size: $font-size-sm;
+}
+.text-xs {
+  font-size: $font-size-xs;
+}
+.rounded {
+  border-radius: $radius-md;
+}
 .truncate {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -292,18 +351,33 @@
 
 // 动画
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 8px rgba($primary, 0.3); }
-  50%       { box-shadow: 0 0 20px rgba($primary, 0.6); }
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba($primary, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba($primary, 0.6);
+  }
 }
 
 .animate-fade-in-up {
