@@ -4,6 +4,38 @@
 @use './variables' as *;
 @use './reset';
 
+:root {
+  --bg-page: #f4f6f8;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f9fafb;
+  --bg-input: #f3f4f6;
+  --bg-sidebar: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --text-inverse: #ffffff;
+  --border: #e2e8f0;
+  --border-light: #f1f5f9;
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --nav-hover-bg: rgba(0, 0, 0, 0.04);
+}
+
+html.dark {
+  --bg-page: #0f1117;
+  --bg-card: #1a1d27;
+  --bg-card-hover: #1e2235;
+  --bg-input: #252836;
+  --bg-sidebar: #13151f;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #0f1117;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(255, 255, 255, 0.04);
+  --glass-bg: rgba(26, 29, 39, 0.8);
+  --nav-hover-bg: rgba(255, 255, 255, 0.06);
+}
+
 // -------- 通用卡片 --------
 .card {
   background: $bg-card;
@@ -343,7 +375,7 @@
 
 // 毛玻璃效果
 .glass {
-  background: rgba(26, 29, 39, 0.8);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid $border;

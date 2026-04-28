@@ -60,7 +60,7 @@
             :min="0"
             :max="100"
             :step="5"
-            @change="(v: number) => updateProgress(goal.id, v)"
+            @change="(v: any) => updateProgress(goal.id, v as number)"
             :color="progressColor(goal.progress)"
           />
         </div>

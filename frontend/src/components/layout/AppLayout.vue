@@ -52,6 +52,13 @@
           <span class="current-date">{{ today }}</span>
         </div>
         <div class="top-bar-right">
+          <el-switch
+            v-model="isDark"
+            inline-prompt
+            :active-icon="iconMap.Moon"
+            :inactive-icon="iconMap.Sunny"
+            style="--el-switch-on-color: #2c2c2c; margin-right: 16px"
+          />
           <el-button link class="logout-btn" @click="handleLogout">
             <el-icon><component :is="iconMap.SwitchButton" /></el-icon>
             退出
@@ -77,6 +84,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
+import { useDark } from '@vueuse/core'
 import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
 
@@ -89,7 +97,9 @@ import {
   TrophyBase,
   Expand,
   Fold,
-  SwitchButton
+  SwitchButton,
+  Moon,
+  Sunny
 } from '@element-plus/icons-vue'
 
 const iconMap: Record<string, any> = {
@@ -101,7 +111,9 @@ const iconMap: Record<string, any> = {
   TrophyBase,
   Expand,
   Fold,
-  SwitchButton
+  SwitchButton,
+  Moon,
+  Sunny
 }
 
 dayjs.locale('zh-cn')
@@ -110,6 +122,8 @@ const appStore = useAppStore()
 const userStore = useUserStore()
 const route = useRoute()
 const router = useRouter()
+
+const isDark = useDark()
 
 const today = computed(() => dayjs().format('YYYY年MM月DD日 dddd'))
 
@@ -212,7 +226,7 @@ async function handleLogout() {
     text-decoration: none;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.06);
+      background: var(--nav-hover-bg);
       color: $text-primary;
     }
 

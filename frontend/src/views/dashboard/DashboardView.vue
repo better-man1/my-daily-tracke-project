@@ -140,7 +140,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { useDark } from '@vueuse/core'
 import { useUserStore } from '@/stores/user'
 import { dashboardApi } from '@/api/dashboard'
 import { summaryApi } from '@/api/summary'
@@ -167,6 +168,20 @@ echarts.use([
 
 const userStore = useUserStore()
 const period = ref<'today' | 'week' | 'month'>('today')
+const isDark = useDark()
+
+watch(isDark, () => {
+  if (planChart) {
+    planChart.dispose()
+    planChart = null
+  }
+  if (moodChart) {
+    moodChart.dispose()
+    moodChart = null
+  }
+  renderPlanChart()
+  renderMoodChart()
+})
 
 // 数据
 const planStats = ref<Record<string, any>>({})
@@ -232,7 +247,7 @@ async function loadData() {
 function renderPlanChart() {
   if (!planChartRef.value) return
   if (!planChart) {
-    planChart = echarts.init(planChartRef.value, 'dark')
+    planChart = echarts.init(planChartRef.value, isDark.value ? 'dark' : 'light')
   }
   const planByDate = weekData.value.planByDate ?? {}
   const donePlanByDate = weekData.value.donePlanByDate ?? {}
@@ -283,7 +298,7 @@ function renderPlanChart() {
 function renderMoodChart() {
   if (!moodChartRef.value) return
   if (!moodChart) {
-    moodChart = echarts.init(moodChartRef.value, 'dark')
+    moodChart = echarts.init(moodChartRef.value, isDark.value ? 'dark' : 'light')
   }
   const data = moodTrend.value
   moodChart.setOption({

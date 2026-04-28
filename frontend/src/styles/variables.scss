@@ -24,21 +24,21 @@ $color-summary: #ec4899; // 总结 - 粉
 $color-goal: #3b82f6; // 目标 - 蓝
 
 // 背景色
-$bg-page: #0f1117;
-$bg-card: #1a1d27;
-$bg-card-hover: #1e2235;
-$bg-input: #252836;
-$bg-sidebar: #13151f;
+$bg-page: var(--bg-page);
+$bg-card: var(--bg-card);
+$bg-card-hover: var(--bg-card-hover);
+$bg-input: var(--bg-input);
+$bg-sidebar: var(--bg-sidebar);
 
 // 文字色
-$text-primary: #e2e8f0;
-$text-secondary: #94a3b8;
-$text-muted: #64748b;
-$text-inverse: #0f1117;
+$text-primary: var(--text-primary);
+$text-secondary: var(--text-secondary);
+$text-muted: var(--text-muted);
+$text-inverse: var(--text-inverse);
 
 // 边框色
-$border: rgba(255, 255, 255, 0.08);
-$border-light: rgba(255, 255, 255, 0.04);
+$border: var(--border);
+$border-light: var(--border-light);
 
 // 间距
 $space-xs: 4px;
