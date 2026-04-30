@@ -115,13 +115,22 @@ const features = [
 ]
 
 async function handleLogin() {
-  await formRef.value?.validate()
-  loading.value = true
+  if (!formRef.value) return
+  
   try {
+    await formRef.value.validate()
+    loading.value = true
     const data = await authApi.login(form)
     userStore.setLoginData(data)
     ElMessage.success(`欢迎回来，${data.nickname || data.username}！`)
     router.push('/dashboard')
+  } catch (error: any) {
+    console.error('Login error:', error)
+    if (error.name === 'ValidationError') {
+       // Validation error is handled by el-form
+    } else {
+       // Other errors are handled by interceptor or message
+    }
   } finally {
     loading.value = false
   }

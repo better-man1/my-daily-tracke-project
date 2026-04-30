@@ -3,6 +3,7 @@ package com.dailytracker.controller;
 import com.dailytracker.common.result.Result;
 import com.dailytracker.dto.request.LoginRequest;
 import com.dailytracker.dto.request.RegisterRequest;
+import com.dailytracker.dto.request.WxLoginRequest;
 import com.dailytracker.dto.response.LoginResponse;
 import com.dailytracker.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,6 +41,13 @@ public class AuthController {
     @PostMapping("/refresh")
     public Result<LoginResponse> refreshToken(@RequestHeader("Refresh-Token") String refreshToken) {
         LoginResponse response = authService.refreshToken(refreshToken);
+        return Result.success(response);
+    }
+
+    @Operation(summary = "微信一键登录")
+    @PostMapping("/wx-login")
+    public Result<LoginResponse> wxLogin(@Valid @RequestBody WxLoginRequest request) {
+        LoginResponse response = authService.wxLogin(request);
         return Result.success(response);
     }
 }

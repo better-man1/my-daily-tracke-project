@@ -1,5 +1,6 @@
 package com.dailytracker.service;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 /**
@@ -18,4 +19,7 @@ public interface DashboardService {
 
     /** 年度统计数据 */
     Map<String, Object> getYear();
+
+    /** 趋势分析数据 */
+    Map<String, Object> getTrend(LocalDate startDate, LocalDate endDate);
 }

@@ -19,3 +19,13 @@ spring:
           max-active: 8
           max-idle: 8
           min-idle: 0
+
+minio:
+  endpoint: http://localhost:9000
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket-name: daily-tracker
+
+wx:
+  app-id: your_app_id
+  app-secret: your_app_secret

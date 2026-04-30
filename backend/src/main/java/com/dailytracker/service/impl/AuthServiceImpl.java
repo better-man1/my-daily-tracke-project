@@ -1,10 +1,15 @@
 package com.dailytracker.service.impl;
 
+import cn.hutool.http.HttpUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.dailytracker.common.exception.BusinessException;
 import com.dailytracker.common.result.ResultCode;
+import com.dailytracker.config.WxProperties;
 import com.dailytracker.dto.request.LoginRequest;
 import com.dailytracker.dto.request.RegisterRequest;
+import com.dailytracker.dto.request.WxLoginRequest;
 import com.dailytracker.dto.response.LoginResponse;
 import com.dailytracker.entity.User;
 import com.dailytracker.mapper.UserMapper;
@@ -30,6 +35,7 @@ public class AuthServiceImpl implements AuthService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final WxProperties wxProperties;
 
     @Value("${jwt.access-token-expiration}")
     private long accessTokenExpiration;
@@ -99,6 +105,51 @@ public class AuthServiceImpl implements AuthService {
         if (user == null || user.getStatus() == 0) {
             throw new BusinessException(ResultCode.USER_NOT_FOUND);
         }
+        return buildLoginResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public LoginResponse wxLogin(WxLoginRequest request) {
+        // 1. 调用微信接口换取openid
+        String url = String.format("https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code",
+                wxProperties.getAppId(), wxProperties.getAppSecret(), request.getCode());
+        
+        String responseStr = HttpUtil.get(url);
+        JSONObject jsonObject = JSONUtil.parseObj(responseStr);
+        String openid = jsonObject.getStr("openid");
+        
+        if (openid == null) {
+            log.error("微信登录失败: {}", responseStr);
+            throw new BusinessException(ResultCode.USER_LOGIN_ERROR.getCode(), "微信登录失败: " + jsonObject.getStr("errmsg"));
+        }
+
+        // 2. 根据openid查询用户
+        User user = userMapper.selectOne(
+                new LambdaQueryWrapper<User>()
+                        .eq(User::getWxOpenid, openid)
+                        .eq(User::getIsDeleted, 0)
+        );
+
+        // 3. 如果用户不存在，则自动注册
+        if (user == null) {
+            user = new User();
+            user.setUsername("wx_" + openid.substring(0, 8) + LocalDateTime.now().getNano());
+            user.setPassword(passwordEncoder.encode(openid)); // 默认密码
+            user.setNickname("微信用户");
+            user.setWxOpenid(openid);
+            user.setStatus(1);
+            userMapper.insert(user);
+            log.info("微信用户自动注册成功: openid={}", openid);
+        }
+
+        // 4. 更新最后登录时间
+        User updateUser = new User();
+        updateUser.setId(user.getId());
+        updateUser.setLastLoginAt(LocalDateTime.now());
+        userMapper.updateById(updateUser);
+
+        // 5. 生成Token
         return buildLoginResponse(user);
     }
 

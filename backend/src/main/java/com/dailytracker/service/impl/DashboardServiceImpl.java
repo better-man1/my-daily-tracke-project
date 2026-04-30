@@ -249,4 +249,62 @@ public class DashboardServiceImpl implements DashboardService {
 
         return result;
     }
+
+    @Override
+    public Map<String, Object> getTrend(LocalDate startDate, LocalDate endDate) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        Map<String, Object> result = new LinkedHashMap<>();
+        
+        // 1. 计划完成趋势
+        List<DailyPlan> plans = dailyPlanMapper.selectList(
+                new LambdaQueryWrapper<DailyPlan>()
+                        .eq(DailyPlan::getUserId, userId)
+                        .ge(DailyPlan::getPlanDate, startDate)
+                        .le(DailyPlan::getPlanDate, endDate)
+                        .eq(DailyPlan::getIsTemplate, 0));
+        
+        Map<LocalDate, Map<String, Long>> planTrend = plans.stream()
+                .collect(Collectors.groupingBy(DailyPlan::getPlanDate, Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        list -> {
+                            Map<String, Long> m = new HashMap<>();
+                            m.put("total", (long) list.size());
+                            m.put("done", list.stream().filter(p -> "DONE".equals(p.getStatus())).count());
+                            return m;
+                        }
+                )));
+        result.put("planTrend", planTrend);
+
+        // 2. 收支趋势
+        List<Accounting> accs = accountingMapper.selectList(
+                new LambdaQueryWrapper<Accounting>()
+                        .eq(Accounting::getUserId, userId)
+                        .ge(Accounting::getAccountingDate, startDate)
+                        .le(Accounting::getAccountingDate, endDate));
+        
+        Map<LocalDate, Map<String, BigDecimal>> financeTrend = accs.stream()
+                .collect(Collectors.groupingBy(Accounting::getAccountingDate, Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        list -> {
+                            Map<String, BigDecimal> m = new HashMap<>();
+                            m.put("income", list.stream().filter(a -> "INCOME".equals(a.getType())).map(Accounting::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
+                            m.put("expense", list.stream().filter(a -> "EXPENSE".equals(a.getType())).map(Accounting::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
+                            return m;
+                        }
+                )));
+        result.put("financeTrend", financeTrend);
+
+        // 3. 摘录趋势
+        List<Excerpt> excerpts = excerptMapper.selectList(
+                new LambdaQueryWrapper<Excerpt>()
+                        .eq(Excerpt::getUserId, userId)
+                        .ge(Excerpt::getExcerptDate, startDate)
+                        .le(Excerpt::getExcerptDate, endDate));
+        
+        Map<LocalDate, Long> excerptTrend = excerpts.stream()
+                .collect(Collectors.groupingBy(Excerpt::getExcerptDate, Collectors.counting()));
+        result.put("excerptTrend", excerptTrend);
+
+        return result;
+    }
 }

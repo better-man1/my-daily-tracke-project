@@ -2,6 +2,7 @@ package com.dailytracker.service;
 
 import com.dailytracker.dto.request.LoginRequest;
 import com.dailytracker.dto.request.RegisterRequest;
+import com.dailytracker.dto.request.WxLoginRequest;
 import com.dailytracker.dto.response.LoginResponse;
 
 /**
@@ -23,4 +24,9 @@ public interface AuthService {
      * 刷新Token
      */
     LoginResponse refreshToken(String refreshToken);
+
+    /**
+     * 微信登录
+     */
+    LoginResponse wxLogin(WxLoginRequest request);
 }

@@ -7,13 +7,15 @@ import com.dailytracker.dto.request.ChangePasswordRequest;
 import com.dailytracker.dto.response.UserProfileResponse;
 import com.dailytracker.entity.User;
 import com.dailytracker.entity.UserSettings;
-import com.dailytracker.mapper.UserMapper;
-import com.dailytracker.mapper.UserSettingsMapper;
+import com.dailytracker.mapper.*;
 import com.dailytracker.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 用户服务实现
@@ -25,6 +27,12 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final UserSettingsMapper userSettingsMapper;
     private final PasswordEncoder passwordEncoder;
+    private final DailyPlanMapper dailyPlanMapper;
+    private final AccountingMapper accountingMapper;
+    private final ExcerptMapper excerptMapper;
+    private final GoalPlanMapper goalPlanMapper;
+    private final DailySummaryMapper dailySummaryMapper;
+    private final BudgetMapper budgetMapper;
 
     @Override
     public UserProfileResponse getProfile(Long userId) {
@@ -98,6 +106,70 @@ public class UserServiceImpl implements UserService {
             newSettings.setId(existing.getId());
             userSettingsMapper.updateById(newSettings);
         }
+    }
+
+    @Override
+    public void updateAvatar(Long userId, String avatarUrl) {
+        User user = new User();
+        user.setId(userId);
+        user.setAvatar(avatarUrl);
+        userMapper.updateById(user);
+    }
+
+    @Override
+    public Map<String, Object> exportData(Long userId) {
+        Map<String, Object> data = new HashMap<>();
+        
+        // 1. 用户信息
+        User user = getUser(userId);
+        user.setPassword(null); // 导出时脱敏
+        data.put("user", user);
+        
+        // 2. 偏好设置
+        data.put("settings", getSettings(userId));
+        
+        // 3. 每日计划
+        data.put("dailyPlans", dailyPlanMapper.selectList(
+                new LambdaQueryWrapper<com.dailytracker.entity.DailyPlan>()
+                        .eq(com.dailytracker.entity.DailyPlan::getUserId, userId)
+                        .eq(com.dailytracker.entity.DailyPlan::getIsDeleted, 0)
+        ));
+        
+        // 4. 记账数据
+        data.put("accounting", accountingMapper.selectList(
+                new LambdaQueryWrapper<com.dailytracker.entity.Accounting>()
+                        .eq(com.dailytracker.entity.Accounting::getUserId, userId)
+                        .eq(com.dailytracker.entity.Accounting::getIsDeleted, 0)
+        ));
+        
+        // 5. 每日摘录
+        data.put("excerpts", excerptMapper.selectList(
+                new LambdaQueryWrapper<com.dailytracker.entity.Excerpt>()
+                        .eq(com.dailytracker.entity.Excerpt::getUserId, userId)
+                        .eq(com.dailytracker.entity.Excerpt::getIsDeleted, 0)
+        ));
+        
+        // 6. 目标计划
+        data.put("goals", goalPlanMapper.selectList(
+                new LambdaQueryWrapper<com.dailytracker.entity.GoalPlan>()
+                        .eq(com.dailytracker.entity.GoalPlan::getUserId, userId)
+                        .eq(com.dailytracker.entity.GoalPlan::getIsDeleted, 0)
+        ));
+        
+        // 7. 每日总结
+        data.put("summaries", dailySummaryMapper.selectList(
+                new LambdaQueryWrapper<com.dailytracker.entity.DailySummary>()
+                        .eq(com.dailytracker.entity.DailySummary::getUserId, userId)
+                        .eq(com.dailytracker.entity.DailySummary::getIsDeleted, 0)
+        ));
+
+        // 8. 预算
+        data.put("budgets", budgetMapper.selectList(
+                new LambdaQueryWrapper<com.dailytracker.entity.Budget>()
+                        .eq(com.dailytracker.entity.Budget::getUserId, userId)
+        ));
+        
+        return data;
     }
 
     private User getUser(Long userId) {

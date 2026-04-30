@@ -11,6 +11,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import com.dailytracker.service.FileStorageService;
 
 import java.util.Map;
 
@@ -24,6 +26,7 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    private final FileStorageService fileStorageService;
 
     @Operation(summary = "获取个人信息")
     @GetMapping("/profile")
@@ -67,5 +70,29 @@ public class UserController {
         Long userId = SecurityUtils.getCurrentUserId();
         userService.updateSettings(userId, settings);
         return Result.success();
+    }
+
+    @Operation(summary = "上传头像")
+    @PostMapping("/avatar")
+    public Result<String> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return Result.error("文件不能为空");
+        }
+        Long userId = SecurityUtils.getCurrentUserId();
+        
+        // 1. 上传文件到对象存储
+        String avatarUrl = fileStorageService.uploadFile(file, "avatar");
+        
+        // 2. 更新用户表的头像URL
+        userService.updateAvatar(userId, avatarUrl);
+        
+        return Result.success("上传成功", avatarUrl);
+    }
+
+    @Operation(summary = "导出全量数据")
+    @PostMapping("/export")
+    public Result<Map<String, Object>> exportData() {
+        Long userId = SecurityUtils.getCurrentUserId();
+        return Result.success(userService.exportData(userId));
     }
 }

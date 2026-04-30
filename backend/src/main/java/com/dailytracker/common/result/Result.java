@@ -64,4 +64,11 @@ public class Result<T> implements Serializable {
         result.setMessage(message);
         return result;
     }
+
+    public static <T> Result<T> error(String message) {
+        Result<T> result = new Result<>();
+        result.setCode(ResultCode.INTERNAL_ERROR.getCode());
+        result.setMessage(message);
+        return result;
+    }
 }

@@ -25,6 +25,7 @@ public enum ResultCode {
     USER_TOKEN_EXPIRED(1005, "Token已过期，请重新登录"),
     USER_TOKEN_INVALID(1006, "Token无效"),
     USER_OLD_PASSWORD_ERROR(1007, "原密码错误"),
+    USER_LOGIN_ERROR(1008, "登录失败"),
 
     // 计划模块 2001~2999
     PLAN_NOT_FOUND(2001, "计划不存在"),

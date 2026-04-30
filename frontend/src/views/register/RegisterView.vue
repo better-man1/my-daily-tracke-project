@@ -122,9 +122,11 @@ const rules: FormRules = {
 }
 
 async function handleRegister() {
-  await formRef.value?.validate()
-  loading.value = true
+  if (!formRef.value) return
+  
   try {
+    await formRef.value.validate()
+    loading.value = true
     await authApi.register({
       username: form.username,
       password: form.password,
@@ -132,6 +134,8 @@ async function handleRegister() {
     })
     ElMessage.success('注册成功！请登录')
     router.push('/login')
+  } catch (error: any) {
+    console.error('Register error:', error)
   } finally {
     loading.value = false
   }
