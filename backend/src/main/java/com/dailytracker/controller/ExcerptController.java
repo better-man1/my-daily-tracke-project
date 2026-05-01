@@ -93,4 +93,11 @@ public class ExcerptController {
             @RequestParam(defaultValue = "20") int pageSize) {
         return Result.success(excerptService.search(keyword, pageNum, pageSize));
     }
+
+    @Operation(summary = "导出为 Markdown")
+    @GetMapping("/export-markdown")
+    public Result<String> exportMarkdown() {
+        Long userId = com.dailytracker.util.SecurityUtils.getCurrentUserId();
+        return Result.success(excerptService.exportMarkdown(userId));
+    }
 }

@@ -40,4 +40,7 @@ public interface ExcerptService {
 
     /** 全文搜索 */
     IPage<ExcerptResponse> search(String keyword, int pageNum, int pageSize);
+
+    /** 导出摘录为 Markdown 格式 */
+    String exportMarkdown(Long userId);
 }

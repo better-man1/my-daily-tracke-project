@@ -175,6 +175,36 @@ public class ExcerptServiceImpl implements ExcerptService {
         return excerptPage.convert(this::toResponse);
     }
 
+    @Override
+    public String exportMarkdown(Long userId) {
+        List<Excerpt> list = excerptMapper.selectList(
+                new LambdaQueryWrapper<Excerpt>()
+                        .eq(Excerpt::getUserId, userId)
+                        .orderByDesc(Excerpt::getExcerptDate));
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append("# 每日摘录备份\n\n");
+        sb.append("> 导出日期: ").append(LocalDate.now()).append("\n\n");
+        
+        for (Excerpt excerpt : list) {
+            sb.append("## ").append(excerpt.getSourceTitle() != null ? excerpt.getSourceTitle() : "未命名来源").append("\n");
+            sb.append("- **日期**: ").append(excerpt.getExcerptDate()).append("\n");
+            sb.append("- **类型**: ").append(excerpt.getSourceType()).append("\n");
+            if (excerpt.getIsFavorite() == 1) {
+                sb.append("- **收藏**: ❤️\n");
+            }
+            sb.append("\n### 原文\n");
+            sb.append(excerpt.getContent()).append("\n\n");
+            if (excerpt.getThought() != null && !excerpt.getThought().isEmpty()) {
+                sb.append("### 心得\n");
+                sb.append(excerpt.getThought()).append("\n\n");
+            }
+            sb.append("---\n\n");
+        }
+        
+        return sb.toString();
+    }
+
     // =================== 私有方法 ===================
 
     private Excerpt getAndValidate(Long id) {

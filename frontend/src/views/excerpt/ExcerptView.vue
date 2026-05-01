@@ -15,6 +15,7 @@
           @keyup.enter="doSearch"
         />
         <el-button type="primary" size="small" :icon="Plus" @click="openAdd">新增摘录</el-button>
+        <el-button type="success" size="small" :icon="Download" @click="handleExportMarkdown" :loading="exporting">导出 MD</el-button>
       </div>
     </div>
 
@@ -141,7 +142,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
-import { Plus, Search, Star, Edit, Delete } from '@element-plus/icons-vue'
+import { Plus, Search, Star, Edit, Delete, Download } from '@element-plus/icons-vue'
 import { excerptApi } from '@/api/excerpt'
 import type { ExcerptItem } from '@/api/excerpt'
 import dayjs from 'dayjs'
@@ -152,6 +153,7 @@ const pageNum = ref(1)
 const pageSize = 12
 const loading = ref(false)
 const saving = ref(false)
+const exporting = ref(false)
 const showDialog = ref(false)
 const editing = ref<ExcerptItem | null>(null)
 const searchKeyword = ref('')
@@ -259,6 +261,28 @@ async function save() {
     loadList()
   } finally {
     saving.value = false
+  }
+}
+
+async function handleExportMarkdown() {
+  exporting.value = true
+  try {
+    const content = await excerptApi.exportMarkdown()
+    const blob = new Blob([content], { type: 'text/markdown' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `daily-excerpts-${dayjs().format('YYYY-MM-DD')}.md`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('导出成功')
+  } catch (error) {
+    console.error('Export error:', error)
+    ElMessage.error('导出失败')
+  } finally {
+    exporting.value = false
   }
 }
 

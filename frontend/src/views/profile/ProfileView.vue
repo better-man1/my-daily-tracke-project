@@ -5,7 +5,26 @@
     </div>
     <div class="card" style="max-width: 480px">
       <div class="profile-avatar">
-        <div class="avatar-circle">{{ (userStore.nickname || 'U')[0].toUpperCase() }}</div>
+        <el-upload
+          class="avatar-uploader"
+          action="#"
+          :show-file-list="false"
+          :http-request="handleAvatarUpload"
+          :before-upload="beforeAvatarUpload"
+        >
+          <div v-if="userStore.avatar" class="avatar-image">
+            <img :src="userStore.avatar" alt="avatar" />
+            <div class="avatar-hover">
+              <el-icon><Camera /></el-icon>
+            </div>
+          </div>
+          <div v-else class="avatar-circle">
+            {{ (userStore.nickname || 'U')[0].toUpperCase() }}
+            <div class="avatar-hover">
+              <el-icon><Camera /></el-icon>
+            </div>
+          </div>
+        </el-upload>
         <div>
           <div class="profile-name">{{ userStore.nickname }}</div>
           <div class="profile-username text-muted text-sm">@{{ userStore.username }}</div>
@@ -32,6 +51,7 @@
       <div class="flex flex-col gap-sm">
         <el-button type="primary" @click="showEditDialog = true">编辑个人资料</el-button>
         <el-button type="warning" plain @click="showPwdDialog = true">修改登录密码</el-button>
+        <el-button type="success" plain @click="handleExport" :loading="exporting">导出全量数据 (JSON)</el-button>
         <el-button type="danger" plain @click="handleLogout">退出登录</el-button>
       </div>
     </div>
@@ -86,10 +106,12 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { userApi } from '@/api/user'
+import { Camera } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const router = useRouter()
 const saving = ref(false)
+const exporting = ref(false)
 const showEditDialog = ref(false)
 const showPwdDialog = ref(false)
 
@@ -183,6 +205,55 @@ async function handleLogout() {
   router.push('/login')
 }
 
+const beforeAvatarUpload = (file: any) => {
+  const isJPGorPNG = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp'
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isJPGorPNG) {
+    ElMessage.error('上传头像图片只能是 JPG/PNG/WebP 格式!')
+  }
+  if (!isLt2M) {
+    ElMessage.error('上传头像图片大小不能超过 2MB!')
+  }
+  return isJPGorPNG && isLt2M
+}
+
+const handleAvatarUpload = async (options: any) => {
+  const formData = new FormData()
+  formData.append('file', options.file)
+  
+  try {
+    const avatarUrl = await userApi.updateAvatar(formData)
+    userStore.updateUserInfo({ avatar: avatarUrl })
+    ElMessage.success('头像上传成功')
+  } catch (error) {
+    console.error('Avatar upload error:', error)
+    ElMessage.error('头像上传失败')
+  }
+}
+
+async function handleExport() {
+  exporting.value = true
+  try {
+    const data = await userApi.exportData()
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `daily-tracker-data-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    ElMessage.success('数据导出成功')
+  } catch (error) {
+    console.error('Export error:', error)
+    ElMessage.error('导出失败')
+  } finally {
+    exporting.value = false
+  }
+}
+
 onMounted(loadProfile)
 </script>
 
@@ -205,6 +276,43 @@ onMounted(loadProfile)
       font-size: 26px;
       font-weight: 700;
       color: white;
+      position: relative;
+      overflow: hidden;
+
+      &:hover .avatar-hover {
+        opacity: 1;
+      }
+    }
+
+    .avatar-image {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      position: relative;
+      overflow: hidden;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      &:hover .avatar-hover {
+        opacity: 1;
+      }
+    }
+
+    .avatar-hover {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
     }
 
     .profile-name {

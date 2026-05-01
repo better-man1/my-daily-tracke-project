@@ -27,5 +27,12 @@ export const userApi = {
 
   getSettings: () => request.get<any, any>('/users/settings'),
 
-  updateSettings: (data: any) => request.put<any, void>('/users/settings', data)
+  updateSettings: (data: any) => request.put<any, void>('/users/settings', data),
+
+  updateAvatar: (formData: FormData) =>
+    request.post<any, string>('/users/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+
+  exportData: () => request.post<any, any>('/users/export')
 }

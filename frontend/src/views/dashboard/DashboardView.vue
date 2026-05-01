@@ -107,10 +107,24 @@
         <div ref="planChartRef" class="chart" />
       </div>
 
+      <!-- 财务收支趋势 -->
+      <div class="card chart-card">
+        <div class="card-title flex justify-between items-center">
+          <span>收支趋势 (近 7 天)</span>
+        </div>
+        <div ref="financeChartRef" class="chart" />
+      </div>
+
       <!-- 情绪趋势 -->
       <div class="card chart-card">
         <div class="card-title">近 30 天情绪趋势</div>
         <div ref="moodChartRef" class="chart" />
+      </div>
+
+      <!-- 摘录趋势 -->
+      <div class="card chart-card">
+        <div class="card-title">近 7 天摘录数趋势</div>
+        <div ref="excerptChartRef" class="chart" />
       </div>
     </div>
 
@@ -171,16 +185,17 @@ const period = ref<'today' | 'week' | 'month'>('today')
 const isDark = useDark()
 
 watch(isDark, () => {
-  if (planChart) {
-    planChart.dispose()
-    planChart = null
-  }
-  if (moodChart) {
-    moodChart.dispose()
-    moodChart = null
-  }
-  renderPlanChart()
-  renderMoodChart()
+  const charts = [planChart, moodChart, financeChart, excerptChart]
+  charts.forEach(c => {
+    if (c) {
+      c.dispose()
+    }
+  })
+  planChart = null
+  moodChart = null
+  financeChart = null
+  excerptChart = null
+  renderAllCharts()
 })
 
 // 数据
@@ -196,8 +211,14 @@ const weekData = ref<Record<string, any>>({})
 // 图表 refs
 const planChartRef = ref<HTMLElement>()
 const moodChartRef = ref<HTMLElement>()
+const financeChartRef = ref<HTMLElement>()
+const excerptChartRef = ref<HTMLElement>()
+
 let planChart: echarts.ECharts | null = null
 let moodChart: echarts.ECharts | null = null
+let financeChart: echarts.ECharts | null = null
+let excerptChart: echarts.ECharts | null = null
+const trendData = ref<Record<string, any>>({})
 
 const moodEmoji = ['😢', '😔', '😐', '😊', '😄']
 
@@ -239,9 +260,20 @@ async function loadData() {
     streak.value = {}
   }
 
+  // 趋势分析（近7天）
+  const end = dayjs().format('YYYY-MM-DD')
+  const start = dayjs().subtract(6, 'day').format('YYYY-MM-DD')
+  trendData.value = await dashboardApi.getTrend(start, end)
+
   await nextTick()
+  renderAllCharts()
+}
+
+function renderAllCharts() {
   renderPlanChart()
   renderMoodChart()
+  renderFinanceChart()
+  renderExcerptChart()
 }
 
 function renderPlanChart() {
@@ -349,17 +381,108 @@ function renderMoodChart() {
   })
 }
 
+function renderFinanceChart() {
+  if (!financeChartRef.value) return
+  if (!financeChart) {
+    financeChart = echarts.init(financeChartRef.value, isDark.value ? 'dark' : 'light')
+  }
+  const data = trendData.value.financeTrend ?? {}
+  const days: string[] = []
+  for (let i = 6; i >= 0; i--) {
+    days.push(dayjs().subtract(i, 'day').format('YYYY-MM-DD'))
+  }
+
+  financeChart.setOption({
+    backgroundColor: 'transparent',
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['收入', '支出'], textStyle: { color: '#94a3b8' } },
+    grid: { top: 40, right: 16, bottom: 24, left: 40 },
+    xAxis: {
+      type: 'category',
+      data: days.map(d => dayjs(d).format('MM-DD')),
+      axisLabel: { color: '#64748b', fontSize: 11 },
+      axisLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } }
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { color: '#64748b', fontSize: 11 },
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.04)' } }
+    },
+    series: [
+      {
+        name: '收入',
+        type: 'line',
+        data: days.map(d => data[d]?.income ?? 0),
+        smooth: true,
+        itemStyle: { color: '#10b981' }
+      },
+      {
+        name: '支出',
+        type: 'line',
+        data: days.map(d => data[d]?.expense ?? 0),
+        smooth: true,
+        itemStyle: { color: '#ef4444' }
+      }
+    ]
+  })
+}
+
+function renderExcerptChart() {
+  if (!excerptChartRef.value) return
+  if (!excerptChart) {
+    excerptChart = echarts.init(excerptChartRef.value, isDark.value ? 'dark' : 'light')
+  }
+  const data = trendData.value.excerptTrend ?? {}
+  const days: string[] = []
+  for (let i = 6; i >= 0; i--) {
+    days.push(dayjs().subtract(i, 'day').format('YYYY-MM-DD'))
+  }
+
+  excerptChart.setOption({
+    backgroundColor: 'transparent',
+    tooltip: { trigger: 'axis' },
+    grid: { top: 20, right: 16, bottom: 24, left: 40 },
+    xAxis: {
+      type: 'category',
+      data: days.map(d => dayjs(d).format('MM-DD')),
+      axisLabel: { color: '#64748b', fontSize: 11 }
+    },
+    yAxis: {
+      type: 'value',
+      minInterval: 1,
+      axisLabel: { color: '#64748b', fontSize: 11 }
+    },
+    series: [
+      {
+        type: 'bar',
+        data: days.map(d => data[d] ?? 0),
+        itemStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: '#f59e0b' },
+            { offset: 1, color: '#fbbf24' }
+          ]),
+          borderRadius: [4, 4, 0, 0]
+        }
+      }
+    ]
+  })
+}
+
 onMounted(() => {
   loadData()
   const resizeHandler = () => {
     planChart?.resize()
     moodChart?.resize()
+    financeChart?.resize()
+    excerptChart?.resize()
   }
   window.addEventListener('resize', resizeHandler)
   onUnmounted(() => {
     window.removeEventListener('resize', resizeHandler)
     planChart?.dispose()
     moodChart?.dispose()
+    financeChart?.dispose()
+    excerptChart?.dispose()
   })
 })
 </script>

@@ -54,5 +54,7 @@ export const excerptApi = {
   search: (keyword: string, pageNum = 1, pageSize = 20) =>
     request.get<any, PageResult<ExcerptItem>>('/excerpts/search', {
       params: { keyword, pageNum, pageSize }
-    })
+    }),
+
+  exportMarkdown: () => request.get<any, string>('/excerpts/export-markdown')
 }
