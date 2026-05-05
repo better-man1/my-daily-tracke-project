@@ -249,4 +249,82 @@ public class DashboardServiceImpl implements DashboardService {
 
         return result;
     }
+
+    @Override
+    public Map<String, Object> getTrend(LocalDate startDate, LocalDate endDate, String type) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("startDate", startDate);
+        result.put("endDate", endDate);
+
+        boolean all = (type == null);
+
+        // 每日计划完成数趋势
+        if (all || "plan".equals(type)) {
+            List<DailyPlan> plans = dailyPlanMapper.selectList(
+                    new LambdaQueryWrapper<DailyPlan>()
+                            .eq(DailyPlan::getUserId, userId)
+                            .ge(DailyPlan::getPlanDate, startDate)
+                            .le(DailyPlan::getPlanDate, endDate)
+                            .eq(DailyPlan::getIsTemplate, 0));
+            Map<LocalDate, Long> totalByDate = plans.stream()
+                    .collect(Collectors.groupingBy(DailyPlan::getPlanDate, Collectors.counting()));
+            Map<LocalDate, Long> doneByDate = plans.stream()
+                    .filter(p -> "DONE".equals(p.getStatus()))
+                    .collect(Collectors.groupingBy(DailyPlan::getPlanDate, Collectors.counting()));
+            result.put("planTotal", totalByDate);
+            result.put("planDone", doneByDate);
+        }
+
+        // 每日收支趋势
+        if (all || "accounting".equals(type)) {
+            List<Accounting> accList = accountingMapper.selectList(
+                    new LambdaQueryWrapper<Accounting>()
+                            .eq(Accounting::getUserId, userId)
+                            .ge(Accounting::getAccountingDate, startDate)
+                            .le(Accounting::getAccountingDate, endDate));
+            Map<String, Object> incomeByDate = new LinkedHashMap<>();
+            Map<String, Object> expenseByDate = new LinkedHashMap<>();
+            accList.forEach(a -> {
+                String dateKey = a.getAccountingDate().toString();
+                if ("INCOME".equals(a.getType())) {
+                    incomeByDate.merge(dateKey, a.getAmount(), (o, n) ->
+                            ((java.math.BigDecimal) o).add((java.math.BigDecimal) n));
+                } else {
+                    expenseByDate.merge(dateKey, a.getAmount(), (o, n) ->
+                            ((java.math.BigDecimal) o).add((java.math.BigDecimal) n));
+                }
+            });
+            result.put("incomeByDate", incomeByDate);
+            result.put("expenseByDate", expenseByDate);
+        }
+
+        // 每日摘录数量趋势
+        if (all || "excerpt".equals(type)) {
+            List<Excerpt> excerpts = excerptMapper.selectList(
+                    new LambdaQueryWrapper<Excerpt>()
+                            .eq(Excerpt::getUserId, userId)
+                            .ge(Excerpt::getExcerptDate, startDate)
+                            .le(Excerpt::getExcerptDate, endDate));
+            Map<LocalDate, Long> excerptByDate = excerpts.stream()
+                    .collect(Collectors.groupingBy(Excerpt::getExcerptDate, Collectors.counting()));
+            result.put("excerptByDate", excerptByDate);
+        }
+
+        // 心情趋势
+        if (all || "summary".equals(type)) {
+            List<DailySummary> summaries = summaryMapper.selectList(
+                    new LambdaQueryWrapper<DailySummary>()
+                            .eq(DailySummary::getUserId, userId)
+                            .ge(DailySummary::getSummaryDate, startDate)
+                            .le(DailySummary::getSummaryDate, endDate)
+                            .orderByAsc(DailySummary::getSummaryDate));
+            result.put("moodByDate", summaries.stream()
+                    .map(s -> Map.of("date", s.getSummaryDate().toString(),
+                            "mood", s.getMood(), "score", s.getScore()))
+                    .collect(Collectors.toList()));
+        }
+
+        return result;
+    }
 }

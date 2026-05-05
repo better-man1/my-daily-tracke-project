@@ -6,16 +6,54 @@
         <p class="page-subtitle">积累知识，沉淀思考</p>
       </div>
       <div class="flex items-center gap-md">
-        <el-input v-model="searchKeyword" placeholder="搜索摘录..." :prefix-icon="Search" size="small" style="width:200px" @keyup.enter="doSearch" />
+        <el-input
+          v-model="searchKeyword"
+          placeholder="搜索摘录..."
+          :prefix-icon="Search"
+          size="small"
+          style="width:200px"
+          clearable
+          @keyup.enter="doSearch"
+          @clear="clearSearch"
+        />
         <el-button type="primary" size="small" :icon="Plus" @click="openAdd">新增摘录</el-button>
       </div>
     </div>
 
+    <!-- 标签筛选栏 -->
+    <div v-if="allTags.length" class="tag-filter">
+      <span class="filter-label">标签筛选：</span>
+      <span
+        class="filter-tag"
+        :class="{ active: !filterTagId }"
+        @click="setTagFilter(null)"
+      >全部</span>
+      <span
+        v-for="tag in allTags"
+        :key="tag.id"
+        class="filter-tag"
+        :class="{ active: filterTagId === tag.id }"
+        :style="filterTagId === tag.id ? { borderColor: tag.color, color: tag.color, background: tag.color + '18' } : {}"
+        @click="setTagFilter(tag.id)"
+      >{{ tag.name }}</span>
+    </div>
+
+    <!-- 来源类型筛选 -->
+    <div class="type-filter">
+      <el-radio-group v-model="filterSourceType" size="small" @change="loadList">
+        <el-radio-button label="">全部</el-radio-button>
+        <el-radio-button v-for="s in sourceTypes" :key="s.value" :label="s.value">{{ s.label }}</el-radio-button>
+      </el-radio-group>
+    </div>
+
     <!-- 摘录卡片 -->
     <div v-loading="loading" class="excerpt-grid">
-      <div v-for="(item, idx) in list" :key="item.id"
+      <div
+        v-for="(item, idx) in list"
+        :key="item.id"
         class="excerpt-card card card--glow animate-fade-in-up"
-        :style="{ animationDelay: idx * 0.05 + 's' }">
+        :style="{ animationDelay: idx * 0.05 + 's' }"
+      >
         <!-- 顶部 -->
         <div class="excerpt-header">
           <span class="source-type-badge">{{ sourceTypeLabel(item.sourceType) }}</span>
@@ -44,7 +82,12 @@
         <!-- 底部 -->
         <div class="excerpt-footer">
           <div class="excerpt-tags">
-            <span v-for="tag in item.tags" :key="tag.id" class="tag" :style="{ borderColor: tag.color, color: tag.color }">
+            <span
+              v-for="tag in item.tags"
+              :key="tag.id"
+              class="tag"
+              :style="{ borderColor: tag.color, color: tag.color, background: tag.color + '18' }"
+            >
               {{ tag.name }}
             </span>
           </div>
@@ -54,25 +97,39 @@
 
       <div v-if="!loading && list.length === 0" class="empty-state">
         <div class="empty-icon">📖</div>
-        <p>还没有摘录，记录你的第一条知识</p>
-        <el-button type="primary" size="small" @click="openAdd">添加摘录</el-button>
+        <p>{{ searchKeyword || filterTagId ? '没有找到匹配的摘录' : '还没有摘录，记录你的第一条知识' }}</p>
+        <el-button v-if="!searchKeyword && !filterTagId" type="primary" size="small" @click="openAdd">
+          添加摘录
+        </el-button>
       </div>
     </div>
 
     <!-- 分页 -->
-    <el-pagination v-if="total > 0"
+    <el-pagination
+      v-if="total > pageSize"
       v-model:current-page="pageNum"
       :page-size="pageSize"
       :total="total"
       layout="prev, pager, next"
       class="mt-md"
-      @current-change="loadList" />
+      @current-change="loadList"
+    />
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="showDialog" :title="editing ? '编辑摘录' : '新增摘录'" width="600px" destroy-on-close>
+    <el-dialog
+      v-model="showDialog"
+      :title="editing ? '编辑摘录' : '新增摘录'"
+      width="640px"
+      destroy-on-close
+    >
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="内容" prop="content">
-          <el-input v-model="form.content" type="textarea" :rows="4" placeholder="输入摘录内容..." />
+          <el-input
+            v-model="form.content"
+            type="textarea"
+            :rows="4"
+            placeholder="输入摘录内容..."
+          />
         </el-form-item>
         <div class="flex gap-md">
           <el-form-item label="来源类型" style="flex:1">
@@ -87,8 +144,24 @@
         <el-form-item label="个人感悟">
           <el-input v-model="form.thought" type="textarea" :rows="2" placeholder="写下你的感悟..." />
         </el-form-item>
+        <el-form-item label="标签">
+          <TagInput
+            v-model="selectedTags"
+            :options="allTags"
+            placeholder="选择或创建标签..."
+            @create="handleCreateTag"
+          />
+        </el-form-item>
         <el-form-item label="摘录日期" prop="excerptDate">
-          <el-date-picker v-model="form.excerptDate" type="date" format="YYYY-MM-DD" value-format="YYYY-MM-DD" />
+          <el-date-picker
+            v-model="form.excerptDate"
+            type="date"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+          />
+        </el-form-item>
+        <el-form-item label="收藏">
+          <el-switch v-model="form.isFavorite" :active-value="1" :inactive-value="0" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -106,6 +179,8 @@ import type { FormInstance } from 'element-plus'
 import { Plus, Search, Star, Edit, Delete } from '@element-plus/icons-vue'
 import { excerptApi } from '@/api/excerpt'
 import type { ExcerptItem } from '@/api/excerpt'
+import TagInput from '@/components/common/TagInput.vue'
+import type { TagOption } from '@/components/common/TagInput.vue'
 import dayjs from 'dayjs'
 
 const list = ref<ExcerptItem[]>([])
@@ -117,7 +192,11 @@ const saving = ref(false)
 const showDialog = ref(false)
 const editing = ref<ExcerptItem | null>(null)
 const searchKeyword = ref('')
+const filterTagId = ref<number | null>(null)
+const filterSourceType = ref('')
 const formRef = ref<FormInstance>()
+const allTags = ref<TagOption[]>([])
+const selectedTags = ref<TagOption[]>([])
 
 const sourceTypes = [
   { value: 'BOOK', label: '📚 书籍' },
@@ -132,7 +211,8 @@ const form = reactive({
   sourceType: 'BOOK',
   sourceTitle: '',
   thought: '',
-  excerptDate: dayjs().format('YYYY-MM-DD')
+  excerptDate: dayjs().format('YYYY-MM-DD'),
+  isFavorite: 0
 })
 
 const rules = {
@@ -147,35 +227,70 @@ function sourceTypeLabel(val: string) {
 async function loadList() {
   loading.value = true
   try {
-    const res = await excerptApi.page({ pageNum: pageNum.value, pageSize })
-    list.value = res.records
-    total.value = res.total
+    if (searchKeyword.value.trim()) {
+      const res = await excerptApi.search(searchKeyword.value, pageNum.value, pageSize)
+      list.value = res.records
+      total.value = res.total
+    } else {
+      const res = await excerptApi.page({
+        pageNum: pageNum.value,
+        pageSize,
+        sourceType: filterSourceType.value || undefined,
+        tagId: filterTagId.value ?? undefined
+      })
+      list.value = res.records
+      total.value = res.total
+    }
   } finally {
     loading.value = false
   }
 }
 
-async function doSearch() {
-  if (!searchKeyword.value.trim()) { loadList(); return }
-  loading.value = true
+async function loadTags() {
   try {
-    const res = await excerptApi.search(searchKeyword.value, 1, pageSize)
-    list.value = res.records
-    total.value = res.total
-  } finally {
-    loading.value = false
-  }
+    const tags = await excerptApi.getAllTags()
+    allTags.value = tags.map((t: any) => ({ id: t.id, name: t.name, color: t.color }))
+  } catch {}
+}
+
+async function doSearch() {
+  pageNum.value = 1
+  await loadList()
+}
+
+async function clearSearch() {
+  searchKeyword.value = ''
+  pageNum.value = 1
+  await loadList()
+}
+
+function setTagFilter(id: number | null) {
+  filterTagId.value = id
+  pageNum.value = 1
+  loadList()
 }
 
 function openAdd() {
   editing.value = null
-  Object.assign(form, { content: '', sourceType: 'BOOK', sourceTitle: '', thought: '', excerptDate: dayjs().format('YYYY-MM-DD') })
+  selectedTags.value = []
+  Object.assign(form, {
+    content: '', sourceType: 'BOOK', sourceTitle: '',
+    thought: '', excerptDate: dayjs().format('YYYY-MM-DD'), isFavorite: 0
+  })
   showDialog.value = true
 }
 
 function editItem(item: ExcerptItem) {
   editing.value = item
-  Object.assign(form, { content: item.content, sourceType: item.sourceType, sourceTitle: item.sourceTitle ?? '', thought: item.thought ?? '', excerptDate: item.excerptDate })
+  selectedTags.value = (item.tags ?? []).map(t => ({ id: t.id, name: t.name, color: t.color }))
+  Object.assign(form, {
+    content: item.content,
+    sourceType: item.sourceType,
+    sourceTitle: item.sourceTitle ?? '',
+    thought: item.thought ?? '',
+    excerptDate: item.excerptDate,
+    isFavorite: item.isFavorite ?? 0
+  })
   showDialog.value = true
 }
 
@@ -191,29 +306,84 @@ async function deleteItem(id: number) {
   loadList()
 }
 
+async function handleCreateTag(name: string) {
+  // 添加到本地可选列表（无需额外后端接口，后端会在创建摘录时自动创建标签）
+  const newTag: TagOption = { name, color: '#6366f1' }
+  allTags.value = [...allTags.value, newTag]
+}
+
 async function save() {
   await formRef.value?.validate()
   saving.value = true
   try {
+    const payload = {
+      ...form,
+      tagIds: selectedTags.value.filter(t => t.id).map(t => t.id as number)
+    }
     if (editing.value) {
-      await excerptApi.update(editing.value.id, form as any)
+      await excerptApi.update(editing.value.id, payload as any)
       ElMessage.success('更新成功')
     } else {
-      await excerptApi.create(form as any)
+      await excerptApi.create(payload as any)
       ElMessage.success('创建成功')
     }
     showDialog.value = false
-    loadList()
+    await Promise.all([loadList(), loadTags()])
   } finally {
     saving.value = false
   }
 }
 
-onMounted(loadList)
+onMounted(() => {
+  loadList()
+  loadTags()
+})
 </script>
 
 <style lang="scss" scoped>
 .excerpt-view {
+  .tag-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+
+    .filter-label {
+      font-size: 12px;
+      color: $text-muted;
+      flex-shrink: 0;
+    }
+
+    .filter-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: $radius-full;
+      border: 1px solid $border;
+      font-size: 12px;
+      color: $text-secondary;
+      cursor: pointer;
+      transition: $transition-fast;
+      user-select: none;
+
+      &:hover {
+        border-color: rgba($primary, 0.4);
+        color: $primary-light;
+      }
+
+      &.active {
+        border-color: $primary;
+        color: $primary-light;
+        background: $primary-100;
+      }
+    }
+  }
+
+  .type-filter {
+    margin-bottom: 16px;
+  }
+
   .excerpt-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -259,9 +429,7 @@ onMounted(loadList)
       }
     }
 
-    &:hover .excerpt-header .excerpt-actions {
-      opacity: 1;
-    }
+    &:hover .excerpt-header .excerpt-actions { opacity: 1; }
 
     .excerpt-content {
       font-size: 14px;
@@ -299,6 +467,7 @@ onMounted(loadList)
   }
 
   .empty-state {
+    grid-column: 1 / -1;
     text-align: center;
     padding: 60px 20px;
     color: $text-muted;

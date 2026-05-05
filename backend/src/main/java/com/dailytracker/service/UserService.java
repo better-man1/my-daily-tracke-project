@@ -33,4 +33,9 @@ public interface UserService {
      * 更新用户偏好设置
      */
     void updateSettings(Long userId, UserSettings settings);
+
+    /**
+     * 导出用户全量数据（JSON格式）
+     */
+    byte[] exportData(Long userId);
 }

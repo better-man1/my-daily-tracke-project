@@ -50,9 +50,14 @@ export const excerptApi = {
 
   create: (data: any) => http.post<any>('/excerpts', data),
 
+  delete: (id: number) => http.delete<void>(`/excerpts/${id}`),
+
   toggleFavorite: (id: number) => http.put<void>(`/excerpts/${id}/favorite`),
 
-  getRandom: () => http.get<any>('/excerpts/random')
+  getRandom: () => http.get<any>('/excerpts/random'),
+
+  search: (keyword: string, pageNum = 1, pageSize = 20) =>
+    http.get<any>('/excerpts/search', { keyword, pageNum, pageSize })
 }
 
 export const summaryApi = {

@@ -23,22 +23,7 @@
         </router-link>
       </nav>
 
-      <!-- 底部操作 -->
-      <div class="sidebar-footer">
-        <button class="nav-item" @click="appStore.toggleSidebar" title="收缩/展开">
-          <el-icon class="nav-icon">
-            <component :is="appStore.sidebarCollapsed ? 'Expand' : 'Fold'" />
-          </el-icon>
-          <span class="nav-label" v-show="!appStore.sidebarCollapsed">收缩</span>
-        </button>
-        <router-link to="/profile" class="nav-item user-item">
-          <div class="user-avatar">
-            <img v-if="userStore.avatar" :src="userStore.avatar" alt="avatar" />
-            <span v-else>{{ (userStore.nickname || 'U')[0].toUpperCase() }}</span>
-          </div>
-          <span class="nav-label" v-show="!appStore.sidebarCollapsed">{{ userStore.nickname }}</span>
-        </router-link>
-      </div>
+
     </aside>
 
     <!-- 主内容区 -->
@@ -46,18 +31,36 @@
       <!-- 顶部栏 -->
       <header class="top-bar glass">
         <div class="top-bar-left">
+          <!-- 收缩按钮 -->
+          <button class="collapse-top-btn" @click="appStore.toggleSidebar" :title="appStore.sidebarCollapsed ? '展开侧栏' : '收缩侧栏'">
+            <el-icon><component :is="appStore.sidebarCollapsed ? 'Expand' : 'Fold'" /></el-icon>
+          </button>
+          <div class="top-divider-v" />
           <h1 class="current-page-title">{{ currentPageTitle }}</h1>
           <span class="current-date">{{ today }}</span>
         </div>
         <div class="top-bar-right">
-          <el-button
-            link
-            class="logout-btn"
-            @click="handleLogout"
-          >
-            <el-icon><SwitchButton /></el-icon>
-            退出
-          </el-button>
+          <!-- 用户菜单（头像点击展开） -->
+          <el-dropdown trigger="click" @command="handleUserCommand">
+            <div class="user-nav-btn">
+              <div class="user-avatar-sm">
+                <img v-if="userStore.avatar" :src="userStore.avatar" alt="avatar" />
+                <span v-else>{{ (userStore.nickname || 'U')[0].toUpperCase() }}</span>
+              </div>
+              <span class="user-nickname">{{ userStore.nickname }}</span>
+              <el-icon class="dropdown-arrow"><ArrowDown /></el-icon>
+            </div>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="profile">
+                  <el-icon><User /></el-icon>个人中心
+                </el-dropdown-item>
+                <el-dropdown-item command="logout" divided class="logout-item">
+                  <el-icon><SwitchButton /></el-icon>退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
       </header>
 
@@ -77,6 +80,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
+import { ArrowDown, User, SwitchButton } from '@element-plus/icons-vue'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import dayjs from 'dayjs'
@@ -109,14 +113,18 @@ function isActive(path: string) {
   return route.path.startsWith(path)
 }
 
-async function handleLogout() {
-  await ElMessageBox.confirm('确认退出登录？', '提示', {
-    confirmButtonText: '退出',
-    cancelButtonText: '取消',
-    type: 'warning'
-  })
-  userStore.logout()
-  router.push('/login')
+async function handleUserCommand(cmd: string) {
+  if (cmd === 'profile') {
+    router.push('/profile')
+  } else if (cmd === 'logout') {
+    await ElMessageBox.confirm('确认退出登录？', '提示', {
+      confirmButtonText: '退出',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    userStore.logout()
+    router.push('/login')
+  }
 }
 </script>
 
@@ -216,35 +224,34 @@ async function handleLogout() {
     }
   }
 
-  .sidebar-footer {
+  // 顶部栏收缩按钮
+  .collapse-top-btn {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding-top: 12px;
-    border-top: 1px solid $border;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: $radius-sm;
+    border: none;
+    background: transparent;
+    color: $text-muted;
+    cursor: pointer;
+    transition: $transition-fast;
+    flex-shrink: 0;
+
+    .el-icon { font-size: 18px; }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.07);
+      color: $text-primary;
+    }
   }
 
-  .user-item {
-    .user-avatar {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, $primary, #a78bfa);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 700;
-      color: white;
-      flex-shrink: 0;
-      overflow: hidden;
-
-      img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-    }
+  .top-divider-v {
+    width: 1px;
+    height: 18px;
+    background: $border;
+    flex-shrink: 0;
   }
 
   .main-content {
@@ -280,6 +287,76 @@ async function handleLogout() {
     .current-date {
       font-size: 13px;
       color: $text-muted;
+    }
+
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    // 用户导航按鈕
+    .user-nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: $radius-md;
+      text-decoration: none;
+      color: $text-secondary;
+      transition: $transition-fast;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: $text-primary;
+      }
+
+      .user-avatar-sm {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, $primary, #a78bfa);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        color: white;
+        flex-shrink: 0;
+        overflow: hidden;
+        border: 2px solid rgba($primary, 0.4);
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+
+      .user-nickname {
+        font-size: 13px;
+        font-weight: 500;
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .dropdown-arrow {
+        font-size: 12px;
+        color: $text-muted;
+        transition: transform 0.2s ease;
+      }
+
+      &:hover .dropdown-arrow {
+        color: $text-primary;
+      }
+    }
+
+    .top-divider {
+      width: 1px;
+      height: 18px;
+      background: $border;
     }
 
     .logout-btn {

@@ -10,8 +10,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 /**
@@ -67,5 +71,17 @@ public class UserController {
         Long userId = SecurityUtils.getCurrentUserId();
         userService.updateSettings(userId, settings);
         return Result.success();
+    }
+
+    @Operation(summary = "导出用户全量数据 (JSON)")
+    @PostMapping("/export")
+    public ResponseEntity<byte[]> exportData() {
+        Long userId = SecurityUtils.getCurrentUserId();
+        byte[] data = userService.exportData(userId);
+        String filename = "daily-tracker-export-" + LocalDate.now() + ".json";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(data);
     }
 }

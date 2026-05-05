@@ -41,9 +41,12 @@ request.interceptors.response.use(
       const refreshToken = localStorage.getItem('refresh_token')
       if (refreshToken) {
         try {
-          const res = await axios.post('/api/v1/auth/refresh', { refreshToken })
-          const { accessToken } = res.data.data
+          const res = await axios.post('/api/v1/auth/refresh', null, {
+            headers: { 'Refresh-Token': refreshToken }
+          })
+          const { accessToken, refreshToken: newRefreshToken } = res.data.data
           localStorage.setItem('access_token', accessToken)
+          if (newRefreshToken) localStorage.setItem('refresh_token', newRefreshToken)
           // 重试原请求
           error.config.headers['Authorization'] = `Bearer ${accessToken}`
           return request(error.config)

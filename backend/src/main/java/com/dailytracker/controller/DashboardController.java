@@ -5,10 +5,13 @@ import com.dailytracker.service.DashboardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 /**
@@ -44,5 +47,14 @@ public class DashboardController {
     @GetMapping("/year")
     public Result<Map<String, Object>> getYear() {
         return Result.success(dashboardService.getYear());
+    }
+
+    @Operation(summary = "趋势分析（自定义时间范围）")
+    @GetMapping("/trend")
+    public Result<Map<String, Object>> getTrend(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String type) {
+        return Result.success(dashboardService.getTrend(startDate, endDate, type));
     }
 }

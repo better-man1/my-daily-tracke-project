@@ -317,3 +317,14 @@
   animation: shimmer 1.5s infinite;
   border-radius: $radius-sm;
 }
+
+// 下拉菜单危险项
+.logout-item {
+  color: $danger !important;
+
+  .el-icon { color: $danger !important; }
+
+  &:hover, &:focus {
+    background: rgba($danger, 0.08) !important;
+  }
+}
