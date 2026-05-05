@@ -6,6 +6,7 @@
         <p class="page-subtitle">积累知识，沉淀思考</p>
       </div>
       <div class="flex items-center gap-md">
+        <!-- 暂隐藏按标签筛选
         <el-select
           v-model="filterTagId"
           placeholder="按标签筛选"
@@ -14,8 +15,32 @@
           style="width: 140px"
           @change="loadList"
         >
-          <el-option v-for="t in allTags" :key="t.id" :label="t.name" :value="t.id" />
+        <el-option v-for="t in allTags" :key="t.id" :label="t.name" :value="t.id" />
         </el-select>
+        -->
+        <el-select
+          v-model="filterSourceType"
+          placeholder="按来源筛选"
+          clearable
+          size="small"
+          style="width: 140px"
+          @change="loadList"
+        >
+          <el-option v-for="s in sourceTypes" :key="s.value" :label="s.label" :value="s.value" />
+        </el-select>
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          format="YYYY-MM-DD"
+          value-format="YYYY-MM-DD"
+          :shortcuts="shortcuts"
+          size="small"
+          style="width: 240px"
+          @change="loadList"
+        />
         <el-input
           v-model="searchKeyword"
           placeholder="搜索摘录..."
@@ -30,50 +55,68 @@
       </div>
     </div>
 
-    <!-- 摘录卡片 -->
-    <div v-loading="loading" class="excerpt-grid">
-      <div
-        v-for="(item, idx) in list"
-        :key="item.id"
-        class="excerpt-card card card--glow animate-fade-in-up"
-        :style="{ animationDelay: idx * 0.05 + 's' }"
-      >
-        <!-- 顶部 -->
-        <div class="excerpt-header">
-          <span class="source-type-badge">{{ sourceTypeLabel(item.sourceType) }}</span>
-          <div class="excerpt-actions">
-            <el-icon class="icon-btn" :class="{ active: item.isFavorite }" @click="toggleFav(item)">
-              <Star />
-            </el-icon>
-            <el-icon class="icon-btn" @click="editItem(item)"><Edit /></el-icon>
-            <el-icon class="icon-btn danger" @click="deleteItem(item.id)"><Delete /></el-icon>
-          </div>
-        </div>
+    <!-- 摘录列表 -->
+    <div v-loading="loading" class="excerpt-list-container">
+      <el-collapse v-model="activeNames" class="custom-collapse">
+        <el-collapse-item v-for="group in groupedList" :key="group.month" :name="group.month">
+          <template #title>
+            <div class="group-header">
+              <span class="group-month">
+                <el-icon><Calendar /></el-icon>
+                {{ group.displayMonth }}
+              </span>
+              <div class="group-summary">
+                <span class="count">共 {{ group.items.length }} 条摘录</span>
+              </div>
+            </div>
+          </template>
 
-        <!-- 内容 -->
-        <div class="excerpt-content">"{{ item.content }}"</div>
-
-        <!-- 来源 -->
-        <div v-if="item.sourceTitle" class="excerpt-source">📌 {{ item.sourceTitle }}</div>
-
-        <!-- 感悟 -->
-        <div v-if="item.thought" class="excerpt-thought">💭 {{ item.thought }}</div>
-
-        <!-- 底部 -->
-        <div class="excerpt-footer">
-          <div class="excerpt-tags">
-            <span
-              v-for="tag in item.tags"
-              :key="tag.id"
-              class="tag"
-              :style="{ borderColor: tag.color, color: tag.color }"
+          <div class="excerpt-grid">
+            <div
+              v-for="(item, idx) in group.items"
+              :key="item.id"
+              class="excerpt-card card card--glow animate-fade-in-up"
+              :style="{ animationDelay: idx * 0.05 + 's' }"
             >
-              {{ tag.name }}
-            </span>
+              <!-- 顶部 -->
+              <div class="excerpt-header">
+                <span class="source-type-badge">{{ sourceTypeLabel(item.sourceType) }}</span>
+                <div class="excerpt-actions">
+                  <el-icon class="icon-btn" :class="{ active: item.isFavorite }" @click="toggleFav(item)">
+                    <Star />
+                  </el-icon>
+                  <el-icon class="icon-btn" @click="editItem(item)"><Edit /></el-icon>
+                  <el-icon class="icon-btn danger" @click="deleteItem(item.id)"><Delete /></el-icon>
+                </div>
+              </div>
+
+              <!-- 内容 -->
+              <div class="excerpt-content">"{{ item.content }}"</div>
+
+              <!-- 来源 -->
+              <div v-if="item.sourceTitle" class="excerpt-source">📌 {{ item.sourceTitle }}</div>
+
+              <!-- 感悟 -->
+              <div v-if="item.thought" class="excerpt-thought">💭 {{ item.thought }}</div>
+
+              <!-- 底部 -->
+              <div class="excerpt-footer">
+                <div class="excerpt-tags">
+                  <span
+                    v-for="tag in item.tags"
+                    :key="tag.id"
+                    class="tag"
+                    :style="{ borderColor: tag.color, color: tag.color }"
+                  >
+                    {{ tag.name }}
+                  </span>
+                </div>
+                <span class="excerpt-date text-muted text-xs">{{ item.excerptDate }}</span>
+              </div>
+            </div>
           </div>
-          <span class="excerpt-date text-muted text-xs">{{ item.excerptDate }}</span>
-        </div>
-      </div>
+        </el-collapse-item>
+      </el-collapse>
 
       <div v-if="!loading && list.length === 0" class="empty-state">
         <div class="empty-icon">📖</div>
@@ -83,6 +126,7 @@
     </div>
 
     <!-- 分页 -->
+    <!-- 分页暂时隐藏
     <el-pagination
       v-if="total > 0"
       v-model:current-page="pageNum"
@@ -92,6 +136,7 @@
       class="mt-md"
       @current-change="loadList"
     />
+    -->
 
     <!-- 新增/编辑弹窗 -->
     <el-dialog
@@ -140,6 +185,26 @@
             value-format="YYYY-MM-DD"
           />
         </el-form-item>
+        <!-- 暂隐藏标签功能
+        <el-form-item label="标签">
+          <el-select
+            v-model="form.tagIds"
+            multiple
+            filterable
+            allow-create
+            default-first-option
+            placeholder="请选择或输入新标签"
+            @create="handleTagCreate"
+          >
+            <el-option
+              v-for="t in allTags"
+              :key="t.id"
+              :label="t.name"
+              :value="t.id"
+            />
+          </el-select>
+        </el-form-item>
+        -->
       </el-form>
       <template #footer>
         <el-button @click="showDialog = false">取消</el-button>
@@ -175,10 +240,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
-import { Plus, Search, Star, Edit, Delete, Download } from '@element-plus/icons-vue'
+import { Plus, Search, Star, Edit, Delete, Download, Calendar } from '@element-plus/icons-vue'
 import { excerptApi } from '@/api/excerpt'
 import type { ExcerptItem } from '@/api/excerpt'
 import dayjs from 'dayjs'
@@ -186,7 +251,7 @@ import dayjs from 'dayjs'
 const list = ref<ExcerptItem[]>([])
 const total = ref(0)
 const pageNum = ref(1)
-const pageSize = 12
+const pageSize = 200
 const loading = ref(false)
 const saving = ref(false)
 const exporting = ref(false)
@@ -196,8 +261,72 @@ const editing = ref<ExcerptItem | null>(null)
 const randomExcerpt = ref<ExcerptItem | null>(null)
 const searchKeyword = ref('')
 const filterTagId = ref<number | undefined>(undefined)
+const filterSourceType = ref<string | undefined>(undefined)
 const allTags = ref<any[]>([])
 const formRef = ref<FormInstance>()
+
+const dateRange = ref<[string, string] | null>([
+  dayjs().startOf('month').format('YYYY-MM-DD'),
+  dayjs().endOf('month').format('YYYY-MM-DD')
+])
+
+const activeNames = ref<string[]>([dayjs().format('YYYY-MM')])
+
+const groupedList = computed(() => {
+  const groups: Record<string, ExcerptItem[]> = {}
+  list.value.forEach((item) => {
+    const month = dayjs(item.excerptDate).format('YYYY-MM')
+    if (!groups[month]) {
+      groups[month] = []
+    }
+    groups[month].push(item)
+  })
+  
+  return Object.keys(groups)
+    .sort((a, b) => b.localeCompare(a))
+    .map((month) => ({
+      month,
+      displayMonth: dayjs(month).format('YYYY年MM月'),
+      items: groups[month]
+    }))
+})
+
+const shortcuts = [
+  {
+    text: '近一个月',
+    value: () => {
+      const start = dayjs().startOf('month').toDate()
+      const end = dayjs().endOf('month').toDate()
+      return [start, end]
+    }
+  },
+  {
+    text: '近三个月',
+    value: () => {
+      const start = dayjs().subtract(2, 'month').startOf('month').toDate()
+      const end = dayjs().endOf('month').toDate()
+      return [start, end]
+    }
+  },
+  {
+    text: '近半年',
+    value: () => {
+      const currentMonth = dayjs().month()
+      const isFirstHalf = currentMonth < 6
+      const start = dayjs().month(isFirstHalf ? 0 : 6).startOf('month').toDate()
+      const end = dayjs().month(isFirstHalf ? 5 : 11).endOf('month').toDate()
+      return [start, end]
+    }
+  },
+  {
+    text: '近一年',
+    value: () => {
+      const start = dayjs().startOf('year').toDate()
+      const end = dayjs().endOf('year').toDate()
+      return [start, end]
+    }
+  }
+]
 
 const sourceTypes = [
   { value: 'BOOK', label: '📚 书籍' },
@@ -212,7 +341,8 @@ const form = reactive({
   sourceType: 'BOOK',
   sourceTitle: '',
   thought: '',
-  excerptDate: dayjs().format('YYYY-MM-DD')
+  excerptDate: dayjs().format('YYYY-MM-DD'),
+  tagIds: [] as number[]
 })
 
 const rules = {
@@ -230,7 +360,10 @@ async function loadList() {
     const res = await excerptApi.page({ 
       pageNum: pageNum.value, 
       pageSize,
-      tagId: filterTagId.value || undefined
+      tagId: filterTagId.value || undefined,
+      sourceType: filterSourceType.value || undefined,
+      startDate: dateRange.value?.[0],
+      endDate: dateRange.value?.[1]
     })
     list.value = res.records
     total.value = res.total
@@ -269,7 +402,8 @@ function openAdd() {
     sourceType: 'BOOK',
     sourceTitle: '',
     thought: '',
-    excerptDate: dayjs().format('YYYY-MM-DD')
+    excerptDate: dayjs().format('YYYY-MM-DD'),
+    tagIds: []
   })
   showDialog.value = true
 }
@@ -281,9 +415,24 @@ function editItem(item: ExcerptItem) {
     sourceType: item.sourceType,
     sourceTitle: item.sourceTitle ?? '',
     thought: item.thought ?? '',
-    excerptDate: item.excerptDate
+    excerptDate: item.excerptDate,
+    tagIds: item.tags.map(t => t.id)
   })
   showDialog.value = true
+}
+
+async function handleTagCreate(tagName: string) {
+  try {
+    const res = await excerptApi.createTag(tagName)
+    // 重新加载所有标签以获取最新列表
+    await loadTags()
+    // 将新创建的标签ID添加到选中列表
+    if (!form.tagIds.includes(res.id)) {
+      form.tagIds.push(res.id)
+    }
+  } catch (e) {
+    ElMessage.error('创建标签失败')
+  }
 }
 
 async function toggleFav(item: ExcerptItem) {
@@ -360,6 +509,58 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .excerpt-view {
+  .excerpt-list-container {
+    .custom-collapse {
+      border: none;
+      --el-collapse-header-bg-color: transparent;
+      --el-collapse-content-bg-color: transparent;
+      
+      :deep(.el-collapse-item__header) {
+        border-bottom: none;
+        height: auto;
+        padding: 12px 0;
+        line-height: 1.4;
+      }
+
+      :deep(.el-collapse-item__wrap) {
+        border-bottom: none;
+      }
+
+      :deep(.el-collapse-item__content) {
+        padding-bottom: 20px;
+      }
+    }
+
+    .group-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding-right: 12px;
+
+      .group-month {
+        font-size: 16px;
+        font-weight: 700;
+        color: $text-primary;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .group-summary {
+        display: flex;
+        gap: 16px;
+        font-size: 13px;
+        background: $bg-page;
+        padding: 4px 16px;
+        border-radius: $radius-full;
+        align-items: center;
+        color: $text-secondary;
+        font-weight: 500;
+      }
+    }
+  }
+
   .excerpt-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));

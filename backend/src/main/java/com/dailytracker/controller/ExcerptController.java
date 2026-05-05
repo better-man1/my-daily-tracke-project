@@ -85,6 +85,12 @@ public class ExcerptController {
         return Result.success(excerptService.getAllTags());
     }
 
+    @Operation(summary = "创建标签")
+    @PostMapping("/tags")
+    public Result<Map<String, Object>> createTag(@RequestParam String name, @RequestParam(required = false) String color) {
+        return Result.success(excerptService.createTag(name, color));
+    }
+
     @Operation(summary = "全文搜索")
     @GetMapping("/search")
     public Result<IPage<ExcerptResponse>> search(

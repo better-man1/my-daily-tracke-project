@@ -152,14 +152,40 @@ public class ExcerptServiceImpl implements ExcerptService {
                 new LambdaQueryWrapper<Tag>()
                         .eq(Tag::getUserId, userId)
                         .orderByDesc(Tag::getUsageCount));
-        return tags.stream().map(t -> {
-            Map<String, Object> map = new LinkedHashMap<>();
-            map.put("id", t.getId());
-            map.put("name", t.getName());
-            map.put("color", t.getColor());
-            map.put("usageCount", t.getUsageCount());
-            return map;
-        }).collect(Collectors.toList());
+        return tags.stream().map(this::tagToMap).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public Map<String, Object> createTag(String name, String color) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        
+        // 检查是否已存在同名标签
+        Tag existing = tagMapper.selectOne(new LambdaQueryWrapper<Tag>()
+                .eq(Tag::getUserId, userId)
+                .eq(Tag::getName, name));
+        if (existing != null) {
+            return tagToMap(existing);
+        }
+
+        Tag tag = new Tag();
+        tag.setUserId(userId);
+        tag.setName(name);
+        tag.setColor(color != null ? color : "#6366f1");
+        tag.setUsageCount(0);
+        tag.setCreatedAt(java.time.LocalDateTime.now());
+        tagMapper.insert(tag);
+
+        return tagToMap(tag);
+    }
+
+    private Map<String, Object> tagToMap(Tag t) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", t.getId());
+        map.put("name", t.getName());
+        map.put("color", t.getColor());
+        map.put("usageCount", t.getUsageCount());
+        return map;
     }
 
     @Override

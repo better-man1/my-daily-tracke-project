@@ -50,6 +50,9 @@ export const excerptApi = {
   getRandom: () => request.get<any, ExcerptItem>('/excerpts/random'),
 
   getAllTags: () => request.get<any, any[]>('/excerpts/tags'),
+  
+  createTag: (name: string, color?: string) => 
+    request.post<any, any>('/excerpts/tags', null, { params: { name, color } }),
 
   search: (keyword: string, pageNum = 1, pageSize = 20) =>
     request.get<any, PageResult<ExcerptItem>>('/excerpts/search', {

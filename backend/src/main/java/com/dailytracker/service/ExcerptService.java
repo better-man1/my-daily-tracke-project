@@ -43,4 +43,7 @@ public interface ExcerptService {
 
     /** 导出摘录为 Markdown 格式 */
     String exportMarkdown(Long userId);
+
+    /** 创建标签 */
+    Map<String, Object> createTag(String name, String color);
 }
