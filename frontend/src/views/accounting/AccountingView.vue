@@ -5,7 +5,7 @@
         <h1 class="page-title">每日记账</h1>
         <p class="page-subtitle">记录每一笔收支，掌握财务状况</p>
       </div>
-      <el-button type="primary" size="small" :icon="Plus" @click="showAddDialog = true"
+      <el-button type="primary" size="small" :icon="Plus" @click="openAddDialog"
         >新增账目</el-button
       >
     </div>
@@ -75,6 +75,7 @@
         end-placeholder="结束日期"
         format="YYYY-MM-DD"
         value-format="YYYY-MM-DD"
+        :shortcuts="shortcuts"
         size="small"
         @change="loadList"
       />
@@ -86,23 +87,46 @@
     </div>
 
     <!-- 账目列表 -->
-    <div v-loading="loading" class="accounting-list">
-      <div v-for="item in list" :key="item.id" class="accounting-card card">
-        <div class="acc-type-dot" :class="item.type" />
-        <div class="acc-info">
-          <div class="acc-category">
-            {{ item.parentCategoryName ? `${item.parentCategoryName} / ` : ''
-            }}{{ item.categoryName }}
+    <div v-loading="loading" class="accounting-list-container">
+      <el-collapse v-model="activeNames" class="custom-collapse">
+        <el-collapse-item v-for="group in groupedList" :key="group.month" :name="group.month">
+          <template #title>
+            <div class="group-header">
+              <span class="group-month">
+                <el-icon><Calendar /></el-icon>
+                {{ group.displayMonth }}
+              </span>
+              <div class="group-summary">
+                <span class="income">入 ¥{{ formatAmount(calculateTotal(group.items, 'INCOME')) }}</span>
+                <span class="expense">出 ¥{{ formatAmount(calculateTotal(group.items, 'EXPENSE')) }}</span>
+                <span class="balance" :class="calculateBalance(group.items) >= 0 ? 'is-positive' : 'is-negative'">
+                  结余 {{ calculateBalance(group.items) < 0 ? '-' : '' }}¥{{ formatAmount(Math.abs(calculateBalance(group.items))) }}
+                </span>
+              </div>
+            </div>
+          </template>
+
+          <div class="accounting-list">
+            <div v-for="item in group.items" :key="item.id" class="accounting-card card">
+              <div class="acc-type-dot" :class="item.type" />
+              <div class="acc-info">
+                <div class="acc-category">
+                  {{ item.parentCategoryName ? `${item.parentCategoryName} / ` : ''
+                  }}{{ item.categoryName }}
+                </div>
+                <div class="acc-remark text-muted text-sm">{{ item.remark || item.accountingDate }}</div>
+              </div>
+              <div class="acc-amount" :class="item.type">
+                {{ item.type === 'INCOME' ? '+' : '-' }}¥{{ formatAmount(item.amount) }}
+              </div>
+              <div class="acc-actions">
+                <el-icon class="icon-btn edit-btn" @click="editItem(item)"><Edit /></el-icon>
+                <el-icon class="icon-btn delete-btn" @click="deleteItem(item.id)"><Delete /></el-icon>
+              </div>
+            </div>
           </div>
-          <div class="acc-remark text-muted text-sm">{{ item.remark || item.accountingDate }}</div>
-        </div>
-        <div class="acc-amount" :class="item.type">
-          {{ item.type === 'INCOME' ? '+' : '-' }}¥{{ formatAmount(item.amount) }}
-        </div>
-        <div class="acc-actions">
-          <el-icon class="icon-btn" @click="deleteItem(item.id)"><Delete /></el-icon>
-        </div>
-      </div>
+        </el-collapse-item>
+      </el-collapse>
 
       <div v-if="!loading && list.length === 0" class="empty-state">
         <div class="empty-icon">💰</div>
@@ -110,8 +134,8 @@
       </div>
     </div>
 
-    <!-- 新增弹窗 -->
-    <el-dialog v-model="showAddDialog" title="新增账目" width="480px" destroy-on-close>
+    <!-- 新增/编辑弹窗 -->
+    <el-dialog v-model="showAddDialog" :title="editingId ? '编辑账目' : '新增账目'" width="480px" destroy-on-close>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="类型" prop="type">
           <el-radio-group v-model="form.type">
@@ -122,9 +146,10 @@
         <el-form-item label="金额" prop="amount">
           <el-input-number
             v-model="form.amount"
-            :min="0.01"
+            :min="0"
             :precision="2"
             :step="1"
+            placeholder="请输入金额"
             style="width: 200px"
           />
         </el-form-item>
@@ -188,10 +213,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
-import { Plus, Delete } from '@element-plus/icons-vue'
+import { Plus, Delete, Calendar, Edit } from '@element-plus/icons-vue'
 import { accountingApi } from '@/api/accounting'
 import type { AccountingItem } from '@/api/accounting'
 import dayjs from 'dayjs'
@@ -205,9 +230,101 @@ const showAddDialog = ref(false)
 const showBudgetDialog = ref(false)
 const savingBudget = ref(false)
 const filterType = ref('')
-const dateRange = ref<[string, string] | null>(null)
+const dateRange = ref<[string, string] | null>([
+  dayjs().startOf('month').format('YYYY-MM-DD'),
+  dayjs().endOf('month').format('YYYY-MM-DD')
+])
 const formRef = ref<FormInstance>()
 const categoryOptions = ref<any[]>([])
+const activeNames = ref<string[]>([dayjs().format('YYYY-MM')])
+const editingId = ref<number | null>(null)
+
+const shortcuts = [
+  {
+    text: '近一个月',
+    value: () => {
+      const start = dayjs().startOf('month').toDate()
+      const end = dayjs().endOf('month').toDate()
+      return [start, end]
+    }
+  },
+  {
+    text: '近三个月',
+    value: () => {
+      const start = dayjs().subtract(2, 'month').startOf('month').toDate()
+      const end = dayjs().endOf('month').toDate()
+      return [start, end]
+    }
+  },
+  {
+    text: '近半年',
+    value: () => {
+      const currentMonth = dayjs().month()
+      const isFirstHalf = currentMonth < 6
+      const start = dayjs().month(isFirstHalf ? 0 : 6).startOf('month').toDate()
+      const end = dayjs().month(isFirstHalf ? 5 : 11).endOf('month').toDate()
+      return [start, end]
+    }
+  },
+  {
+    text: '近一年',
+    value: () => {
+      const start = dayjs().startOf('year').toDate()
+      const end = dayjs().endOf('year').toDate()
+      return [start, end]
+    }
+  }
+]
+
+function openAddDialog() {
+  editingId.value = null
+  Object.assign(form, { type: 'EXPENSE', amount: undefined, categoryId: undefined, accountingDate: dayjs().format('YYYY-MM-DD'), accountType: 'WECHAT', remark: '' })
+  showAddDialog.value = true
+}
+
+function editItem(item: AccountingItem) {
+  editingId.value = item.id
+  Object.assign(form, {
+    type: item.type,
+    amount: item.amount,
+    categoryId: item.categoryId,
+    accountingDate: item.accountingDate,
+    accountType: item.accountType,
+    remark: item.remark || ''
+  })
+  showAddDialog.value = true
+}
+
+const groupedList = computed(() => {
+  const groups: Record<string, AccountingItem[]> = {}
+  list.value.forEach((item) => {
+    const month = dayjs(item.accountingDate).format('YYYY-MM')
+    if (!groups[month]) {
+      groups[month] = []
+    }
+    groups[month].push(item)
+  })
+  
+  const result = Object.keys(groups)
+    .sort((a, b) => b.localeCompare(a))
+    .map((month) => ({
+      month,
+      displayMonth: dayjs(month).format('YYYY年MM月'),
+      items: groups[month]
+    }))
+
+  return result
+})
+
+function calculateTotal(items: AccountingItem[], type: 'INCOME' | 'EXPENSE') {
+  return items
+    .filter((item) => item.type === type)
+    .reduce((sum, item) => sum + Number(item.amount), 0)
+}
+
+function calculateBalance(items: AccountingItem[]) {
+  return calculateTotal(items, 'INCOME') - calculateTotal(items, 'EXPENSE')
+}
 
 const budgetForm = reactive({
   month: dayjs().format('YYYY-MM'),
@@ -216,7 +333,7 @@ const budgetForm = reactive({
 
 const form = reactive({
   type: 'EXPENSE' as 'EXPENSE' | 'INCOME',
-  amount: 0,
+  amount: undefined as number | undefined,
   categoryId: undefined as number | undefined,
   accountingDate: dayjs().format('YYYY-MM-DD'),
   accountType: 'WECHAT',
@@ -288,10 +405,16 @@ async function saveItem() {
   await formRef.value?.validate()
   saving.value = true
   try {
-    await accountingApi.create(form as any)
-    ElMessage.success('记录成功')
+    if (editingId.value) {
+      await accountingApi.update(editingId.value, form as any)
+      ElMessage.success('修改成功')
+    } else {
+      await accountingApi.create(form as any)
+      ElMessage.success('记录成功')
+    }
     showAddDialog.value = false
-    Object.assign(form, { type: 'EXPENSE', amount: 0, categoryId: undefined, remark: '' })
+    Object.assign(form, { type: 'EXPENSE', amount: undefined, categoryId: undefined, remark: '' })
+    editingId.value = null
     await Promise.all([loadList(), loadMonthStats()])
   } finally {
     saving.value = false
@@ -327,6 +450,74 @@ onMounted(() => {
 
   .budget-card {
     padding: 16px 20px;
+  }
+
+  .accounting-list-container {
+    .custom-collapse {
+      border: none;
+      --el-collapse-header-bg-color: transparent;
+      --el-collapse-content-bg-color: transparent;
+      
+      :deep(.el-collapse-item__header) {
+        border-bottom: none;
+        height: auto;
+        padding: 12px 0;
+        line-height: 1.4;
+      }
+
+      :deep(.el-collapse-item__wrap) {
+        border-bottom: none;
+      }
+
+      :deep(.el-collapse-item__content) {
+        padding-bottom: 20px;
+      }
+    }
+
+    .group-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding-right: 12px;
+
+      .group-month {
+        font-size: 16px;
+        font-weight: 700;
+        color: $text-primary;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .group-summary {
+        display: flex;
+        gap: 16px;
+        font-size: 13px;
+        background: $bg-page;
+        padding: 4px 16px;
+        border-radius: $radius-full;
+        align-items: center;
+
+        .income {
+          color: $success;
+        }
+        .expense {
+          color: $danger;
+        }
+        .balance {
+          font-weight: 600;
+          color: $text-secondary;
+          
+          &.is-positive {
+            color: $success;
+          }
+          &.is-negative {
+            color: $danger;
+          }
+        }
+      }
+    }
   }
 
   .accounting-list {
@@ -382,6 +573,9 @@ onMounted(() => {
     }
 
     .acc-actions {
+      display: flex;
+      gap: 4px;
+
       .icon-btn {
         color: $text-muted;
         cursor: pointer;
@@ -389,7 +583,12 @@ onMounted(() => {
         border-radius: $radius-sm;
         transition: $transition-fast;
 
-        &:hover {
+        &.edit-btn:hover {
+          color: $primary;
+          background: $primary-50;
+        }
+
+        &.delete-btn:hover {
           color: $danger;
           background: rgba($danger, 0.1);
         }

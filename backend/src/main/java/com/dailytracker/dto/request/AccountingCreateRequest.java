@@ -22,7 +22,7 @@ public class AccountingCreateRequest {
 
     /** 金额（必填，大于0） */
     @NotNull(message = "金额不能为空")
-    @DecimalMin(value = "0.01", message = "金额必须大于0")
+    @DecimalMin(value = "0", message = "金额不能小于0")
     private BigDecimal amount;
 
     /** 分类ID（必填） */

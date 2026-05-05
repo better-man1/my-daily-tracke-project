@@ -1,9 +1,11 @@
 <template>
-  <router-view />
+  <el-config-provider :locale="zhCn">
+    <router-view />
+  </el-config-provider>
 </template>
 
 <script setup lang="ts">
-// App.vue 作为根组件，仅负责 router-view 出口
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 </script>
 
 <style>
