@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS t_user_settings (
     reminder_time   TIME         DEFAULT '21:00:00' COMMENT '每日提醒时间',
     week_start_day  TINYINT      DEFAULT 1 COMMENT '周起始日(1=周一,7=周日)',
     language        VARCHAR(10)  DEFAULT 'zh-CN' COMMENT '语言',
+    is_deleted      TINYINT(1)   DEFAULT 0,
     created_at      DATETIME     DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uk_settings_user (user_id)
