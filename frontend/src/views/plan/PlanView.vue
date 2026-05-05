@@ -18,9 +18,8 @@
           size="small"
           @change="loadPlans"
         />
-        <el-button type="primary" size="small" :icon="Plus" @click="showAddDialog = true"
-          >新增任务</el-button
-        >
+        <el-button type="info" size="small" :icon="Document" @click="openTemplateDialog">从模板添加</el-button>
+        <el-button type="primary" size="small" :icon="Plus" @click="showAddDialog = true">新增任务</el-button>
       </div>
     </div>
 
@@ -48,7 +47,7 @@
     </div>
 
     <!-- 任务列表 -->
-    <div v-loading="loading" class="task-list">
+    <div v-loading="loading" class="task-list" ref="taskListRef">
       <div
         v-for="(plan, idx) in filteredPlans"
         :key="plan.id"
@@ -86,12 +85,9 @@
               <el-dropdown-menu>
                 <el-dropdown-item command="edit">编辑</el-dropdown-item>
                 <el-dropdown-item command="postpone">顺延至明天</el-dropdown-item>
-                <el-dropdown-item v-if="plan.status !== 'IN_PROGRESS'" command="inprogress"
-                  >标记进行中</el-dropdown-item
-                >
-                <el-dropdown-item v-if="plan.status !== 'CANCELLED'" command="cancel"
-                  >取消</el-dropdown-item
-                >
+                <el-dropdown-item v-if="plan.status !== 'IN_PROGRESS'" command="inprogress">标记进行中</el-dropdown-item>
+                <el-dropdown-item command="saveTemplate">保存为模板</el-dropdown-item>
+                <el-dropdown-item v-if="plan.status !== 'CANCELLED'" command="cancel">取消</el-dropdown-item>
                 <el-dropdown-item command="delete" divided class="danger">删除</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -156,27 +152,50 @@
         <el-button type="primary" :loading="saving" @click="savePlan">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 模板选择弹窗 -->
+    <el-dialog v-model="showTemplateDialog" title="从模板创建任务" width="480px" destroy-on-close>
+      <div class="template-list">
+        <div v-for="tpl in templates" :key="tpl.id" class="template-item card mb-sm cursor-pointer" @click="createFromTemplate(tpl)">
+          <div class="font-bold mb-xs">{{ tpl.templateName }}</div>
+          <div class="text-sm text-secondary">{{ tpl.title }}</div>
+          <div class="flex gap-sm mt-xs">
+            <span class="tag">{{ categoryLabel(tpl.category) }}</span>
+            <span class="priority-badge" :class="tpl.priority.toLowerCase()">{{ tpl.priority }}</span>
+            <span v-if="tpl.estimatedMins" class="text-xs text-muted">⏱ {{ tpl.estimatedMins }}m</span>
+          </div>
+        </div>
+        <div v-if="templates.length === 0" class="text-center text-muted py-md">
+          暂无模板，可将现有任务保存为模板
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
-import { Plus, Check, MoreFilled } from '@element-plus/icons-vue'
+import { Plus, Check, MoreFilled, Document } from '@element-plus/icons-vue'
 import { planApi } from '@/api/plan'
 import type { PlanItem } from '@/api/plan'
 import dayjs from 'dayjs'
+import Sortable from 'sortablejs'
 
 const selectedDate = ref(dayjs().format('YYYY-MM-DD'))
 const filterCategory = ref('')
 const plans = ref<PlanItem[]>([])
+const templates = ref<PlanItem[]>([])
 const stats = ref<Record<string, any>>({})
 const loading = ref(false)
 const saving = ref(false)
 const showAddDialog = ref(false)
+const showTemplateDialog = ref(false)
 const editingPlan = ref<PlanItem | null>(null)
 const formRef = ref<FormInstance>()
+const taskListRef = ref<HTMLElement>()
+let sortableInstance: Sortable | null = null
 
 const categories = [
   { value: 'WORK', label: '工作' },
@@ -246,9 +265,39 @@ async function loadPlans() {
       planApi.list(selectedDate.value),
       planApi.statistics(selectedDate.value)
     ])
+    await nextTick()
+    initSortable()
   } finally {
     loading.value = false
   }
+}
+
+function initSortable() {
+  if (!taskListRef.value) return
+  if (sortableInstance) sortableInstance.destroy()
+  sortableInstance = Sortable.create(taskListRef.value, {
+    animation: 150,
+    disabled: !!filterCategory.value, // 只在"全部"分类下允许拖拽
+    onEnd: async (evt) => {
+      const { oldIndex, newIndex } = evt
+      if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return
+      
+      const movedItem = filteredPlans.value.splice(oldIndex, 1)[0]
+      filteredPlans.value.splice(newIndex, 0, movedItem)
+      
+      const sortMap: Record<number, number> = {}
+      filteredPlans.value.forEach((p, idx) => {
+        sortMap[p.id] = idx
+      })
+      
+      try {
+        await planApi.batchSort(sortMap)
+      } catch (error) {
+        ElMessage.error('排序保存失败')
+        loadPlans()
+      }
+    }
+  })
 }
 
 async function toggleStatus(plan: PlanItem) {
@@ -260,7 +309,9 @@ async function toggleStatus(plan: PlanItem) {
 }
 
 function filterPlans() {
-  /* reactive */
+  if (sortableInstance) {
+    sortableInstance.option('disabled', !!filterCategory.value)
+  }
 }
 
 function handleCommand(cmd: string, plan: PlanItem) {
@@ -279,6 +330,17 @@ function handleCommand(cmd: string, plan: PlanItem) {
     planApi.postpone(plan.id).then(() => {
       ElMessage.success('已顺延至明天')
       loadPlans()
+    })
+  } else if (cmd === 'saveTemplate') {
+    ElMessageBox.prompt('请输入模板名称', '保存为模板', {
+      inputValue: plan.title,
+      confirmButtonText: '确定',
+      cancelButtonText: '取消'
+    }).then(({ value }) => {
+      if (!value) return
+      planApi.saveAsTemplate(plan.id, value).then(() => {
+        ElMessage.success('已保存为模板')
+      })
     })
   } else if (cmd === 'inprogress') {
     planApi.updateStatus(plan.id, 'IN_PROGRESS').then(() => {
@@ -322,6 +384,34 @@ async function savePlan() {
     loadPlans()
   } finally {
     saving.value = false
+  }
+}
+
+async function openTemplateDialog() {
+  try {
+    templates.value = await planApi.listTemplates()
+    showTemplateDialog.value = true
+  } catch (error) {
+    console.error('Failed to load templates', error)
+  }
+}
+
+async function createFromTemplate(tpl: PlanItem) {
+  try {
+    await planApi.create({
+      title: tpl.title,
+      description: tpl.description || '',
+      planDate: selectedDate.value,
+      priority: tpl.priority,
+      category: tpl.category,
+      estimatedMins: tpl.estimatedMins || undefined,
+      sortOrder: plans.value.length
+    })
+    ElMessage.success('从模板创建成功')
+    showTemplateDialog.value = false
+    loadPlans()
+  } catch (error) {
+    console.error('Failed to create from template', error)
   }
 }
 
@@ -494,6 +584,14 @@ onMounted(loadPlans)
     }
     p {
       margin-bottom: 16px;
+    }
+  }
+
+  .template-item {
+    transition: $transition-fast;
+    &:hover {
+      border-color: $primary;
+      background: $primary-50;
     }
   }
 }

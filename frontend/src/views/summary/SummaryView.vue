@@ -26,6 +26,12 @@
       </div>
     </div>
 
+    <!-- 情绪趋势图表 -->
+    <div class="card mb-md" style="padding: 16px">
+      <div class="text-sm font-bold text-secondary mb-sm">近 30 天情绪趋势</div>
+      <div ref="moodChartRef" style="height: 200px; width: 100%"></div>
+    </div>
+
     <!-- 总结列表 -->
     <div v-loading="loading" class="summary-list">
       <div v-for="item in list" :key="item.id" class="summary-card card card--glow">
@@ -141,6 +147,14 @@ import { Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { summaryApi } from '@/api/summary'
 import type { SummaryItem } from '@/api/summary'
 import dayjs from 'dayjs'
+import * as echarts from 'echarts/core'
+import { LineChart } from 'echarts/charts'
+import { TooltipComponent, GridComponent, GraphicComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+import { useDark } from '@vueuse/core'
+import { watch, onUnmounted, nextTick } from 'vue'
+
+echarts.use([LineChart, TooltipComponent, GridComponent, GraphicComponent, CanvasRenderer])
 
 const list = ref<SummaryItem[]>([])
 const streak = ref<Record<string, any>>({})
@@ -150,6 +164,18 @@ const showDialog = ref(false)
 const editing = ref<SummaryItem | null>(null)
 const formRef = ref<FormInstance>()
 const moodEmoji = ['😢', '😔', '😐', '😊', '😄']
+
+const isDark = useDark()
+const moodChartRef = ref<HTMLElement>()
+let moodChart: echarts.ECharts | null = null
+
+watch(isDark, () => {
+  if (moodChart) {
+    moodChart.dispose()
+    moodChart = null
+    renderMoodChart()
+  }
+})
 
 const form = reactive({
   summaryDate: dayjs().format('YYYY-MM-DD'),
@@ -174,6 +200,72 @@ async function loadStreak() {
   try {
     streak.value = (await summaryApi.getStreak()) as any
   } catch {}
+}
+
+const moodTrendData = ref<any[]>([])
+
+async function loadMoodTrend() {
+  try {
+    moodTrendData.value = await summaryApi.getMoodTrend(30)
+    await nextTick()
+    renderMoodChart()
+  } catch (error) {
+    console.error('Failed to load mood trend', error)
+  }
+}
+
+function renderMoodChart() {
+  if (!moodChartRef.value) return
+  if (!moodChart) {
+    moodChart = echarts.init(moodChartRef.value, isDark.value ? 'dark' : 'light')
+  }
+  const data = moodTrendData.value
+  moodChart.setOption({
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params: any) => {
+        const d = params[0]
+        return `${d.name}<br/>心情：${moodEmoji[(d.value ?? 3) - 1]}`
+      }
+    },
+    grid: { top: 10, right: 16, bottom: 20, left: 24 },
+    xAxis: {
+      type: 'category',
+      data: data.map((d: any) => dayjs(d.date).format('MM-DD')),
+      axisLabel: { color: '#64748b', fontSize: 10 },
+      axisLine: { lineStyle: { color: 'rgba(255,255,255,0.08)' } }
+    },
+    yAxis: {
+      type: 'value',
+      min: 1,
+      max: 5,
+      minInterval: 1,
+      axisLabel: {
+        color: '#64748b',
+        fontSize: 10,
+        formatter: (val: number) => moodEmoji[val - 1] ?? val
+      },
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.04)' } }
+    },
+    series: [
+      {
+        type: 'line',
+        data: data.map((d: any) => d.mood),
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: { color: '#ec4899', width: 2 },
+        itemStyle: { color: '#ec4899' },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(236,72,153,0.3)' },
+            { offset: 1, color: 'rgba(236,72,153,0)' }
+          ])
+        }
+      }
+    ]
+  })
 }
 
 function openToday() {
@@ -221,7 +313,7 @@ async function save() {
     }
     ElMessage.success('保存成功')
     showDialog.value = false
-    await Promise.all([loadList(), loadStreak()])
+    await Promise.all([loadList(), loadStreak(), loadMoodTrend()])
   } finally {
     saving.value = false
   }
@@ -230,6 +322,16 @@ async function save() {
 onMounted(() => {
   loadList()
   loadStreak()
+  loadMoodTrend()
+
+  const resizeHandler = () => {
+    moodChart?.resize()
+  }
+  window.addEventListener('resize', resizeHandler)
+  onUnmounted(() => {
+    window.removeEventListener('resize', resizeHandler)
+    moodChart?.dispose()
+  })
 })
 </script>
 

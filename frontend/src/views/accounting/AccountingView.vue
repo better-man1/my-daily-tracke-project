@@ -25,13 +25,14 @@
       <div
         class="stat-card"
         :style="{
-          '--stat-color': monthStats.balance >= 0 ? '#10b981' : '#ef4444',
-          '--stat-bg': monthStats.balance >= 0 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)'
+          '--stat-color': (budgetInfo?.totalBudget ? budgetInfo.budgetRemaining : monthStats.balance) >= 0 ? '#10b981' : '#ef4444',
+          '--stat-bg': (budgetInfo?.totalBudget ? budgetInfo.budgetRemaining : monthStats.balance) >= 0 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.12)'
         }"
       >
         <div class="stat-icon">📊</div>
-        <div class="stat-value">¥{{ formatAmount(Math.abs(monthStats.balance)) }}</div>
-        <div class="stat-label">{{ monthStats.balance >= 0 ? '结余' : '超支' }}</div>
+        <div class="stat-value">¥{{ formatAmount(Math.abs(budgetInfo?.totalBudget ? budgetInfo.budgetRemaining : monthStats.balance)) }}</div>
+        <div class="stat-label" v-if="budgetInfo?.totalBudget">{{ budgetInfo.budgetRemaining >= 0 ? '预算剩余' : '预算超支' }}</div>
+        <div class="stat-label" v-else>{{ monthStats.balance >= 0 ? '本月结余' : '本月赤字' }}</div>
       </div>
     </div>
 

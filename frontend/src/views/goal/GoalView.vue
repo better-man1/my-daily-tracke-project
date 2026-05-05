@@ -8,18 +8,44 @@
       <el-button type="primary" size="small" :icon="Plus" @click="openAdd">新增目标</el-button>
     </div>
 
-    <!-- 类型标签 -->
-    <el-tabs v-model="activeType" @tab-change="loadGoals">
-      <el-tab-pane label="全部" name="" />
-      <el-tab-pane label="🌟 五年" name="FIVE_YEAR" />
-      <el-tab-pane label="📅 年度" name="YEARLY" />
-      <el-tab-pane label="📆 月度" name="MONTHLY" />
-      <el-tab-pane label="🗓️ 周计划" name="WEEKLY" />
-    </el-tabs>
+    <div class="stats-bar mb-md">
+      <div class="stat-pill">
+        <span class="label">总目标数</span>
+        <span class="value">{{ stats.totalCount ?? 0 }}</span>
+      </div>
+      <div class="stat-pill">
+        <span class="label">进行中</span>
+        <span class="value text-warning">{{ stats.activeCount ?? 0 }}</span>
+      </div>
+      <div class="stat-pill">
+        <span class="label">已完成</span>
+        <span class="value text-success">{{ stats.completedCount ?? 0 }}</span>
+      </div>
+      <div class="stat-pill ml-auto">
+        <span class="label">平均进度</span>
+        <span class="value text-primary">{{ stats.avgProgress ?? 0 }}%</span>
+      </div>
+    </div>
+
+    <!-- 类型与视图控制 -->
+    <div class="flex items-center justify-between mb-md">
+      <el-tabs v-model="activeType" @tab-change="loadGoals" style="margin-bottom: 0;">
+        <el-tab-pane label="全部" name="" />
+        <el-tab-pane label="🌟 五年" name="FIVE_YEAR" />
+        <el-tab-pane label="📅 年度" name="YEARLY" />
+        <el-tab-pane label="📆 月度" name="MONTHLY" />
+        <el-tab-pane label="🗓️ 周计划" name="WEEKLY" />
+      </el-tabs>
+
+      <el-radio-group v-model="viewMode" size="small" @change="loadGoals">
+        <el-radio-button label="card">卡片视图</el-radio-button>
+        <el-radio-button label="tree">树形视图</el-radio-button>
+      </el-radio-group>
+    </div>
 
     <!-- 目标列表 -->
     <div v-loading="loading" class="goal-list">
-      <div v-for="goal in goals" :key="goal.id" class="goal-card card card--glow">
+      <div v-if="viewMode === 'card'" v-for="goal in goals" :key="goal.id" class="goal-card card card--glow">
         <!-- 头部 -->
         <div class="goal-header">
           <div class="goal-title-area">
@@ -87,6 +113,46 @@
           <span>🏁 {{ goal.endDate }}</span>
         </div>
       </div>
+
+      <!-- 树形视图 -->
+      <el-table
+        v-if="viewMode === 'tree'"
+        :data="goals"
+        style="width: 100%; border-radius: 8px;"
+        row-key="id"
+        border
+        default-expand-all
+      >
+        <el-table-column prop="title" label="目标名称" min-width="240">
+          <template #default="{ row }">
+            <span class="font-bold">{{ row.title }}</span>
+            <span class="text-xs text-muted ml-sm" v-if="row.description">{{ row.description }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="类型" width="100">
+          <template #default="{ row }">
+            <span class="goal-type-badge text-xs px-2 py-1 bg-primary-100 text-primary rounded-full">{{ typeLabel(row.goalType) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="进度" width="200">
+          <template #default="{ row }">
+            <div class="flex items-center gap-sm">
+              <el-progress :percentage="row.progress" :color="progressColor(row.progress)" style="flex: 1" />
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="100">
+          <template #default="{ row }">
+            <span class="goal-status text-xs px-2 py-1 rounded-full" :class="row.status.toLowerCase()">{{ statusLabel(row.status) }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="120">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="handleCommand('edit', row)">编辑</el-button>
+            <el-button link type="danger" @click="handleCommand('delete', row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
       <div v-if="!loading && goals.length === 0" class="empty-state">
         <div class="empty-icon">🎯</div>
@@ -185,6 +251,8 @@ import dayjs from 'dayjs'
 const goals = ref<GoalItem[]>([])
 const allGoals = ref<GoalItem[]>([])
 const activeType = ref('')
+const viewMode = ref<'card' | 'tree'>('card')
+const stats = ref<Record<string, any>>({})
 const loading = ref(false)
 const saving = ref(false)
 const showDialog = ref(false)
@@ -238,11 +306,17 @@ function progressColor(p: number) {
 async function loadGoals() {
   loading.value = true
   try {
-    const res = await goalApi.list({ goalType: activeType.value || undefined })
-    goals.value = res
+    if (viewMode.value === 'tree') {
+      goals.value = await goalApi.getTree(activeType.value || undefined)
+    } else {
+      goals.value = await goalApi.list({ goalType: activeType.value || undefined })
+    }
+    
     // 同时加载全量列表用于父级选择
-    const all = await goalApi.list({})
-    allGoals.value = all
+    allGoals.value = await goalApi.list({})
+    
+    // 加载统计信息
+    stats.value = await goalApi.getStatistics()
   } finally {
     loading.value = false
   }
@@ -330,11 +404,39 @@ onMounted(loadGoals)
 
 <style lang="scss" scoped>
 .goal-view {
+  .stats-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    background: $bg-card;
+    border: 1px solid $border;
+    border-radius: $radius-md;
+
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+
+      .label {
+        color: $text-secondary;
+      }
+      .value {
+        font-weight: 600;
+        color: $text-primary;
+      }
+    }
+
+    .ml-auto {
+      margin-left: auto;
+    }
+  }
+
   .goal-list {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
     gap: 16px;
-    margin-top: 16px;
   }
 
   .goal-card {

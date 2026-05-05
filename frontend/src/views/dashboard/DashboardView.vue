@@ -10,6 +10,7 @@
         <el-radio-button label="today">今日</el-radio-button>
         <el-radio-button label="week">本周</el-radio-button>
         <el-radio-button label="month">本月</el-radio-button>
+        <el-radio-button label="year">本年</el-radio-button>
       </el-radio-group>
     </div>
 
@@ -21,7 +22,7 @@
         style="--stat-color: #6366f1; --stat-bg: rgba(99, 102, 241, 0.12)"
       >
         <div class="stat-badge">
-          {{ period === 'today' ? '今日' : period === 'week' ? '本周' : '本月' }}
+          {{ period === 'today' ? '今日' : period === 'week' ? '本周' : period === 'month' ? '本月' : '本年' }}
         </div>
         <div class="stat-icon">📋</div>
         <div class="stat-value">
@@ -38,12 +39,14 @@
         class="stat-card card--glow"
         style="--stat-color: #ef4444; --stat-bg: rgba(239, 68, 68, 0.12)"
       >
-        <div class="stat-badge">支出</div>
+        <div class="stat-badge">
+          {{ period === 'today' ? '今日' : period === 'week' ? '本周' : period === 'month' ? '本月' : '本年' }}
+        </div>
         <div class="stat-icon">💸</div>
-        <div class="stat-value">¥{{ formatAmount(accountingStats.totalExpense) }}</div>
+        <div class="stat-value">¥{{ formatAmount(accountingStats.totalExpense || accountingStats.expense) }}</div>
         <div class="stat-label">支出金额</div>
         <div style="margin-top: 8px; font-size: 12px; color: #94a3b8">
-          收入 ¥{{ formatAmount(accountingStats.totalIncome) }}
+          收入 ¥{{ formatAmount(accountingStats.totalIncome || accountingStats.income) }}
         </div>
       </div>
 
@@ -63,10 +66,16 @@
         style="--stat-color: #ec4899; --stat-bg: rgba(236, 72, 153, 0.12)"
       >
         <div class="stat-icon">✍️</div>
-        <div class="stat-value">{{ summaryInfo.hasSummary ? '已完成' : '未完成' }}</div>
-        <div class="stat-label">今日总结</div>
-        <div v-if="summaryInfo.mood" style="margin-top: 8px; font-size: 12px; color: #94a3b8">
+        <div class="stat-value" v-if="period === 'today'">{{ summaryInfo.hasSummary ? '已完成' : '未完成' }}</div>
+        <div class="stat-value" v-else>{{ summaryInfo.days ?? 0 }}<span style="font-size: 16px"> 天</span></div>
+        <div class="stat-label">
+          {{ period === 'today' ? '今日总结' : period === 'week' ? '本周总结' : period === 'month' ? '本月总结' : '本年总结' }}
+        </div>
+        <div v-if="period === 'today' && summaryInfo.mood" style="margin-top: 8px; font-size: 12px; color: #94a3b8">
           心情：{{ moodEmoji[summaryInfo.mood - 1] }}
+        </div>
+        <div v-else-if="summaryInfo.avgMood" style="margin-top: 8px; font-size: 12px; color: #94a3b8">
+          平均心情：{{ summaryInfo.avgMood }}
         </div>
       </div>
 
@@ -76,11 +85,21 @@
         style="--stat-color: #3b82f6; --stat-bg: rgba(59, 130, 246, 0.12)"
       >
         <div class="stat-icon">🎯</div>
-        <div class="stat-value">
+        <div class="stat-value" v-if="period === 'year'">
+          {{ goalStats.completionRate ?? 0 }}<span style="font-size: 16px">%</span>
+        </div>
+        <div class="stat-value" v-else>
           {{ goalStats.avgProgress ?? 0 }}<span style="font-size: 16px">%</span>
         </div>
-        <div class="stat-label">目标平均进度</div>
-        <div style="margin-top: 8px; font-size: 12px; color: #94a3b8">
+        
+        <div class="stat-label">
+          {{ period === 'year' ? '年度目标完成率' : '目标平均进度' }}
+        </div>
+        
+        <div v-if="period === 'year'" style="margin-top: 8px; font-size: 12px; color: #94a3b8">
+          已完成 {{ goalStats.done ?? 0 }} / 共 {{ goalStats.total ?? 0 }} 个
+        </div>
+        <div v-else style="margin-top: 8px; font-size: 12px; color: #94a3b8">
           进行中 {{ goalStats.activeCount ?? 0 }} 个
         </div>
       </div>
@@ -181,7 +200,7 @@ echarts.use([
 ])
 
 const userStore = useUserStore()
-const period = ref<'today' | 'week' | 'month'>('today')
+const period = ref<'today' | 'week' | 'month' | 'year'>('today')
 const isDark = useDark()
 
 watch(isDark, () => {
@@ -237,17 +256,55 @@ function formatAmount(val: any) {
 }
 
 async function loadData() {
-  // 今日概览
+  // 根据不同的 period 获取对应的数据并映射到卡片变量上
+  // 为了保证 "目标进度" 在本周/本月切换时也有基础数据，我们默认获取 today 的 goalStats
   const today = await dashboardApi.getToday()
-  planStats.value = today.plan ?? {}
-  accountingStats.value = today.accounting ?? {}
-  excerptCount.value = today.excerptCount ?? 0
-  summaryInfo.value = today.summary ?? {}
-  goalStats.value = today.goal ?? {}
+  let fallbackGoalStats = today.goal ?? {}
 
-  // 本周数据（用于图表）
-  const week = await dashboardApi.getWeek()
-  weekData.value = week
+  if (period.value === 'today') {
+    planStats.value = today.plan ?? {}
+    accountingStats.value = today.accounting ?? { income: 0, expense: 0 }
+    excerptCount.value = today.excerptCount ?? 0
+    summaryInfo.value = today.summary ?? {}
+    goalStats.value = today.goal ?? {}
+  } else if (period.value === 'week') {
+    const res = await dashboardApi.getWeek()
+    let total = 0, done = 0;
+    if (res.planByDate) Object.values(res.planByDate).forEach((v: any) => total += v)
+    if (res.donePlanByDate) Object.values(res.donePlanByDate).forEach((v: any) => done += v)
+    planStats.value = { total, done, completionRate: total ? Math.round(done * 100 / total) : 0 }
+    accountingStats.value = { income: res.weekIncome ?? 0, expense: res.weekExpense ?? 0 }
+    excerptCount.value = res.weekExcerpts ?? 0
+    summaryInfo.value = { days: 0 } // 本周无单独的总结天数统计接口返回，默认 0
+    goalStats.value = fallbackGoalStats
+  } else if (period.value === 'month') {
+    const res = await dashboardApi.getMonth()
+    planStats.value = { 
+      total: res.monthPlanTotal ?? 0, 
+      done: res.monthPlanDone ?? 0, 
+      completionRate: res.monthCompletionRate ?? 0 
+    }
+    accountingStats.value = { income: res.monthIncome ?? 0, expense: res.monthExpense ?? 0 }
+    excerptCount.value = 0 // 本月摘录数接口未返回
+    summaryInfo.value = { days: res.summaryDays ?? 0, avgMood: res.avgMood }
+    goalStats.value = fallbackGoalStats
+  } else if (period.value === 'year') {
+    const res = await dashboardApi.getYear()
+    planStats.value = { total: 0, done: 0, completionRate: 0 }
+    accountingStats.value = { income: res.yearIncome ?? 0, expense: res.yearExpense ?? 0 }
+    excerptCount.value = res.excerptCount ?? 0
+    summaryInfo.value = { days: res.summaryDays ?? 0 }
+    const totalGoal = res.yearlyGoalTotal ?? 0
+    const doneGoal = res.yearlyGoalDone ?? 0
+    goalStats.value = { 
+      total: totalGoal, 
+      done: doneGoal,
+      completionRate: totalGoal ? Math.round(doneGoal * 100 / totalGoal) : 0
+    }
+  }
+
+  // 本周数据（始终加载用于柱状图表）
+  weekData.value = await dashboardApi.getWeek()
 
   // 情绪趋势
   moodTrend.value = await summaryApi.getMoodTrend(30)

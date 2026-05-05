@@ -6,15 +6,26 @@
         <p class="page-subtitle">积累知识，沉淀思考</p>
       </div>
       <div class="flex items-center gap-md">
+        <el-select
+          v-model="filterTagId"
+          placeholder="按标签筛选"
+          clearable
+          size="small"
+          style="width: 140px"
+          @change="loadList"
+        >
+          <el-option v-for="t in allTags" :key="t.id" :label="t.name" :value="t.id" />
+        </el-select>
         <el-input
           v-model="searchKeyword"
           placeholder="搜索摘录..."
           :prefix-icon="Search"
           size="small"
-          style="width: 200px"
+          style="width: 160px"
           @keyup.enter="doSearch"
         />
         <el-button type="primary" size="small" :icon="Plus" @click="openAdd">新增摘录</el-button>
+        <el-button type="warning" size="small" @click="handleRandomReview">🎲 随机回顾</el-button>
         <el-button type="success" size="small" :icon="Download" @click="handleExportMarkdown" :loading="exporting">导出 MD</el-button>
       </div>
     </div>
@@ -135,6 +146,31 @@
         <el-button type="primary" :loading="saving" @click="save">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 随机回顾弹窗 -->
+    <el-dialog
+      v-model="showRandomDialog"
+      title="🎲 随机回顾，温故知新"
+      width="500px"
+      center
+    >
+      <div v-if="randomExcerpt" class="random-excerpt-card">
+        <div class="excerpt-content">"{{ randomExcerpt.content }}"</div>
+        <div v-if="randomExcerpt.sourceTitle" class="excerpt-source">
+          📌 {{ randomExcerpt.sourceTitle }}
+        </div>
+        <div v-if="randomExcerpt.thought" class="excerpt-thought">
+          💭 {{ randomExcerpt.thought }}
+        </div>
+      </div>
+      <div v-else class="text-center text-muted py-md">
+        还没有摘录记录哦~
+      </div>
+      <template #footer>
+        <el-button @click="showRandomDialog = false">关闭</el-button>
+        <el-button type="primary" @click="handleRandomReview">再来一条</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -155,8 +191,12 @@ const loading = ref(false)
 const saving = ref(false)
 const exporting = ref(false)
 const showDialog = ref(false)
+const showRandomDialog = ref(false)
 const editing = ref<ExcerptItem | null>(null)
+const randomExcerpt = ref<ExcerptItem | null>(null)
 const searchKeyword = ref('')
+const filterTagId = ref<number | undefined>(undefined)
+const allTags = ref<any[]>([])
 const formRef = ref<FormInstance>()
 
 const sourceTypes = [
@@ -187,11 +227,23 @@ function sourceTypeLabel(val: string) {
 async function loadList() {
   loading.value = true
   try {
-    const res = await excerptApi.page({ pageNum: pageNum.value, pageSize })
+    const res = await excerptApi.page({ 
+      pageNum: pageNum.value, 
+      pageSize,
+      tagId: filterTagId.value || undefined
+    })
     list.value = res.records
     total.value = res.total
   } finally {
     loading.value = false
+  }
+}
+
+async function loadTags() {
+  try {
+    allTags.value = await excerptApi.getAllTags()
+  } catch (e) {
+    console.error('Failed to load tags', e)
   }
 }
 
@@ -286,7 +338,24 @@ async function handleExportMarkdown() {
   }
 }
 
-onMounted(loadList)
+async function handleRandomReview() {
+  try {
+    const res = await excerptApi.getRandom()
+    if (res) {
+      randomExcerpt.value = res
+      showRandomDialog.value = true
+    } else {
+      ElMessage.info('暂无摘录记录')
+    }
+  } catch (error) {
+    console.error('Failed to get random excerpt:', error)
+  }
+}
+
+onMounted(() => {
+  loadList()
+  loadTags()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -393,6 +462,39 @@ onMounted(loadList)
     }
     p {
       margin-bottom: 16px;
+    }
+  }
+
+  .random-excerpt-card {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: $radius-md;
+    border: 1px solid $border;
+
+    .excerpt-content {
+      font-size: 16px;
+      line-height: 1.8;
+      color: $text-primary;
+      font-style: italic;
+      text-align: center;
+    }
+
+    .excerpt-source {
+      font-size: 13px;
+      color: $text-secondary;
+      text-align: right;
+    }
+
+    .excerpt-thought {
+      font-size: 14px;
+      color: $text-primary;
+      padding: 12px;
+      background: $bg-input;
+      border-radius: $radius-sm;
+      border-left: 3px solid $warning;
     }
   }
 }
