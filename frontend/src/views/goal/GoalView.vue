@@ -44,8 +44,17 @@
     </div>
 
     <!-- 目标列表 -->
-    <div v-loading="loading" class="goal-list">
-      <div v-if="viewMode === 'card'" v-for="goal in goals" :key="goal.id" class="goal-card card card--glow">
+    <div v-loading="loading" element-loading-background="transparent" class="goal-content w-full">
+      
+      <!-- 卡片视图分组显示 -->
+      <div v-if="viewMode === 'card'" class="w-full">
+        <div v-for="group in groupedCardList" :key="group.name" class="goal-group mb-lg">
+          <div v-if="group.name !== '全部目标'" class="group-header mb-md flex items-center">
+            <h3 class="text-lg font-bold" style="color: var(--el-color-primary);">📂 {{ group.name }}</h3>
+            <span class="text-muted text-sm ml-sm">({{ group.items.length }})</span>
+          </div>
+          <div class="goal-list">
+            <div v-for="goal in group.items" :key="goal.id" class="goal-card card card--glow">
         <!-- 头部 -->
         <div class="goal-header">
           <div class="goal-title-area">
@@ -112,9 +121,12 @@
           <span> → </span>
           <span>🏁 {{ goal.endDate }}</span>
         </div>
+        </div>
       </div>
+    </div>
+  </div>
 
-      <!-- 树形视图 -->
+  <!-- 树形视图 -->
       <el-table
         v-if="viewMode === 'tree'"
         :data="goals"
@@ -252,6 +264,58 @@ const goals = ref<GoalItem[]>([])
 const allGoals = ref<GoalItem[]>([])
 const activeType = ref('')
 const viewMode = ref<'card' | 'tree'>('card')
+
+const groupedCardList = computed(() => {
+  if (viewMode.value !== 'card') return []
+
+  const groups: Record<string, GoalItem[]> = {}
+
+  const getGroupPath = (goal: GoalItem) => {
+    if (!activeType.value || activeType.value === 'FIVE_YEAR') {
+      return '全部目标'
+    }
+
+    let path = []
+    let currentId = goal.parentId
+    let depth = 0
+    while (currentId && depth < 5) {
+      const parent = allGoals.value.find(g => g.id === currentId)
+      if (parent) {
+        path.unshift(parent.title)
+        currentId = parent.parentId
+      } else {
+        break
+      }
+      depth++
+    }
+
+    if (path.length === 0) {
+      return '独立目标'
+    }
+    return path.join(' > ')
+  }
+
+  goals.value.forEach(goal => {
+    const path = getGroupPath(goal)
+    if (!groups[path]) {
+      groups[path] = []
+    }
+    groups[path].push(goal)
+  })
+
+  return Object.keys(groups)
+    .sort((a, b) => {
+      if (a === '全部目标') return -1;
+      if (a === '独立目标') return 1;
+      if (b === '独立目标') return -1;
+      return a.localeCompare(b);
+    })
+    .map(key => ({
+      name: key,
+      items: groups[key].sort((a, b) => dayjs(a.startDate).valueOf() - dayjs(b.startDate).valueOf())
+    }))
+})
+
 const stats = ref<Record<string, any>>({})
 const loading = ref(false)
 const saving = ref(false)

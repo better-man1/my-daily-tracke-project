@@ -5,7 +5,7 @@
 
 // 运行时环境判断：H5 用相对路径走 vite 代理，小程序用局域网 IP 直连
 const isH5 = process.env.UNI_PLATFORM === 'h5'
-const BASE_URL = isH5 ? '/api/v1' : 'http://192.168.111.250:8080/api/v1'
+const BASE_URL = isH5 ? '/api/v1' : 'http://192.168.1.155:8080/api/v1'
 
 interface RequestOptions {
   url: string

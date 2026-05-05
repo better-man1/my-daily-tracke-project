@@ -72,7 +72,7 @@ public class GoalServiceImpl implements GoalService {
                         .eq(goalType != null, GoalPlan::getGoalType, goalType)
                         .eq(category != null, GoalPlan::getCategory, category)
                         .eq(status != null, GoalPlan::getStatus, status)
-                        .orderByAsc(GoalPlan::getSortOrder)
+                        .orderByAsc(GoalPlan::getStartDate)
                         .orderByDesc(GoalPlan::getId));
         return goals.stream().map(this::toResponse).collect(Collectors.toList());
     }
@@ -125,7 +125,7 @@ public class GoalServiceImpl implements GoalService {
         LambdaQueryWrapper<GoalPlan> wrapper = new LambdaQueryWrapper<GoalPlan>()
                 .eq(GoalPlan::getUserId, userId)
                 .eq(goalType != null, GoalPlan::getGoalType, goalType)
-                .orderByAsc(GoalPlan::getSortOrder);
+                .orderByAsc(GoalPlan::getStartDate);
 
         List<GoalPlan> all = goalPlanMapper.selectList(wrapper);
         Map<Long, GoalResponse> responseMap = all.stream()
@@ -143,6 +143,10 @@ public class GoalServiceImpl implements GoalService {
                         parent.setChildren(new ArrayList<>());
                     }
                     parent.getChildren().add(response);
+                } else {
+                    // 如果父目标因为类型筛选（例如：只查月度，而父级是年度）未被查询出来，
+                    // 则将当前目标作为当前视图的根节点展示
+                    roots.add(response);
                 }
             }
         }
