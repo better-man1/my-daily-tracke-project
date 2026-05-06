@@ -175,7 +175,7 @@ onShow(loadData)
 </script>
 
 <style lang="scss" scoped>
-.page-container { background: #0f1117; min-height: 100vh; padding-bottom: 120rpx; }
+.page-container { background: #0f1117; min-height: 100vh; padding-bottom: 120rpx; width: 100%; overflow-x: hidden; }
 
 .greeting-bar {
   display: flex; align-items: center; justify-content: space-between;
@@ -217,10 +217,18 @@ onShow(loadData)
 
 .quick-actions {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 16rpx; padding: 0 24rpx 32rpx;
-  .action-item { display: flex; flex-direction: column; align-items: center; gap: 12rpx; }
-  .action-icon-wrap { width: 96rpx; height: 96rpx; border-radius: 28rpx; display: flex; align-items: center; justify-content: center; }
-  .action-icon { font-size: 48rpx; }
-  .action-label { font-size: 24rpx; color: #94a3b8; }
+  .action-item { 
+    display: flex; flex-direction: column; align-items: center; gap: 14rpx; 
+    transition: transform 0.2s ease;
+    &:active { transform: scale(0.92); }
+  }
+  .action-icon-wrap { 
+    width: 108rpx; height: 108rpx; border-radius: 36rpx; display: flex; align-items: center; justify-content: center; 
+    box-shadow: 0 8rpx 20rpx rgba(0,0,0,0.15);
+    background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0));
+  }
+  .action-icon { font-size: 52rpx; }
+  .action-label { font-size: 24rpx; color: #cbd5e1; font-weight: 500; }
 }
 
 .plan-preview {

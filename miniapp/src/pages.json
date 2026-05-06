@@ -5,89 +5,75 @@
       "^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
     }
   },
+  "themeLocation": "theme.json",
+  "darkmode": true,
   "pages": [
     {
       "path": "pages/login/index",
       "style": {
-        "navigationBarTitleText": "登录",
-        "navigationBarBackgroundColor": "#0f1117",
-        "navigationBarTextStyle": "white"
+        "navigationBarTitleText": "登录"
       }
     },
     {
       "path": "pages/index/index",
       "style": {
-        "navigationBarTitleText": "今日概览",
-        "navigationBarBackgroundColor": "#0f1117",
-        "navigationBarTextStyle": "white"
+        "navigationBarTitleText": "今日概览"
       }
     },
     {
       "path": "pages/plan/index",
       "style": {
-        "navigationBarTitleText": "每日计划",
-        "navigationBarBackgroundColor": "#0f1117",
-        "navigationBarTextStyle": "white"
+        "navigationBarTitleText": "每日计划"
       }
     },
     {
       "path": "pages/accounting/index",
       "style": {
-        "navigationBarTitleText": "每日记账",
-        "navigationBarBackgroundColor": "#0f1117",
-        "navigationBarTextStyle": "white"
+        "navigationBarTitleText": "每日记账"
       }
     },
     {
       "path": "pages/excerpt/index",
       "style": {
-        "navigationBarTitleText": "每日摘录",
-        "navigationBarBackgroundColor": "#0f1117",
-        "navigationBarTextStyle": "white"
+        "navigationBarTitleText": "每日摘录"
       }
     },
     {
       "path": "pages/summary/index",
       "style": {
-        "navigationBarTitleText": "每日总结",
-        "navigationBarBackgroundColor": "#0f1117",
-        "navigationBarTextStyle": "white"
+        "navigationBarTitleText": "每日总结"
       }
     },
     {
       "path": "pages/goal/index",
       "style": {
-        "navigationBarTitleText": "目标管理",
-        "navigationBarBackgroundColor": "#0f1117",
-        "navigationBarTextStyle": "white"
+        "navigationBarTitleText": "目标管理"
       }
     },
     {
       "path": "pages/profile/index",
       "style": {
-        "navigationBarTitleText": "我的",
-        "navigationBarBackgroundColor": "#0f1117",
-        "navigationBarTextStyle": "white"
+        "navigationBarTitleText": "我的"
       }
     }
   ],
   "globalStyle": {
-    "navigationBarTextStyle": "white",
+    "navigationBarTextStyle": "@navTxtStyle",
     "navigationBarTitleText": "DailyTracker",
-    "navigationBarBackgroundColor": "#0f1117",
-    "backgroundColor": "#0f1117",
-    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "@navBgColor",
+    "backgroundColor": "@bgColor",
+    "backgroundTextStyle": "@bgTxtStyle",
     "enablePullDownRefresh": false,
     "onReachBottomDistance": 50,
     "app-plus": {
-      "background": "#0f1117"
+      "background": "@bgColor"
     }
   },
   "tabBar": {
-    "color": "#64748b",
-    "selectedColor": "#6366f1",
-    "backgroundColor": "#13151f",
-    "borderStyle": "black",
+    "color": "@tabFontColor",
+    "selectedColor": "@tabSelectedColor",
+    "backgroundColor": "@tabBgColor",
+    "borderStyle": "@tabBorderStyle",
     "list": [
       {
         "pagePath": "pages/index/index",
