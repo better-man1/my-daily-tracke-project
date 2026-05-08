@@ -1,5 +1,7 @@
 <template>
   <div class="app-layout" :class="{ 'sidebar-mini': appStore.sidebarCollapsed }">
+    <!-- 全局 Loading -->
+    <Loading v-if="appStore.loading" :text="appStore.loadingText" />
     <!-- 侧边栏 -->
     <aside class="sidebar glass">
       <!-- Logo -->
@@ -87,6 +89,7 @@ import { ElMessageBox } from 'element-plus'
 import { useAppStore } from '@/stores/app'
 import { useUserStore } from '@/stores/user'
 import { useDark } from '@vueuse/core'
+import Loading from '@/components/Loading.vue'
 import dayjs from 'dayjs'
 import 'dayjs/locale/zh-cn'
 

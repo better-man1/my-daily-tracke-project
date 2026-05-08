@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx husky init:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(chmod:*)"
+    ]
+  }
+}

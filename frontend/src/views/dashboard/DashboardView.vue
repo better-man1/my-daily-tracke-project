@@ -353,8 +353,13 @@ function renderPlanChart() {
   planChart.setOption({
     backgroundColor: 'transparent',
     tooltip: { trigger: 'axis' },
-    legend: { data: ['任务数', '已完成'], textStyle: { color: '#94a3b8' } },
-    grid: { top: 40, right: 16, bottom: 24, left: 40 },
+    legend: {
+      data: ['任务数', '已完成'],
+      textStyle: { color: '#94a3b8' },
+      bottom: 0,
+      left: 'center'
+    },
+    grid: { top: 16, right: 16, bottom: 40, left: 40 },
     xAxis: {
       type: 'category',
       data: days,
@@ -452,8 +457,13 @@ function renderFinanceChart() {
   financeChart.setOption({
     backgroundColor: 'transparent',
     tooltip: { trigger: 'axis' },
-    legend: { data: ['收入', '支出'], textStyle: { color: '#94a3b8' } },
-    grid: { top: 40, right: 16, bottom: 24, left: 40 },
+    legend: {
+      data: ['收入', '支出'],
+      textStyle: { color: '#94a3b8' },
+      bottom: 0,
+      left: 'center'
+    },
+    grid: { top: 16, right: 16, bottom: 40, left: 40 },
     xAxis: {
       type: 'category',
       data: days.map(d => dayjs(d).format('MM-DD')),

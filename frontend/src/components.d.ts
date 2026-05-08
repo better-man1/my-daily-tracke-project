@@ -42,9 +42,14 @@ declare module 'vue' {
     ElTabPane: typeof import('element-plus/es')['ElTabPane']
     ElTabs: typeof import('element-plus/es')['ElTabs']
     ElUpload: typeof import('element-plus/es')['ElUpload']
+    EmptyState: typeof import('./components/EmptyState.vue')['default']
+    ErrorBoundary: typeof import('./components/ErrorBoundary.vue')['default']
+    ExportButton: typeof import('./components/ExportButton.vue')['default']
     HelloWorld: typeof import('./components/HelloWorld.vue')['default']
+    Loading: typeof import('./components/Loading.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    Skeleton: typeof import('./components/Skeleton.vue')['default']
   }
   export interface GlobalDirectives {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']
