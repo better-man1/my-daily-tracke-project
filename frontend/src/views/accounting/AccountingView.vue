@@ -135,52 +135,67 @@
     </div>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="showAddDialog" :title="editingId ? '编辑账目' : '新增账目'" width="480px" destroy-on-close>
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="类型" prop="type">
-          <el-radio-group v-model="form.type">
-            <el-radio-button label="EXPENSE">支出</el-radio-button>
-            <el-radio-button label="INCOME">收入</el-radio-button>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="金额" prop="amount">
-          <el-input-number
-            v-model="form.amount"
-            :min="0"
-            :precision="2"
-            :step="1"
-            placeholder="请输入金额"
-            style="width: 200px"
-          />
-        </el-form-item>
-        <el-form-item label="分类" prop="categoryId">
-          <el-cascader
-            v-model="form.categoryId"
-            :options="categoryOptions"
-            placeholder="选择分类"
-            :props="{ value: 'id', label: 'name', children: 'children', emitPath: false }"
-            style="width: 100%"
-          />
-        </el-form-item>
-        <el-form-item label="日期" prop="accountingDate">
-          <el-date-picker
-            v-model="form.accountingDate"
-            type="date"
-            format="YYYY-MM-DD"
-            value-format="YYYY-MM-DD"
-          />
-        </el-form-item>
-        <el-form-item label="账户">
-          <el-select v-model="form.accountType">
-            <el-option label="微信" value="WECHAT" />
-            <el-option label="支付宝" value="ALIPAY" />
-            <el-option label="现金" value="CASH" />
-            <el-option label="银行卡" value="BANK" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="备注">
-          <el-input v-model="form.remark" placeholder="可选备注" />
-        </el-form-item>
+    <el-dialog 
+      v-model="showAddDialog" 
+      :title="editingId ? '编辑账目' : '新增账目'" 
+      width="480px" 
+      destroy-on-close
+      class="premium-dialog"
+    >
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="90px" label-position="left">
+        <div class="form-section">
+          <el-form-item label="收支类型" prop="type">
+            <el-radio-group v-model="form.type" class="premium-radio-group">
+              <el-radio-button label="EXPENSE">支出</el-radio-button>
+              <el-radio-button label="INCOME">收入</el-radio-button>
+            </el-radio-group>
+          </el-form-item>
+          
+          <el-form-item label="交易金额" prop="amount">
+            <el-input-number
+              v-model="form.amount"
+              :min="0"
+              :precision="2"
+              :step="1"
+              placeholder="0.00"
+              controls-position="right"
+              style="width: 100%"
+            />
+          </el-form-item>
+
+          <el-form-item label="交易日期" prop="accountingDate">
+            <el-date-picker
+              v-model="form.accountingDate"
+              type="date"
+              format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD"
+              style="width: 100%"
+            />
+          </el-form-item>
+
+          <el-form-item label="所属分类" prop="categoryId">
+            <el-cascader
+              v-model="form.categoryId"
+              :options="categoryOptions"
+              placeholder="选择分类"
+              :props="{ value: 'id', label: 'name', children: 'children', emitPath: false }"
+              style="width: 100%"
+            />
+          </el-form-item>
+
+          <el-form-item label="支付账户">
+            <el-select v-model="form.accountType" style="width: 100%">
+              <el-option label="微信" value="WECHAT" />
+              <el-option label="支付宝" value="ALIPAY" />
+              <el-option label="现金" value="CASH" />
+              <el-option label="银行卡" value="BANK" />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item label="备注说明">
+            <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="写点什么（可选）..." />
+          </el-form-item>
+        </div>
       </el-form>
       <template #footer>
         <el-button @click="showAddDialog = false">取消</el-button>
@@ -188,8 +203,10 @@
       </template>
     </el-dialog>
 
+
+
     <!-- 设置预算弹窗 -->
-    <el-dialog v-model="showBudgetDialog" title="设置总预算" width="400px" destroy-on-close>
+    <el-dialog v-model="showBudgetDialog" title="设置总预算" width="500px" destroy-on-close>
       <el-form :model="budgetForm" label-width="100px">
         <el-form-item label="预算月份">
           <el-date-picker
@@ -422,7 +439,10 @@ async function saveItem() {
 }
 
 async function deleteItem(id: number) {
-  await ElMessageBox.confirm('确认删除？', '提示', { type: 'warning' })
+  await ElMessageBox.confirm('确认删除？', '提示', { 
+    type: 'warning',
+    customClass: 'delete-confirm-box'
+  })
   await accountingApi.delete(id)
   ElMessage.success('已删除')
   await Promise.all([loadList(), loadMonthStats()])
@@ -582,6 +602,7 @@ onMounted(() => {
         padding: 4px;
         border-radius: $radius-sm;
         transition: $transition-fast;
+        font-size: 18px;
 
         &.edit-btn:hover {
           color: $primary;

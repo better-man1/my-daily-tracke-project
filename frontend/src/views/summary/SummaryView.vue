@@ -67,69 +67,76 @@
       </div>
     </div>
 
-    <!-- 编辑弹窗 -->
+    <!-- 新增/编辑弹窗 -->
     <el-dialog
       v-model="showDialog"
-      :title="editing ? '编辑总结' : '今日总结'"
-      width="600px"
+      :title="editing ? '编辑总结' : '写下今日总结'"
+      width="680px"
       destroy-on-close
+      class="premium-dialog"
     >
-      <el-form ref="formRef" :model="form" label-width="90px">
-        <el-form-item label="总结日期">
-          <el-date-picker
-            v-model="form.summaryDate"
-            type="date"
-            format="YYYY-MM-DD"
-            value-format="YYYY-MM-DD"
-          />
-        </el-form-item>
-        <div class="flex gap-md">
-          <el-form-item label="今日心情" style="flex: 1">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px" label-position="left">
+        <div class="form-section">
+          <div class="form-row">
+            <el-form-item label="总结日期" prop="summaryDate">
+              <el-date-picker
+                v-model="form.summaryDate"
+                type="date"
+                format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD"
+                style="width: 100%"
+              />
+            </el-form-item>
+            <el-form-item label="今日评分">
+              <el-input-number v-model="form.score" :min="1" :max="10" controls-position="right" style="width: 100%" />
+            </el-form-item>
+          </div>
+
+          <el-form-item label="今日心情">
             <el-rate
               v-model="form.mood"
               :max="5"
               :texts="moodEmoji"
               show-text
-              style="height: 32px"
             />
           </el-form-item>
-          <el-form-item label="今日评分" style="flex: 1">
-            <el-input-number v-model="form.score" :min="1" :max="10" style="width: 120px" />
-            <span class="text-muted text-sm" style="margin-left: 8px">/ 10</span>
+
+          <el-form-item label="今日成就">
+            <el-input
+              v-model="form.achievement"
+              type="textarea"
+              :rows="3"
+              placeholder="今天最让你有成就感的事是什么？"
+            />
+          </el-form-item>
+
+          <el-form-item label="待改进项">
+            <el-input
+              v-model="form.improvement"
+              type="textarea"
+              :rows="3"
+              placeholder="如果时光倒流，今天哪里可以做得更好？"
+            />
+          </el-form-item>
+
+          <el-form-item label="明日计划">
+            <el-input
+              v-model="form.tomorrowPlan"
+              type="textarea"
+              :rows="3"
+              placeholder="明天的核心目标是什么？"
+            />
+          </el-form-item>
+
+          <el-form-item label="自由随笔">
+            <el-input
+              v-model="form.freeWriting"
+              type="textarea"
+              :rows="4"
+              placeholder="记录下这一刻的碎碎念或深刻感悟..."
+            />
           </el-form-item>
         </div>
-        <el-form-item label="今日成就">
-          <el-input
-            v-model="form.achievement"
-            type="textarea"
-            :rows="2"
-            placeholder="今天做到了什么值得骄傲的事？"
-          />
-        </el-form-item>
-        <el-form-item label="待改进">
-          <el-input
-            v-model="form.improvement"
-            type="textarea"
-            :rows="2"
-            placeholder="哪些方面可以做得更好？"
-          />
-        </el-form-item>
-        <el-form-item label="明日计划">
-          <el-input
-            v-model="form.tomorrowPlan"
-            type="textarea"
-            :rows="2"
-            placeholder="明天的主要任务是什么？"
-          />
-        </el-form-item>
-        <el-form-item label="自由日记">
-          <el-input
-            v-model="form.freeWriting"
-            type="textarea"
-            :rows="3"
-            placeholder="随意写写今天的感受..."
-          />
-        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showDialog = false">取消</el-button>
@@ -297,7 +304,10 @@ function editItem(item: SummaryItem) {
 }
 
 async function deleteItem(id: number) {
-  await ElMessageBox.confirm('确认删除？', '提示', { type: 'warning' })
+  await ElMessageBox.confirm('确认删除？', '提示', { 
+    type: 'warning',
+    customClass: 'delete-confirm-box'
+  })
   await summaryApi.delete(id)
   ElMessage.success('已删除')
   loadList()
@@ -434,7 +444,7 @@ onMounted(() => {
         cursor: pointer;
         padding: 4px;
         border-radius: $radius-sm;
-        font-size: 15px;
+        font-size: 18px;
         transition: $transition-fast;
 
         &:hover {

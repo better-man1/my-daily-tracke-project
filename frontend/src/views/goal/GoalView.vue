@@ -177,72 +177,112 @@
     <el-dialog
       v-model="showDialog"
       :title="editing ? '编辑目标' : '新增目标'"
-      width="560px"
+      width="780px"
       destroy-on-close
+      class="goal-dialog"
+      top="5vh"
     >
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="90px">
-        <el-form-item label="目标标题" prop="title">
-          <el-input v-model="form.title" placeholder="输入目标标题" />
-        </el-form-item>
-        <el-form-item label="目标类型" prop="goalType">
-          <el-select v-model="form.goalType" style="width: 100%">
-            <el-option label="五年目标" value="FIVE_YEAR" />
-            <el-option label="年度目标" value="YEARLY" />
-            <el-option label="月度目标" value="MONTHLY" />
-            <el-option label="周计划" value="WEEKLY" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="目标描述">
-          <el-input v-model="form.description" type="textarea" :rows="2" placeholder="目标的具体背景或意义" />
-        </el-form-item>
-        <el-form-item label="父级目标">
-          <el-select v-model="form.parentId" clearable placeholder="选择上级目标（可选）" style="width: 100%">
-            <el-option
-              v-for="g in allGoals"
-              :key="g.id"
-              :label="`[${typeLabel(g.goalType)}] ${g.title}`"
-              :value="g.id"
-              :disabled="editing?.id === g.id"
-            />
-          </el-select>
-        </el-form-item>
-        <div class="flex gap-md">
-          <el-form-item label="开始日期" prop="startDate" style="flex: 1">
-            <el-date-picker
-              v-model="form.startDate"
-              type="date"
-              format="YYYY-MM-DD"
-              value-format="YYYY-MM-DD"
-            />
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" label-position="left">
+        <div class="form-section">
+          <el-form-item label="目标标题" prop="title">
+            <el-input v-model="form.title" placeholder="例如：掌握前端进阶技术" />
           </el-form-item>
-          <el-form-item label="截止日期" prop="endDate" style="flex: 1">
-            <el-date-picker
-              v-model="form.endDate"
-              type="date"
-              format="YYYY-MM-DD"
-              value-format="YYYY-MM-DD"
-            />
+          
+          <div class="form-row">
+            <el-form-item label="目标类型" prop="goalType">
+              <el-select v-model="form.goalType" style="width: 100%">
+                <el-option label="五年目标" value="FIVE_YEAR" />
+                <el-option label="年度目标" value="YEARLY" />
+                <el-option label="月度目标" value="MONTHLY" />
+                <el-option label="周计划" value="WEEKLY" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="父级目标">
+              <el-select v-model="form.parentId" clearable placeholder="可选" style="width: 100%">
+                <el-option
+                  v-for="g in allGoals"
+                  :key="g.id"
+                  :label="`[${typeLabel(g.goalType)}] ${g.title}`"
+                  :value="g.id"
+                  :disabled="editing?.id === g.id"
+                />
+              </el-select>
+            </el-form-item>
+          </div>
+
+          <el-form-item label="目标描述">
+            <el-input v-model="form.description" type="textarea" :rows="2" placeholder="目标的具体背景或意义..." />
+          </el-form-item>
+
+          <div class="form-row">
+            <el-form-item label="开始日期" prop="startDate">
+              <el-date-picker
+                v-model="form.startDate"
+                type="date"
+                format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD"
+                style="width: 100%"
+              />
+            </el-form-item>
+            <el-form-item label="截止日期" prop="endDate">
+              <el-date-picker
+                v-model="form.endDate"
+                type="date"
+                format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </div>
+
+          <el-form-item label="初始进度">
+            <div class="flex items-center gap-md w-full">
+              <el-slider v-model="form.progress" :min="0" :max="100" :step="5" style="flex: 1" />
+              <el-input-number v-model="form.progress" :min="0" :max="100" :step="5" controls-position="right" style="width: 100px" />
+            </div>
           </el-form-item>
         </div>
-        <el-form-item label="初始进度">
-          <el-slider v-model="form.progress" :min="0" :max="100" :step="5" show-input />
-        </el-form-item>
 
         <!-- 关键结果管理 -->
-        <el-divider content-position="left">关键结果 (OKR KRs)</el-divider>
-        <div v-for="(kr, idx) in form.keyResults" :key="idx" class="kr-form-item mb-md">
-          <div class="flex gap-sm items-center mb-xs">
-            <el-input v-model="kr.title" placeholder="KR 描述" style="flex: 3" />
-            <el-button type="danger" link :icon="Delete" @click="removeKr(idx)" />
+        <div class="kr-section">
+          <div class="section-header">
+            <span class="title">关键结果 (OKR KRs)</span>
+            <el-button type="primary" link :icon="Plus" class="add-kr-btn" @click="addKr">添加 KR</el-button>
           </div>
-          <div class="flex gap-sm">
-            <el-input-number v-model="kr.currentValue" placeholder="当前" style="flex: 1" />
-            <el-input-number v-model="kr.targetValue" placeholder="目标" style="flex: 1" />
-            <el-input v-model="kr.unit" placeholder="单位" style="width: 80px" />
+          
+          <div v-if="form.keyResults.length === 0" class="kr-empty">
+            暂无关键结果，点击右上方添加
+          </div>
+          
+          <div class="kr-list-container">
+            <div v-for="(kr, idx) in form.keyResults" :key="idx" class="kr-form-card">
+              <div class="kr-card-header">
+                <el-input v-model="kr.title" placeholder="KR 描述 (例如：完成 3 个实战项目)" class="kr-title-input" />
+                <el-button type="danger" link :icon="Delete" class="delete-kr-btn" @click="removeKr(idx)" />
+              </div>
+              <div class="kr-card-body">
+                <div class="kr-value-row">
+                  <div class="input-group">
+                    <span class="label">当前值</span>
+                    <el-input-number v-model="kr.currentValue" :precision="0" controls-position="right" />
+                  </div>
+                  <div class="input-group">
+                    <span class="label">目标值</span>
+                    <el-input-number v-model="kr.targetValue" :precision="0" controls-position="right" />
+                  </div>
+                  <div class="input-group">
+                    <span class="label">单位</span>
+                    <el-input v-model="kr.unit" placeholder="单位" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <el-button type="primary" link :icon="Plus" @click="addKr">添加关键结果</el-button>
       </el-form>
+
+
+
       <template #footer>
         <el-button @click="showDialog = false">取消</el-button>
         <el-button type="primary" :loading="saving" @click="save">保存</el-button>
@@ -437,7 +477,10 @@ function handleCommand(cmd: string, goal: GoalItem) {
     })
     showDialog.value = true
   } else if (cmd === 'delete') {
-    ElMessageBox.confirm('确认删除此目标？', '提示', { type: 'warning' }).then(() => {
+    ElMessageBox.confirm('确认删除此目标？', '提示', { 
+      type: 'warning',
+      customClass: 'delete-confirm-box'
+    }).then(() => {
       goalApi.delete(goal.id).then(() => {
         ElMessage.success('已删除')
         loadGoals()
@@ -569,7 +612,7 @@ onMounted(loadGoals)
         .icon-btn {
           color: $text-muted;
           cursor: pointer;
-          font-size: 16px;
+          font-size: 18px;
           padding: 4px;
           border-radius: $radius-sm;
           transition: $transition-fast;
@@ -616,11 +659,233 @@ onMounted(loadGoals)
     }
   }
 
-  .kr-form-item {
-    padding: 12px;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: $radius-sm;
-    border: 1px solid $border;
+  // 目标弹窗深度优化
+  .goal-dialog {
+    border-radius: 16px !important;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0 !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    max-height: 85vh;
+    margin-top: 5vh !important;
+
+    :deep(.el-dialog__header) {
+      margin-right: 0;
+      padding: 20px 24px;
+      border-bottom: 1px solid rgba($border, 0.6);
+      
+      .el-dialog__title {
+        font-weight: 700;
+        font-size: 18px;
+      }
+    }
+
+    :deep(.el-dialog__body) {
+      padding: 24px;
+      flex: 1;
+      overflow-y: auto;
+      background: #fcfcfd;
+
+      /* 滚动条 */
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+      &::-webkit-scrollbar-thumb {
+        background: rgba($text-muted, 0.2);
+        border-radius: 10px;
+      }
+    }
+
+    :deep(.el-dialog__footer) {
+      padding: 16px 24px;
+      border-top: 1px solid rgba($border, 0.6);
+      background: #fff;
+    }
+
+    .form-section {
+      margin-bottom: 28px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    :deep(.el-form-item) {
+      margin-bottom: 20px;
+      
+      .el-form-item__label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+      }
+    }
+
+    .kr-section {
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid rgba($primary, 0.1);
+
+        .title {
+          font-size: 15px;
+          font-weight: 700;
+          color: $text-primary;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          &::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: $primary;
+            border-radius: 2px;
+          }
+        }
+
+        .add-kr-btn {
+          height: 32px;
+          padding: 0 16px;
+          background: $primary !important;
+          color: #fff !important;
+          font-weight: 600;
+          border-radius: 8px;
+          font-size: 13px;
+          box-shadow: 0 4px 10px rgba($primary, 0.2);
+          
+          &:hover {
+            background: $primary-light !important;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 15px rgba($primary, 0.3);
+          }
+        }
+      }
+
+      .kr-empty {
+        text-align: center;
+        padding: 24px;
+        color: $text-muted;
+        font-size: 13px;
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 8px;
+      }
+
+      .kr-list-container {
+        padding: 4px;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-right: -10px;
+        padding-right: 10px;
+
+        /* 内部滚动条样式 */
+        &::-webkit-scrollbar {
+          width: 4px;
+        }
+        &::-webkit-scrollbar-thumb {
+          background: rgba($text-muted, 0.15);
+          border-radius: 10px;
+        }
+      }
+
+
+      .kr-form-card {
+        background: #fff;
+        border: 1px solid $border;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        transition: all 0.2s ease;
+
+        &:hover {
+          border-color: $primary-light;
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .kr-card-header {
+          display: flex;
+          gap: 12px;
+          align-items: flex-start;
+          margin-bottom: 16px;
+
+          .kr-title-input {
+            flex: 1;
+            :deep(.el-input__wrapper) {
+              box-shadow: none !important;
+              background: #f8fafc !important;
+              border: 1px solid #e2e8f0;
+              padding: 4px 12px;
+              border-radius: 8px;
+              
+              .el-input__inner {
+                font-weight: 600;
+                font-size: 14px;
+                color: $text-primary;
+              }
+            }
+          }
+          
+          .delete-kr-btn {
+            padding: 8px;
+            font-size: 16px;
+            color: #94a3b8;
+            &:hover { color: $danger; }
+          }
+        }
+
+        .kr-card-body {
+          .kr-value-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 100px;
+            gap: 16px;
+
+            .input-group {
+              .label {
+                display: block;
+                font-size: 11px;
+                color: #64748b;
+                font-weight: 700;
+                margin-bottom: 6px;
+                text-transform: uppercase;
+              }
+
+              :deep(.el-input-number), :deep(.el-input) {
+                width: 100%;
+                .el-input__wrapper {
+                  border-radius: 8px;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 暗色模式优化
+  &.dark-mode, :global(html.dark) & {
+    .goal-dialog {
+      :deep(.el-dialog__body) {
+        background: #1e293b;
+      }
+      :deep(.el-dialog__footer) {
+        background: #1e293b;
+      }
+      .kr-form-card {
+        background: #0f172a;
+        border-color: rgba(255,255,255,0.1);
+      }
+      .kr-title-input :deep(.el-input__wrapper) {
+        background: #1e293b !important;
+        border-color: rgba(255,255,255,0.1) !important;
+      }
+    }
   }
 
   .empty-state {
@@ -640,4 +905,5 @@ onMounted(loadGoals)
 :deep(.danger) {
   color: $danger !important;
 }
+
 </style>

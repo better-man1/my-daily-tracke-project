@@ -57,7 +57,7 @@
     </div>
 
     <!-- 编辑资料弹窗 -->
-    <el-dialog v-model="showEditDialog" title="编辑个人资料" width="400px">
+    <el-dialog v-model="showEditDialog" title="编辑个人资料" width="540px">
       <el-form :model="editForm" label-width="80px">
         <el-form-item label="昵称">
           <el-input v-model="editForm.nickname" />
@@ -79,7 +79,7 @@
     </el-dialog>
 
     <!-- 修改密码弹窗 -->
-    <el-dialog v-model="showPwdDialog" title="修改登录密码" width="400px">
+    <el-dialog v-model="showPwdDialog" title="修改登录密码" width="500px">
       <el-form ref="pwdFormRef" :model="pwdForm" :rules="pwdRules" label-width="100px">
         <el-form-item label="当前密码" prop="oldPassword">
           <el-input v-model="pwdForm.oldPassword" type="password" show-password />
@@ -200,7 +200,10 @@ async function handleChangePassword() {
 }
 
 async function handleLogout() {
-  await ElMessageBox.confirm('确认退出登录？', '提示', { type: 'warning' })
+  await ElMessageBox.confirm('确认退出登录？', '提示', { 
+    type: 'warning',
+    customClass: 'logout-confirm-box'
+  })
   userStore.logout()
   router.push('/login')
 }

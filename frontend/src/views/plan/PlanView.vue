@@ -107,45 +107,47 @@
     <el-dialog
       v-model="showAddDialog"
       :title="editingPlan ? '编辑任务' : '新增任务'"
-      width="520px"
+      width="480px"
       destroy-on-close
+      class="premium-dialog"
     >
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="任务标题" prop="title">
-          <el-input v-model="form.title" placeholder="输入任务标题" />
-        </el-form-item>
-        <el-form-item label="任务描述">
-          <el-input v-model="form.description" type="textarea" :rows="2" placeholder="可选" />
-        </el-form-item>
-        <el-form-item label="计划日期" prop="planDate">
-          <el-date-picker
-            v-model="form.planDate"
-            type="date"
-            format="YYYY-MM-DD"
-            value-format="YYYY-MM-DD"
-          />
-        </el-form-item>
-        <div class="flex gap-md">
-          <el-form-item label="优先级" style="flex: 1">
-            <el-select v-model="form.priority">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="90px" label-position="left">
+        <div class="form-section">
+          <el-form-item label="任务标题" prop="title">
+            <el-input v-model="form.title" placeholder="要做点什么呢？" />
+          </el-form-item>
+          
+          <el-form-item label="任务描述">
+            <el-input v-model="form.description" type="textarea" :rows="2" placeholder="补充详细描述（可选）..." />
+          </el-form-item>
+
+          <el-form-item label="计划日期" prop="planDate">
+            <el-date-picker
+              v-model="form.planDate"
+              type="date"
+              format="YYYY-MM-DD"
+              value-format="YYYY-MM-DD"
+              style="width: 100%"
+            />
+          </el-form-item>
+
+          <el-form-item label="优先级">
+            <el-select v-model="form.priority" style="width: 100%">
               <el-option v-for="p in priorities" :key="p.value" :label="p.label" :value="p.value" />
             </el-select>
           </el-form-item>
-          <el-form-item label="分类" style="flex: 1">
-            <el-select v-model="form.category">
+
+          <el-form-item label="所属分类">
+            <el-select v-model="form.category" style="width: 100%">
               <el-option v-for="c in categories" :key="c.value" :label="c.label" :value="c.value" />
             </el-select>
           </el-form-item>
+
+          <el-form-item label="预估用时">
+            <el-input-number v-model="form.estimatedMinutes" :min="0" :step="15" controls-position="right" style="width: 120px" />
+            <span class="ml-sm text-muted">分钟</span>
+          </el-form-item>
         </div>
-        <el-form-item label="预估时间">
-          <el-input-number
-            v-model="form.estimatedMins"
-            :min="0"
-            :step="15"
-            placeholder="分钟"
-            style="width: 140px"
-          />
-        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showAddDialog = false">取消</el-button>
@@ -153,8 +155,9 @@
       </template>
     </el-dialog>
 
+
     <!-- 模板选择弹窗 -->
-    <el-dialog v-model="showTemplateDialog" title="从模板创建任务" width="480px" destroy-on-close>
+    <el-dialog v-model="showTemplateDialog" title="从模板创建任务" width="560px" destroy-on-close>
       <div class="template-list">
         <div v-for="tpl in templates" :key="tpl.id" class="template-item card mb-sm cursor-pointer" @click="createFromTemplate(tpl)">
           <div class="font-bold mb-xs">{{ tpl.templateName }}</div>
@@ -351,7 +354,10 @@ function handleCommand(cmd: string, plan: PlanItem) {
       plan.status = 'CANCELLED'
     })
   } else if (cmd === 'delete') {
-    ElMessageBox.confirm('确认删除此任务？', '提示', { type: 'warning' }).then(() => {
+    ElMessageBox.confirm('确认删除此任务？', '提示', { 
+      type: 'warning',
+      customClass: 'delete-confirm-box'
+    }).then(() => {
       planApi.delete(plan.id).then(() => {
         ElMessage.success('已删除')
         loadPlans()
@@ -563,7 +569,7 @@ onMounted(loadPlans)
         padding: 4px;
         border-radius: $radius-sm;
         transition: $transition-fast;
-        font-size: 16px;
+        font-size: 18px;
 
         &:hover {
           color: $text-primary;

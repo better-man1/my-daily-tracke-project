@@ -165,7 +165,8 @@ async function handleLogout() {
   await ElMessageBox.confirm('确认退出登录？', '提示', {
     confirmButtonText: '退出',
     cancelButtonText: '取消',
-    type: 'warning'
+    type: 'warning',
+    customClass: 'logout-confirm-box'
   })
   userStore.logout()
   router.push('/login')

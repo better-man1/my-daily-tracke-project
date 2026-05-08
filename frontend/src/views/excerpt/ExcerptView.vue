@@ -142,69 +142,66 @@
     <el-dialog
       v-model="showDialog"
       :title="editing ? '编辑摘录' : '新增摘录'"
-      width="600px"
+      width="640px"
       destroy-on-close
+      class="premium-dialog"
     >
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="内容" prop="content">
-          <el-input
-            v-model="form.content"
-            type="textarea"
-            :rows="4"
-            placeholder="输入摘录内容..."
-          />
-        </el-form-item>
-        <div class="flex gap-md">
-          <el-form-item label="来源类型" style="flex: 1">
-            <el-select v-model="form.sourceType">
-              <el-option
-                v-for="s in sourceTypes"
-                :key="s.value"
-                :label="s.label"
-                :value="s.value"
-              />
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px" label-position="left">
+        <div class="form-section">
+          <el-form-item label="摘录内容" prop="content">
+            <el-input
+              v-model="form.content"
+              type="textarea"
+              :rows="5"
+              placeholder="在这里记录触动你的文字..."
+            />
+          </el-form-item>
+
+          <div class="form-row">
+            <el-form-item label="来源类型">
+              <el-select v-model="form.sourceType" style="width: 100%">
+                <el-option
+                  v-for="s in sourceTypes"
+                  :key="s.value"
+                  :label="s.label"
+                  :value="s.value"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="所属分类">
+              <el-select v-model="form.category" style="width: 100%">
+                <el-option v-for="c in categories" :key="c" :label="c" :value="c" />
+              </el-select>
+            </el-form-item>
+          </div>
+
+          <el-form-item label="来源标题">
+            <el-input v-model="form.sourceTitle" placeholder="书名、文章标题或网页链接" />
+          </el-form-item>
+
+          <el-form-item label="心得体会">
+            <el-input
+              v-model="form.thoughts"
+              type="textarea"
+              :rows="3"
+              placeholder="写下你的感悟或对这段文字的思考..."
+            />
+          </el-form-item>
+
+          <el-form-item label="相关标签">
+            <el-select
+              v-model="form.tags"
+              multiple
+              filterable
+              allow-create
+              default-first-option
+              placeholder="输入标签并回车"
+              style="width: 100%"
+            >
+              <el-option v-for="tag in commonTags" :key="tag" :label="tag" :value="tag" />
             </el-select>
           </el-form-item>
-          <el-form-item label="来源标题" style="flex: 2">
-            <el-input v-model="form.sourceTitle" placeholder="书名/文章/视频标题" />
-          </el-form-item>
         </div>
-        <el-form-item label="个人感悟">
-          <el-input
-            v-model="form.thought"
-            type="textarea"
-            :rows="2"
-            placeholder="写下你的感悟..."
-          />
-        </el-form-item>
-        <el-form-item label="摘录日期" prop="excerptDate">
-          <el-date-picker
-            v-model="form.excerptDate"
-            type="date"
-            format="YYYY-MM-DD"
-            value-format="YYYY-MM-DD"
-          />
-        </el-form-item>
-        <!-- 暂隐藏标签功能
-        <el-form-item label="标签">
-          <el-select
-            v-model="form.tagIds"
-            multiple
-            filterable
-            allow-create
-            default-first-option
-            placeholder="请选择或输入新标签"
-            @create="handleTagCreate"
-          >
-            <el-option
-              v-for="t in allTags"
-              :key="t.id"
-              :label="t.name"
-              :value="t.id"
-            />
-          </el-select>
-        </el-form-item>
-        -->
       </el-form>
       <template #footer>
         <el-button @click="showDialog = false">取消</el-button>
@@ -441,7 +438,10 @@ async function toggleFav(item: ExcerptItem) {
 }
 
 async function deleteItem(id: number) {
-  await ElMessageBox.confirm('确认删除？', '提示', { type: 'warning' })
+  await ElMessageBox.confirm('确认删除？', '提示', { 
+    type: 'warning',
+    customClass: 'delete-confirm-box'
+  })
   await excerptApi.delete(id)
   ElMessage.success('已删除')
   loadList()
@@ -596,7 +596,7 @@ onMounted(() => {
           cursor: pointer;
           padding: 4px;
           border-radius: $radius-sm;
-          font-size: 15px;
+          font-size: 18px;
           transition: $transition-fast;
 
           &:hover {
