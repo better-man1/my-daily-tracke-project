@@ -49,15 +49,15 @@
         </el-tab-pane>
         <el-tab-pane label="数据统计" name="analytics">
           <!-- 数据统计组件 -->
-          <PlanAnalytics />
+          <PlanAnalytics v-if="activeTab === 'analytics'" />
         </el-tab-pane>
         <el-tab-pane label="时间块" name="timeblock">
           <!-- 时间块视图 -->
-          <TimeBlockView :plan-date="selectedDate" />
+          <TimeBlockView v-if="activeTab === 'timeblock'" :plan-date="selectedDate" />
         </el-tab-pane>
         <el-tab-pane label="日历" name="calendar">
           <!-- 日历视图 -->
-          <CalendarView @select-date="handleCalendarDateSelect" />
+          <CalendarView v-if="activeTab === 'calendar'" @select-date="handleCalendarDateSelect" />
         </el-tab-pane>
       </el-tabs>
     </div>

@@ -408,8 +408,10 @@ function disposeCharts() {
 }
 
 onMounted(() => {
-  initCharts()
-  loadAnalytics()
+  setTimeout(() => {
+    initCharts()
+    loadAnalytics()
+  }, 200)
 })
 
 onUnmounted(disposeCharts)
