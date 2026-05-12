@@ -42,6 +42,9 @@ export interface CreatePlanRequest {
   startTime?: string
   endTime?: string
   isTimeblock?: number
+  repeatType?: string
+  repeatPattern?: string
+  repeatEndDate?: string
 }
 
 export interface PlanStatistics {

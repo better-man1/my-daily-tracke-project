@@ -51,6 +51,17 @@ public class DailyPlanServiceImpl implements DailyPlanService {
 
         dailyPlanMapper.insert(plan);
         log.info("创建计划成功: userId={}, title={}", userId, plan.getTitle());
+
+        // 自动生成未来30天的重复实例
+        if (plan.getRepeatType() != null && !"NONE".equals(plan.getRepeatType())) {
+            LocalDate endDate = plan.getPlanDate().plusDays(30);
+            if (plan.getRepeatEndDate() != null && plan.getRepeatEndDate().isBefore(endDate)) {
+                endDate = plan.getRepeatEndDate();
+            }
+            // 从第二天开始生成，当天的已经创建
+            generateRepeatInstances(plan.getId(), plan.getPlanDate().plusDays(1), endDate);
+        }
+
         return toResponse(plan);
     }
 
@@ -82,6 +93,25 @@ public class DailyPlanServiceImpl implements DailyPlanService {
         DailyPlan plan = getAndValidate(id);
         BeanUtils.copyProperties(request, plan, "id", "userId", "status", "createdAt");
         dailyPlanMapper.updateById(plan);
+
+        // 如果修改后包含重复规则，自动生成未来30天的重复实例
+        if (plan.getRepeatType() != null && !"NONE".equals(plan.getRepeatType())) {
+            LocalDate endDate = plan.getPlanDate().plusDays(30);
+            if (plan.getRepeatEndDate() != null && plan.getRepeatEndDate().isBefore(endDate)) {
+                endDate = plan.getRepeatEndDate();
+            }
+            generateRepeatInstances(plan.getId(), plan.getPlanDate().plusDays(1), endDate);
+        } else if (plan.getRepeatType() == null || "NONE".equals(plan.getRepeatType())) {
+            // 如果清除了重复规则，清理未来未完成的由该任务产生的重复实例
+            dailyPlanMapper.delete(new LambdaQueryWrapper<DailyPlan>()
+                    .eq(DailyPlan::getUserId, plan.getUserId())
+                    .eq(DailyPlan::getTitle, plan.getTitle())
+                    .gt(DailyPlan::getPlanDate, plan.getPlanDate())
+                    .eq(DailyPlan::getStatus, "TODO")
+                    .eq(DailyPlan::getIsTemplate, 0)
+            );
+        }
+
         return toResponse(plan);
     }
 

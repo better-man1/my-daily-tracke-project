@@ -56,4 +56,13 @@ public class PlanCreateRequest {
 
     /** 是否为时间块 (1:是, 0:否) */
     private Integer isTimeblock = 0;
+
+    /** 重复类型：NONE/DAILY/WEEKLY/MONTHLY/CUSTOM */
+    private String repeatType;
+
+    /** 重复模式（JSON格式） */
+    private String repeatPattern;
+
+    /** 重复结束日期 */
+    private LocalDate repeatEndDate;
 }
