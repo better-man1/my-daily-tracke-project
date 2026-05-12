@@ -75,9 +75,11 @@ public class PlanResponse {
     private Integer completedSubtaskCount;
 
     /** 开始时间 */
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "HH:mm")
     private LocalTime startTime;
 
     /** 结束时间 */
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "HH:mm")
     private LocalTime endTime;
 
     /** 是否为时间块 */

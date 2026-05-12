@@ -218,11 +218,17 @@ function handleCreateBlock() {
 
 async function saveBlock() {
   try {
-    await planApi.create({
+    const data = {
       ...blockForm,
       planDate: props.planDate,
       priority: 'P2'
-    } as any)
+    } as any
+
+    if (editingBlock.value) {
+      await planApi.update(editingBlock.value.id, data)
+    } else {
+      await planApi.create(data)
+    }
     ElMessage.success(editingBlock.value ? '更新成功' : '创建成功')
     showBlockDialog.value = false
     await refreshBlocks()

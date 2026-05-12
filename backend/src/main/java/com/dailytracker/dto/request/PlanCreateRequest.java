@@ -45,4 +45,15 @@ public class PlanCreateRequest {
 
     /** 排序权重 */
     private Integer sortOrder = 0;
+
+    /** 开始时间 (格式 HH:mm) */
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "HH:mm")
+    private java.time.LocalTime startTime;
+
+    /** 结束时间 (格式 HH:mm) */
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "HH:mm")
+    private java.time.LocalTime endTime;
+
+    /** 是否为时间块 (1:是, 0:否) */
+    private Integer isTimeblock = 0;
 }

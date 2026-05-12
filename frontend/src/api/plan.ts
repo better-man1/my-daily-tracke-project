@@ -39,6 +39,9 @@ export interface CreatePlanRequest {
   estimatedMins?: number
   goalId?: number
   sortOrder?: number
+  startTime?: string
+  endTime?: string
+  isTimeblock?: number
 }
 
 export interface PlanStatistics {
