@@ -1,7 +1,9 @@
 package com.dailytracker.controller;
 
 import com.dailytracker.common.result.Result;
+import com.dailytracker.dto.request.PlanBatchUpdateRequest;
 import com.dailytracker.dto.request.PlanCreateRequest;
+import com.dailytracker.dto.request.RepeatUpdateRequest;
 import com.dailytracker.dto.response.PlanResponse;
 import com.dailytracker.service.DailyPlanService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -101,5 +103,138 @@ public class DailyPlanController {
     @GetMapping("/templates")
     public Result<List<PlanResponse>> listTemplates() {
         return Result.success(dailyPlanService.listTemplates());
+    }
+
+    @Operation(summary = "生成重复任务实例")
+    @PostMapping("/{id}/repeat/instances")
+    public Result<List<PlanResponse>> generateRepeatInstances(
+            @PathVariable Long id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return Result.success(dailyPlanService.generateRepeatInstances(id, startDate, endDate));
+    }
+
+    @Operation(summary = "更新重复规则")
+    @PutMapping("/{id}/repeat")
+    public Result<PlanResponse> updateRepeatRule(
+            @PathVariable Long id,
+            @Valid @RequestBody RepeatUpdateRequest request) {
+        return Result.success(dailyPlanService.updateRepeatRule(id, request));
+    }
+
+    @Operation(summary = "停止重复")
+    @DeleteMapping("/{id}/repeat")
+    public Result<Void> stopRepeat(@PathVariable Long id) {
+        dailyPlanService.stopRepeat(id);
+        return Result.success();
+    }
+
+    @Operation(summary = "创建子任务")
+    @PostMapping("/{parentId}/subtasks")
+    public Result<PlanResponse> createSubtask(
+            @PathVariable Long parentId,
+            @Valid @RequestBody PlanCreateRequest request) {
+        return Result.success(dailyPlanService.createSubtask(parentId, request));
+    }
+
+    @Operation(summary = "获取子任务列表")
+    @GetMapping("/{parentId}/subtasks")
+    public Result<List<PlanResponse>> getSubtasks(@PathVariable Long parentId) {
+        return Result.success(dailyPlanService.getSubtasks(parentId));
+    }
+
+    @Operation(summary = "更新子任务状态")
+    @PutMapping("/subtasks/{id}/status")
+    public Result<Void> updateSubtaskStatus(
+            @PathVariable Long id,
+            @RequestParam String status) {
+        dailyPlanService.updateSubtaskStatus(id, status);
+        return Result.success();
+    }
+
+    @Operation(summary = "子任务转为主任务")
+    @PostMapping("/subtasks/{id}/convert")
+    public Result<Void> convertToMainTask(@PathVariable Long id) {
+        dailyPlanService.convertToMainTask(id);
+        return Result.success();
+    }
+
+    @Operation(summary = "完成率趋势")
+    @GetMapping("/analytics/trend")
+    public Result<List<Map<String, Object>>> getCompletionTrend(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return Result.success(dailyPlanService.getCompletionTrend(startDate, endDate));
+    }
+
+    @Operation(summary = "分类分布")
+    @GetMapping("/analytics/category")
+    public Result<Map<String, Object>> getCategoryDistribution(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return Result.success(dailyPlanService.getCategoryDistribution(startDate, endDate));
+    }
+
+    @Operation(summary = "优先级分布")
+    @GetMapping("/analytics/priority")
+    public Result<Map<String, Object>> getPriorityDistribution(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return Result.success(dailyPlanService.getPriorityDistribution(startDate, endDate));
+    }
+
+    @Operation(summary = "时间分配统计")
+    @GetMapping("/analytics/time")
+    public Result<Map<String, Object>> getTimeDistribution(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return Result.success(dailyPlanService.getTimeDistribution(startDate, endDate));
+    }
+
+    @Operation(summary = "检测时间冲突")
+    @GetMapping("/timeblock/conflicts")
+    public Result<List<PlanResponse>> detectTimeConflicts(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate planDate) {
+        return Result.success(dailyPlanService.detectTimeConflicts(planDate));
+    }
+
+    @Operation(summary = "获取时间块列表")
+    @GetMapping("/timeblock")
+    public Result<List<PlanResponse>> getTimeBlocks(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate planDate) {
+        return Result.success(dailyPlanService.getTimeBlocks(planDate));
+    }
+
+    @Operation(summary = "批量更新任务")
+    @PutMapping("/batch-update")
+    public Result<Void> batchUpdate(@RequestBody PlanBatchUpdateRequest request) {
+        dailyPlanService.batchUpdate(
+                request.getIds(),
+                request.getPriority(),
+                request.getCategory(),
+                request.getStatus()
+        );
+        return Result.success();
+    }
+
+    @Operation(summary = "批量删除任务")
+    @DeleteMapping("/batch-delete")
+    public Result<Void> batchDelete(@RequestBody List<Long> ids) {
+        dailyPlanService.batchDelete(ids);
+        return Result.success();
+    }
+
+    @Operation(summary = "批量顺延任务")
+    @PutMapping("/batch-postpone")
+    public Result<Void> batchPostpone(@RequestBody List<Long> ids) {
+        dailyPlanService.batchPostpone(ids);
+        return Result.success();
+    }
+
+    @Operation(summary = "批量完成任务")
+    @PutMapping("/batch-complete")
+    public Result<Void> batchComplete(@RequestBody List<Long> ids) {
+        dailyPlanService.batchComplete(ids);
+        return Result.success();
     }
 }

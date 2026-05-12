@@ -5,7 +5,10 @@
       "Bash(npx husky init:*)",
       "Bash(dir:*)",
       "Bash(findstr:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(mvn clean compile:*)",
+      "Bash(mvn spring-boot:run:*)",
+      "Bash(npm run dev:*)"
     ]
   }
 }

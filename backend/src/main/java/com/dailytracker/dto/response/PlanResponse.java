@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 /**
  * 每日计划响应 DTO
@@ -54,6 +55,33 @@ public class PlanResponse {
 
     /** 模板名称 */
     private String templateName;
+
+    /** 重复类型：NONE/DAILY/WEEKLY/MONTHLY/CUSTOM */
+    private String repeatType;
+
+    /** 重复模式（JSON格式） */
+    private String repeatPattern;
+
+    /** 重复结束日期 */
+    private LocalDate repeatEndDate;
+
+    /** 父任务ID */
+    private Long parentId;
+
+    /** 子任务数量 */
+    private Integer subtaskCount;
+
+    /** 已完成子任务数量 */
+    private Integer completedSubtaskCount;
+
+    /** 开始时间 */
+    private LocalTime startTime;
+
+    /** 结束时间 */
+    private LocalTime endTime;
+
+    /** 是否为时间块 */
+    private Integer isTimeblock;
 
     /** 创建时间 */
     private LocalDateTime createdAt;
