@@ -1,120 +1,136 @@
 {
-  "easycom": {
-    "autoscan": true,
-    "custom": {
-      "^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
-    }
-  },
-  "themeLocation": "theme.json",
-  "darkmode": true,
   "pages": [
-    {
-      "path": "pages/login/index",
-      "style": {
-        "navigationBarTitleText": "登录"
-      }
-    },
     {
       "path": "pages/index/index",
       "style": {
-        "navigationBarTitleText": "今日概览"
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "DailyTracker"
       }
     },
     {
-      "path": "pages/plan/index",
+      "path": "pages/plan/plan",
       "style": {
-        "navigationBarTitleText": "每日计划"
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "计划管理"
       }
     },
     {
-      "path": "pages/accounting/index",
+      "path": "pages/accounting/accounting",
       "style": {
-        "navigationBarTitleText": "每日记账"
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "记账"
       }
     },
     {
-      "path": "pages/excerpt/index",
+      "path": "pages/excerpt/excerpt",
       "style": {
-        "navigationBarTitleText": "每日摘录"
+        "navigationStyle": "custom",
+        "navigationBarTitleText": "感悟摘录"
       }
     },
     {
-      "path": "pages/summary/index",
+      "path": "pages/profile/profile",
       "style": {
-        "navigationBarTitleText": "每日总结"
-      }
-    },
-    {
-      "path": "pages/goal/index",
-      "style": {
-        "navigationBarTitleText": "目标管理"
-      }
-    },
-    {
-      "path": "pages/profile/index",
-      "style": {
+        "navigationStyle": "custom",
         "navigationBarTitleText": "我的"
       }
     }
   ],
-  "globalStyle": {
-    "navigationBarTextStyle": "@navTxtStyle",
-    "navigationBarTitleText": "DailyTracker",
-    "navigationBarBackgroundColor": "@navBgColor",
-    "backgroundColor": "@bgColor",
-    "backgroundTextStyle": "@bgTxtStyle",
-    "enablePullDownRefresh": false,
-    "onReachBottomDistance": 50,
-    "app-plus": {
-      "background": "@bgColor"
+  "subPackages": [
+    {
+      "root": "sub-pages",
+      "pages": [
+        {
+          "path": "login/login",
+          "style": {
+            "navigationStyle": "custom",
+            "navigationBarTitleText": "登录"
+          }
+        },
+        {
+          "path": "plan-add/plan-add",
+          "style": {
+            "navigationBarTitleText": "新建计划"
+          }
+        },
+        {
+          "path": "accounting-add/accounting-add",
+          "style": {
+            "navigationBarTitleText": "记一笔"
+          }
+        },
+        {
+          "path": "excerpt-add/excerpt-add",
+          "style": {
+            "navigationBarTitleText": "新增摘录"
+          }
+        },
+        {
+          "path": "summary/summary",
+          "style": {
+            "navigationBarTitleText": "每日总结"
+          }
+        },
+        {
+          "path": "goal/goal",
+          "style": {
+            "navigationBarTitleText": "目标管理"
+          }
+        }
+      ]
     }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "DailyTracker",
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "backgroundColor": "#F5F7FA",
+    "backgroundTextStyle": "dark",
+    "backgroundColorTop": "#F5F7FA",
+    "backgroundColorBottom": "#F5F7FA"
   },
   "tabBar": {
-    "color": "@tabFontColor",
-    "selectedColor": "@tabSelectedColor",
-    "backgroundColor": "@tabBgColor",
-    "borderStyle": "@tabBorderStyle",
+    "color": "#8E8E93",
+    "selectedColor": "#6366F1",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
     "list": [
       {
         "pagePath": "pages/index/index",
         "text": "首页",
-        "iconPath": "static/tabs/home.png",
-        "selectedIconPath": "static/tabs/home-active.png"
+        "iconPath": "static/tabbar/home.png",
+        "selectedIconPath": "static/tabbar/home-active.png"
       },
       {
-        "pagePath": "pages/plan/index",
+        "pagePath": "pages/plan/plan",
         "text": "计划",
-        "iconPath": "static/tabs/plan.png",
-        "selectedIconPath": "static/tabs/plan-active.png"
+        "iconPath": "static/tabbar/plan.png",
+        "selectedIconPath": "static/tabbar/plan-active.png"
       },
       {
-        "pagePath": "pages/accounting/index",
+        "pagePath": "pages/accounting/accounting",
         "text": "记账",
-        "iconPath": "static/tabs/accounting.png",
-        "selectedIconPath": "static/tabs/accounting-active.png"
+        "iconPath": "static/tabbar/wallet.png",
+        "selectedIconPath": "static/tabbar/wallet-active.png"
       },
       {
-        "pagePath": "pages/summary/index",
-        "text": "总结",
-        "iconPath": "static/tabs/summary.png",
-        "selectedIconPath": "static/tabs/summary-active.png"
+        "pagePath": "pages/excerpt/excerpt",
+        "text": "摘录",
+        "iconPath": "static/tabbar/book.png",
+        "selectedIconPath": "static/tabbar/book-active.png"
       },
       {
-        "pagePath": "pages/profile/index",
+        "pagePath": "pages/profile/profile",
         "text": "我的",
-        "iconPath": "static/tabs/profile.png",
-        "selectedIconPath": "static/tabs/profile-active.png"
+        "iconPath": "static/tabbar/user.png",
+        "selectedIconPath": "static/tabbar/user-active.png"
       }
     ]
   },
-  "condition": {
-    "current": 0,
-    "list": [
-      {
-        "id": 0,
-        "name": "首页",
-        "pathAndQuery": "pages/index/index"
-      }
-    ]
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^dt-(.*)": "@/components/dt-$1/dt-$1.vue"
+    }
   }
 }

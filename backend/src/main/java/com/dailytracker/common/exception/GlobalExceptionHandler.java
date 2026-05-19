@@ -3,6 +3,7 @@ package com.dailytracker.common.exception;
 import com.dailytracker.common.result.Result;
 import com.dailytracker.common.result.ResultCode;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -78,6 +79,16 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public Result<Void> handleAccessDeniedException(AccessDeniedException e) {
         return Result.fail(ResultCode.FORBIDDEN);
+    }
+
+    /**
+     * 数据库唯一约束冲突（兜底，防止未被业务层提前检查的重复插入导致 500）
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public Result<Void> handleDataIntegrityViolation(DataIntegrityViolationException e) {
+        log.warn("数据完整性冲突: {}", e.getMostSpecificCause().getMessage());
+        return Result.fail(ResultCode.CONFLICT, "数据已存在，请勿重复提交");
     }
 
     /**

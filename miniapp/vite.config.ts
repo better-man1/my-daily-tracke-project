@@ -1,15 +1,12 @@
 import { defineConfig } from 'vite'
 import uni from '@dcloudio/vite-plugin-uni'
+import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [uni()],
-  server: {
-    port: 5175,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true
-      }
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src')
     }
   }
 })

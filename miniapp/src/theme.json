@@ -1,22 +1,38 @@
 {
-  "light": {
-    "navBgColor": "#ffffff",
-    "navTxtStyle": "black",
-    "bgColor": "#f8fafc",
-    "bgTxtStyle": "dark",
-    "tabBgColor": "#ffffff",
-    "tabBorderStyle": "white",
-    "tabFontColor": "#94a3b8",
-    "tabSelectedColor": "#6366f1"
+  "page": {
+    "navigationBarBackgroundColor": {
+      "dark": "#1E293B",
+      "light": "#FFFFFF"
+    },
+    "navigationBarTextStyle": {
+      "dark": "white",
+      "light": "black"
+    },
+    "backgroundColor": {
+      "dark": "#0F172A",
+      "light": "#F5F7FA"
+    },
+    "backgroundTextStyle": {
+      "dark": "light",
+      "light": "dark"
+    }
   },
-  "dark": {
-    "navBgColor": "#0f1117",
-    "navTxtStyle": "white",
-    "bgColor": "#0f1117",
-    "bgTxtStyle": "light",
-    "tabBgColor": "#13151f",
-    "tabBorderStyle": "black",
-    "tabFontColor": "#64748b",
-    "tabSelectedColor": "#6366f1"
+  "tabBar": {
+    "backgroundColor": {
+      "dark": "#1E293B",
+      "light": "#FFFFFF"
+    },
+    "borderStyle": {
+      "dark": "black",
+      "light": "white"
+    },
+    "color": {
+      "dark": "#64748B",
+      "light": "#8E8E93"
+    },
+    "selectedColor": {
+      "dark": "#818CF8",
+      "light": "#6366F1"
+    }
   }
 }

@@ -37,10 +37,13 @@ Daily Tracker 是一个全栈个人效率管理平台，旨在帮助用户记录
 - **开发语言**：TypeScript
 
 ### 小程序 (Mini-program)
-- **框架**：Uni-app (Vue 3)
+- **框架**：Uni-app (Vue 3 Composition API)
 - **开发语言**：TypeScript
-- **UI 组件**：Uni-ui
-- **样式**：Sass/Scss
+- **状态管理**：Pinia
+- **HTTP 封装**：uni.request（Token 自动注入 + 401 自动刷新）
+- **样式**：Sass/Scss（设计变量与 Web 端保持一致）
+- **暗色模式**：跟随系统 / 手动切换（theme.json）
+- **页面结构**：5 个 TabBar 主页 + 6 个分包子页面
 
 ## 📂 项目结构
 

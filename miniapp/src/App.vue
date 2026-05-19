@@ -1,16 +1,21 @@
 <script setup lang="ts">
-import { onLaunch } from '@dcloudio/uni-app'
-import { useUserStore } from './stores/user'
+import { onLaunch, onShow } from '@dcloudio/uni-app'
+import { useUserStore } from '@/stores/user'
 
 onLaunch(() => {
+  console.log('[DailyTracker] App launched')
   const userStore = useUserStore()
-  // 未登录则跳转登录页
+  // 检查登录状态
   if (!userStore.isLoggedIn) {
-    uni.reLaunch({ url: '/pages/login/index' })
+    uni.navigateTo({ url: '/sub-pages/login/login' })
   }
+})
+
+onShow(() => {
+  console.log('[DailyTracker] App shown')
 })
 </script>
 
 <style lang="scss">
-@import './styles/global.scss';
+@import '@/styles/common.scss';
 </style>

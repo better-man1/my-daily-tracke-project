@@ -1,40 +1,62 @@
 {
-  "name": "daily-tracker-miniapp",
-  "version": "0.0.1",
-  "description": "DailyTracker 每日记录小程序",
-  "appid": "wx_daily_tracker_dev",
+  "name": "DailyTracker",
+  "appid": "__UNI__DAILYTRACKER",
+  "description": "个人每日记录与生产力管理",
   "versionName": "1.0.0",
   "versionCode": "100",
   "transformPx": false,
+  "app-plus": {
+    "usingComponents": true,
+    "nvueStyleCompiler": "uni-app",
+    "compilerVersion": 3,
+    "splashscreen": {
+      "alwaysShowBeforeRender": true,
+      "waiting": true,
+      "autoclose": true,
+      "delay": 0
+    },
+    "modules": {},
+    "distribute": {
+      "android": {
+        "permissions": [
+          "<uses-permission android:name=\"android.permission.CHANGE_NETWORK_STATE\"/>",
+          "<uses-permission android:name=\"android.permission.INTERNET\"/>",
+          "<uses-permission android:name=\"android.permission.ACCESS_NETWORK_STATE\"/>"
+        ]
+      },
+      "ios": {},
+      "sdkConfigs": {}
+    }
+  },
   "mp-weixin": {
-    "appid": "请填写微信小程序AppID",
+    "appid": "",
     "setting": {
       "urlCheck": false,
       "es6": true,
-      "enhance": true,
-      "postcss": true,
-      "preloadBackgroundData": false,
-      "minified": true
+      "minified": true,
+      "postcss": true
     },
     "usingComponents": true,
-    "permission": {
-      "scope.userLocation": {
-        "desc": "你的位置信息将用于小程序位置相关功能"
-      }
+    "lazyCodeLoading": "requiredComponents",
+    "optimization": {
+      "subPackages": true
     },
     "darkmode": true,
     "themeLocation": "theme.json"
   },
   "h5": {
+    "title": "DailyTracker",
     "devServer": {
-      "port": 5175,
+      "port": 5174,
       "proxy": {
         "/api": {
           "target": "http://localhost:8080",
           "changeOrigin": true
         }
       }
-    },
-    "title": "DailyTracker"
+    }
+  },
+  "uniStatistics": {
+    "enable": false
   }
 }

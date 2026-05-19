@@ -38,13 +38,21 @@ public class SummaryServiceImpl implements SummaryService {
     public SummaryResponse create(SummaryCreateRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
 
-        // 检查该日期是否已有总结
-        DailySummary existing = summaryMapper.selectOne(
-                new LambdaQueryWrapper<DailySummary>()
-                        .eq(DailySummary::getUserId, userId)
-                        .eq(DailySummary::getSummaryDate, request.getSummaryDate()));
+        DailySummary existing = summaryMapper.selectByDateIgnoreDeleted(userId, request.getSummaryDate());
+        
         if (existing != null) {
-            throw new BusinessException(ResultCode.SUMMARY_ALREADY_EXISTS);
+            if (existing.getIsDeleted() == 0) {
+                throw new BusinessException(ResultCode.SUMMARY_ALREADY_EXISTS);
+            } else {
+                // 如果存在已被逻辑删除的记录，则直接更新并恢复(is_deleted=0)
+                BeanUtils.copyProperties(request, existing, "gratitude", "tags");
+                existing.setGratitude(toJson(request.getGratitude()));
+                existing.setTags(toJson(request.getTags()));
+                
+                summaryMapper.restoreAndUpdate(existing);
+                log.info("恢复并更新被逻辑删除的总结: userId={}, date={}", userId, request.getSummaryDate());
+                return toResponse(existing);
+            }
         }
 
         DailySummary summary = new DailySummary();

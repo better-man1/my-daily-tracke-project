@@ -1,270 +1,562 @@
 <template>
-  <scroll-view scroll-y class="page-container" refresher-enabled @refresherrefresh="loadData" :refresher-triggered="refreshing">
-    <!-- 顶部用户问候 -->
-    <view class="greeting-bar">
-      <view class="greeting-left">
-        <text class="greeting-text">{{ greeting }}，{{ userStore.nickname }}</text>
-        <text class="greeting-date">{{ todayStr }}</text>
-      </view>
-      <view class="greeting-avatar" @tap="() => uni.switchTab({ url: '/pages/profile/index' })">
-        <text class="avatar-text">{{ userStore.nickname[0] }}</text>
-      </view>
-    </view>
-
-    <!-- 统计卡片 -->
-    <view class="stats-grid">
-      <view class="stat-card" style="--stat-color: #6366f1">
-        <view class="stat-header">
-          <text class="stat-icon">📋</text>
-          <text class="stat-badge">计划</text>
+  <view class="page-container">
+    <dt-navbar>
+      <template #left>
+        <view class="header-greeting">
+          <text class="greeting-emoji">👋</text>
         </view>
-        <text class="stat-value">{{ planStats.done ?? 0 }}/{{ planStats.total ?? 0 }}</text>
-        <view class="stat-progress">
-          <view class="progress-bar">
-            <view class="progress-fill" :style="{ width: (planStats.completionRate ?? 0) + '%', background: '#6366f1' }" />
+      </template>
+      <template #center>
+        <view class="header-center">
+          <text class="header-date">{{ todayStr }}</text>
+          <text class="header-weekday">{{ weekdayStr }}</text>
+        </view>
+      </template>
+      <template #right>
+        <view class="header-avatar" @tap="goProfile">
+          <text class="avatar-text">{{ userStore.nickname?.charAt(0) || 'U' }}</text>
+        </view>
+      </template>
+    </dt-navbar>
+
+    <view class="page-content">
+      <!-- 欢迎横幅 -->
+      <view class="welcome-banner fade-in">
+        <view class="welcome-text">
+          <text class="welcome-hi">{{ greetingText }}，{{ userStore.nickname }}</text>
+          <text class="welcome-sub">今天也要元气满满哦 ✨</text>
+        </view>
+        <text class="welcome-emoji">🚀</text>
+      </view>
+
+      <!-- 今日概览数据 -->
+      <view class="stats-grid slide-up">
+        <view class="stat-card stat-card--plan" @tap="goTab('plan')">
+          <view class="stat-card__icon-wrap">
+            <text class="stat-card__icon">📋</text>
           </view>
-          <text class="stat-label">{{ planStats.completionRate ?? 0 }}% 完成</text>
+          <view class="stat-card__info">
+            <text class="stat-card__value">{{ todayData.planDone || 0 }}/{{ todayData.planTotal || 0 }}</text>
+            <text class="stat-card__label">今日计划</text>
+          </view>
+          <view v-if="todayData.planTotal" class="stat-card__progress">
+            <view class="stat-card__progress-bar"
+              :style="{ width: (todayData.planDone / todayData.planTotal * 100) + '%' }" />
+          </view>
+        </view>
+
+        <view class="stat-card stat-card--accounting" @tap="goTab('accounting')">
+          <view class="stat-card__icon-wrap">
+            <text class="stat-card__icon">💰</text>
+          </view>
+          <view class="stat-card__info">
+            <text class="stat-card__value">¥{{ formatMoney(todayData.expense || 0) }}</text>
+            <text class="stat-card__label">今日支出</text>
+          </view>
+        </view>
+
+        <view class="stat-card stat-card--excerpt" @tap="goTab('excerpt')">
+          <view class="stat-card__icon-wrap">
+            <text class="stat-card__icon">📝</text>
+          </view>
+          <view class="stat-card__info">
+            <text class="stat-card__value">{{ todayData.excerptCount || 0 }}</text>
+            <text class="stat-card__label">今日摘录</text>
+          </view>
+        </view>
+
+        <view class="stat-card stat-card--mood">
+          <view class="stat-card__icon-wrap">
+            <text class="stat-card__icon">{{ moodEmoji }}</text>
+          </view>
+          <view class="stat-card__info">
+            <text class="stat-card__value">{{ todayData.mood || '--' }}</text>
+            <text class="stat-card__label">今日心情</text>
+          </view>
         </view>
       </view>
 
-      <view class="stat-card" style="--stat-color: #10b981">
-        <view class="stat-header">
-          <text class="stat-icon">💰</text>
-          <text class="stat-badge">记账</text>
+      <!-- 快捷操作 -->
+      <dt-card title="快捷操作" icon="⚡">
+        <view class="quick-actions">
+          <view class="quick-action" @tap="navigateTo('/sub-pages/plan-add/plan-add')">
+            <view class="quick-action__icon" style="background: rgba(99, 102, 241, 0.1);">
+              <text>📋</text>
+            </view>
+            <text class="quick-action__text">新建计划</text>
+          </view>
+          <view class="quick-action" @tap="navigateTo('/sub-pages/accounting-add/accounting-add')">
+            <view class="quick-action__icon" style="background: rgba(16, 185, 129, 0.1);">
+              <text>💰</text>
+            </view>
+            <text class="quick-action__text">记一笔</text>
+          </view>
+          <view class="quick-action" @tap="navigateTo('/sub-pages/excerpt-add/excerpt-add')">
+            <view class="quick-action__icon" style="background: rgba(245, 158, 11, 0.1);">
+              <text>✍️</text>
+            </view>
+            <text class="quick-action__text">写摘录</text>
+          </view>
+          <view class="quick-action" @tap="navigateTo('/sub-pages/summary/summary')">
+            <view class="quick-action__icon" style="background: rgba(239, 68, 68, 0.1);">
+              <text>📔</text>
+            </view>
+            <text class="quick-action__text">日总结</text>
+          </view>
         </view>
-        <text class="stat-value">¥{{ formatAmt(accounting.totalExpense) }}</text>
-        <text class="stat-label">支出 | 收入 ¥{{ formatAmt(accounting.totalIncome) }}</text>
-      </view>
+      </dt-card>
 
-      <view class="stat-card half" style="--stat-color: #f59e0b">
-        <text class="stat-icon">📖</text>
-        <text class="stat-num">{{ excerptCount }}</text>
-        <text class="stat-label">今日摘录</text>
-      </view>
+      <!-- 今日计划预览 -->
+      <dt-card title="今日计划" icon="📋">
+        <template #header-right>
+          <text class="card-more" @tap="goTab('plan')">查看全部 ›</text>
+        </template>
 
-      <view class="stat-card half" style="--stat-color: #ec4899">
-        <text class="stat-icon">✍️</text>
-        <text class="stat-num" :style="{ color: summaryInfo.hasSummary ? '#10b981' : '#64748b' }">
-          {{ summaryInfo.hasSummary ? '✓' : '✗' }}
-        </text>
-        <text class="stat-label">今日总结</text>
-      </view>
-    </view>
-
-    <!-- 快捷操作 -->
-    <view class="section-title">快速记录</view>
-    <view class="quick-actions">
-      <view v-for="action in quickActions" :key="action.label" class="action-item" @tap="action.fn">
-        <view class="action-icon-wrap" :style="{ background: action.bg }">
-          <text class="action-icon">{{ action.icon }}</text>
+        <view v-if="todayPlans.length === 0" class="mini-empty">
+          <text class="mini-empty__text">还没有今日计划，快去添加吧~</text>
         </view>
-        <text class="action-label">{{ action.label }}</text>
-      </view>
-    </view>
 
-    <!-- 今日任务预览 -->
-    <view class="section-title">
-      今日任务
-      <text class="section-more" @tap="() => uni.switchTab({ url: '/pages/plan/index' })">查看全部</text>
-    </view>
-
-    <view v-if="todayPlans.length" class="plan-preview">
-      <view
-        v-for="plan in todayPlans.slice(0, 4)"
-        :key="plan.id"
-        class="plan-item"
-        :class="{ done: plan.status === 'DONE' }"
-        @tap="togglePlan(plan)"
-      >
-        <view class="plan-check" :class="plan.status">
-          <text v-if="plan.status === 'DONE'" class="check-icon">✓</text>
+        <view v-for="item in todayPlans.slice(0, 5)" :key="item.id" class="plan-item">
+          <view class="plan-item__check"
+            :class="{ 'plan-item__check--done': item.status === 'DONE' }"
+            @tap.stop="togglePlanStatus(item)">
+            <text v-if="item.status === 'DONE'" class="plan-item__check-icon">✓</text>
+          </view>
+          <view class="plan-item__content">
+            <text class="plan-item__title" :class="{ 'plan-item__title--done': item.status === 'DONE' }">
+              {{ item.title }}
+            </text>
+            <view class="plan-item__meta">
+              <text class="plan-item__tag" :class="'tag-' + item.priority.toLowerCase()">{{ item.priority }}</text>
+              <text class="plan-item__category">{{ categoryLabel(item.category) }}</text>
+            </view>
+          </view>
         </view>
-        <view class="plan-info">
-          <text class="plan-title">{{ plan.title }}</text>
-          <text class="plan-priority" :class="`priority-${plan.priority.toLowerCase()}`">{{ plan.priority }}</text>
-        </view>
-      </view>
-    </view>
-    <view v-else class="empty-state">
-      <text class="empty-icon">📋</text>
-      <text class="empty-text">今天还没有任务</text>
-    </view>
+      </dt-card>
 
-    <!-- 连续打卡 -->
-    <view class="streak-bar card">
-      <text class="streak-icon">🔥</text>
-      <view class="streak-info">
-        <text class="streak-num">{{ streak.currentStreak ?? 0 }}</text>
-        <text class="streak-label">天连续总结打卡</text>
+      <!-- 每日一句 -->
+      <view v-if="randomExcerpt" class="quote-card slide-up">
+        <text class="quote-mark">"</text>
+        <text class="quote-content">{{ randomExcerpt.content }}</text>
+        <text v-if="randomExcerpt.sourceTitle" class="quote-source">—— {{ randomExcerpt.sourceTitle }}</text>
       </view>
-      <button class="streak-btn" @tap="() => uni.switchTab({ url: '/pages/summary/index' })">
-        {{ summaryInfo.hasSummary ? '已完成' : '去总结' }}
-      </button>
     </view>
-  </scroll-view>
+  </view>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { useUserStore } from '../../stores/user'
-import { dashboardApi, planApi, summaryApi } from '../../api/index'
+import { useUserStore } from '@/stores/user'
+import { dashboardApi } from '@/api/dashboard'
+import { planApi, type PlanItem } from '@/api/plan'
+import { excerptApi, type ExcerptItem } from '@/api/excerpt'
+import { formatDate, getWeekDay, formatMoney } from '@/utils/date'
 
 const userStore = useUserStore()
-const refreshing = ref(false)
 
-const planStats = ref<any>({})
-const accounting = ref<any>({})
-const excerptCount = ref(0)
-const summaryInfo = ref<any>({})
-const todayPlans = ref<any[]>([])
-const streak = ref<any>({})
+// 今天的日期信息
+const today = new Date()
+const todayStr = formatDate(today)
+const weekdayStr = getWeekDay(today)
 
-const todayStr = computed(() => {
-  const d = new Date()
-  const days = ['日', '一', '二', '三', '四', '五', '六']
-  return `${d.getMonth() + 1}月${d.getDate()}日 周${days[d.getDay()]}`
-})
-
-const greeting = computed(() => {
-  const h = new Date().getHours()
-  if (h < 6) return '凌晨好'
-  if (h < 12) return '早上好'
-  if (h < 14) return '中午好'
-  if (h < 18) return '下午好'
+// 问候语
+const greetingText = computed(() => {
+  const hour = today.getHours()
+  if (hour < 6) return '夜深了'
+  if (hour < 9) return '早上好'
+  if (hour < 12) return '上午好'
+  if (hour < 14) return '中午好'
+  if (hour < 18) return '下午好'
   return '晚上好'
 })
 
-const quickActions = [
-  { icon: '➕', label: '加计划', bg: 'rgba(99,102,241,0.15)', fn: () => uni.switchTab({ url: '/pages/plan/index' }) },
-  { icon: '💸', label: '记一笔', bg: 'rgba(16,185,129,0.15)', fn: () => uni.switchTab({ url: '/pages/accounting/index' }) },
-  { icon: '📝', label: '写摘录', bg: 'rgba(245,158,11,0.15)', fn: () => uni.navigateTo({ url: '/pages/excerpt/index' }) },
-  { icon: '✍️', label: '写总结', bg: 'rgba(236,72,153,0.15)', fn: () => uni.switchTab({ url: '/pages/summary/index' }) }
-]
+// 数据
+const todayData = ref<Record<string, any>>({})
+const todayPlans = ref<PlanItem[]>([])
+const randomExcerpt = ref<ExcerptItem | null>(null)
 
-function formatAmt(v: any) { return Number(v ?? 0).toFixed(2) }
+const moodEmoji = computed(() => {
+  const mood = todayData.value.mood
+  if (!mood) return '😶'
+  if (mood >= 8) return '😄'
+  if (mood >= 6) return '🙂'
+  if (mood >= 4) return '😐'
+  return '😔'
+})
 
+const categoryLabel = (cat: string) => {
+  const map: Record<string, string> = { WORK: '工作', STUDY: '学习', LIFE: '生活', HEALTH: '健康' }
+  return map[cat] || cat
+}
+
+// 加载数据
 async function loadData() {
   try {
-    const today = await dashboardApi.getToday()
-    planStats.value = today.plan ?? {}
-    accounting.value = today.accounting ?? {}
-    excerptCount.value = today.excerptCount ?? 0
-    summaryInfo.value = today.summary ?? {}
-
-    const plans = await planApi.list(new Date().toISOString().split('T')[0])
+    const [dashboard, plans] = await Promise.all([
+      dashboardApi.getToday().catch(() => ({})),
+      planApi.list(todayStr).catch(() => [])
+    ])
+    todayData.value = dashboard || {}
     todayPlans.value = plans || []
 
-    const s = await summaryApi.getStreak()
-    streak.value = s
-  } catch (e) {
-    console.error(e)
-  } finally {
-    refreshing.value = false
+    // 异步加载每日一句
+    excerptApi.getRandom().then(res => {
+      randomExcerpt.value = res
+    }).catch(() => {})
+  } catch (err) {
+    console.error('Dashboard load error:', err)
   }
 }
 
-async function togglePlan(plan: any) {
-  const next = plan.status === 'DONE' ? 'TODO' : 'DONE'
-  await planApi.updateStatus(plan.id, next)
-  plan.status = next
+// 切换计划状态
+async function togglePlanStatus(item: PlanItem) {
+  const newStatus = item.status === 'DONE' ? 'TODO' : 'DONE'
+  try {
+    await planApi.updateStatus(item.id, newStatus)
+    item.status = newStatus as PlanItem['status']
+    // 更新统计
+    if (newStatus === 'DONE') {
+      todayData.value.planDone = (todayData.value.planDone || 0) + 1
+    } else {
+      todayData.value.planDone = Math.max(0, (todayData.value.planDone || 1) - 1)
+    }
+  } catch {
+    uni.showToast({ title: '操作失败', icon: 'none' })
+  }
 }
 
-onMounted(loadData)
-onShow(loadData)
+function goTab(name: string) {
+  const map: Record<string, string> = {
+    plan: '/pages/plan/plan',
+    accounting: '/pages/accounting/accounting',
+    excerpt: '/pages/excerpt/excerpt',
+    profile: '/pages/profile/profile'
+  }
+  uni.switchTab({ url: map[name] || '/pages/index/index' })
+}
+
+function goProfile() {
+  uni.switchTab({ url: '/pages/profile/profile' })
+}
+
+function navigateTo(url: string) {
+  uni.navigateTo({ url })
+}
+
+onShow(() => {
+  if (userStore.isLoggedIn) {
+    loadData()
+  }
+})
 </script>
 
 <style lang="scss" scoped>
-.page-container { background: #0f1117; min-height: 100vh; padding-bottom: 120rpx; width: 100%; overflow-x: hidden; }
-
-.greeting-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 40rpx 32rpx 24rpx;
-  .greeting-text { display: block; font-size: 40rpx; font-weight: 700; color: #e2e8f0; }
-  .greeting-date { font-size: 26rpx; color: #64748b; margin-top: 6rpx; }
-  .greeting-avatar {
-    width: 80rpx; height: 80rpx; border-radius: 50%;
-    background: linear-gradient(135deg, #6366f1, #7c3aed);
-    display: flex; align-items: center; justify-content: center;
-    .avatar-text { font-size: 32rpx; font-weight: 700; color: white; }
+// 头部
+.header-greeting {
+  .greeting-emoji {
+    font-size: 40rpx;
   }
 }
 
+.header-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  .header-date {
+    font-size: $dt-font-md;
+    font-weight: 600;
+    color: $dt-text-primary;
+    @media (prefers-color-scheme: dark) { color: $dt-dark-text-primary; }
+  }
+  .header-weekday {
+    font-size: $dt-font-xs;
+    color: $dt-text-secondary;
+    @media (prefers-color-scheme: dark) { color: $dt-dark-text-secondary; }
+  }
+}
+
+.header-avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, $dt-primary, $dt-primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .avatar-text {
+    color: #fff;
+    font-size: 28rpx;
+    font-weight: 600;
+  }
+}
+
+// 欢迎横幅
+.welcome-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, $dt-primary, #818CF8);
+  border-radius: $dt-radius-lg;
+  padding: 36rpx 32rpx;
+  margin-bottom: $dt-space-lg;
+
+  .welcome-text {
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  .welcome-hi {
+    font-size: $dt-font-xl;
+    font-weight: 700;
+    color: #FFFFFF;
+  }
+
+  .welcome-sub {
+    font-size: $dt-font-sm;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .welcome-emoji {
+    font-size: 80rpx;
+  }
+}
+
+// 数据网格
 .stats-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 16rpx; padding: 0 24rpx 24rpx;
-  .stat-card {
-    background: #1a1d27; border-radius: 24rpx; padding: 28rpx;
-    border: 1rpx solid rgba(255,255,255,0.08); position: relative; overflow: hidden;
-    &::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4rpx; background: var(--stat-color, #6366f1); }
-    &.half { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 32rpx 20rpx; }
-    .stat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16rpx; }
-    .stat-badge { font-size: 22rpx; color: #64748b; background: rgba(255,255,255,0.06); padding: 4rpx 12rpx; border-radius: 100rpx; }
-    .stat-icon { font-size: 44rpx; }
-    .stat-num { font-size: 64rpx; font-weight: 700; color: #e2e8f0; line-height: 1; margin: 12rpx 0; }
-    .stat-value { font-size: 40rpx; font-weight: 700; color: #e2e8f0; display: block; margin-bottom: 12rpx; }
-    .stat-label { font-size: 24rpx; color: #94a3b8; }
-    .stat-progress { margin-top: 12rpx; }
-    .progress-bar { height: 8rpx; background: rgba(255,255,255,0.08); border-radius: 4rpx; overflow: hidden; margin-bottom: 8rpx; }
-    .progress-fill { height: 100%; border-radius: 4rpx; }
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20rpx;
+  margin-bottom: $dt-space-lg;
+}
+
+.stat-card {
+  background: $dt-bg-card;
+  border-radius: $dt-radius-lg;
+  padding: 28rpx;
+  box-shadow: $dt-shadow-sm;
+  position: relative;
+  overflow: hidden;
+
+  @media (prefers-color-scheme: dark) {
+    background: $dt-dark-bg-card;
+  }
+
+  &__icon-wrap {
+    margin-bottom: 12rpx;
+  }
+
+  &__icon {
+    font-size: 44rpx;
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    gap: 4rpx;
+  }
+
+  &__value {
+    font-size: $dt-font-xl;
+    font-weight: 700;
+    color: $dt-text-primary;
+    @media (prefers-color-scheme: dark) { color: $dt-dark-text-primary; }
+  }
+
+  &__label {
+    font-size: $dt-font-xs;
+    color: $dt-text-secondary;
+    @media (prefers-color-scheme: dark) { color: $dt-dark-text-secondary; }
+  }
+
+  &__progress {
+    margin-top: 16rpx;
+    height: 6rpx;
+    background: #E5E7EB;
+    border-radius: 3rpx;
+    overflow: hidden;
+
+    &-bar {
+      height: 100%;
+      background: $dt-primary;
+      border-radius: 3rpx;
+      transition: width 0.6s ease;
+    }
   }
 }
 
-.section-title {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 8rpx 32rpx 20rpx; font-size: 30rpx; font-weight: 600; color: #94a3b8;
-  .section-more { font-size: 26rpx; color: #6366f1; font-weight: 400; }
-}
-
+// 快捷操作
 .quick-actions {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16rpx; padding: 0 24rpx 32rpx;
-  .action-item { 
-    display: flex; flex-direction: column; align-items: center; gap: 14rpx; 
-    transition: transform 0.2s ease;
-    &:active { transform: scale(0.92); }
-  }
-  .action-icon-wrap { 
-    width: 108rpx; height: 108rpx; border-radius: 36rpx; display: flex; align-items: center; justify-content: center; 
-    box-shadow: 0 8rpx 20rpx rgba(0,0,0,0.15);
-    background: linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0));
-  }
-  .action-icon { font-size: 52rpx; }
-  .action-label { font-size: 24rpx; color: #cbd5e1; font-weight: 500; }
+  display: flex;
+  justify-content: space-around;
 }
 
-.plan-preview {
-  padding: 0 24rpx 16rpx; display: flex; flex-direction: column; gap: 12rpx;
-  .plan-item {
-    display: flex; align-items: center; gap: 20rpx;
-    background: #1a1d27; border: 1rpx solid rgba(255,255,255,0.08);
-    border-radius: 20rpx; padding: 24rpx;
-    &.done { opacity: 0.5; .plan-title { text-decoration: line-through; } }
-    .plan-check {
-      width: 44rpx; height: 44rpx; border-radius: 50%;
-      border: 2rpx solid #64748b; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-      &.DONE { background: #10b981; border-color: #10b981; }
-      &.IN_PROGRESS { border-color: #f59e0b; }
-      .check-icon { color: white; font-size: 24rpx; }
-    }
-    .plan-info { flex: 1; display: flex; align-items: center; justify-content: space-between; }
-    .plan-title { font-size: 28rpx; color: #e2e8f0; }
-    .plan-priority { font-size: 22rpx; font-weight: 600; padding: 4rpx 12rpx; border-radius: 8rpx; background: rgba(255,255,255,0.06);
-      &.priority-p0 { color: #ef4444; } &.priority-p1 { color: #f59e0b; } &.priority-p2 { color: #818cf8; } &.priority-p3 { color: #64748b; }
+.quick-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx;
+
+  &__icon {
+    width: 96rpx;
+    height: 96rpx;
+    border-radius: 24rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 44rpx;
+    transition: transform 0.2s;
+
+    &:active {
+      transform: scale(0.9);
     }
   }
+
+  &__text {
+    font-size: $dt-font-xs;
+    color: $dt-text-secondary;
+    @media (prefers-color-scheme: dark) { color: $dt-dark-text-secondary; }
+  }
 }
 
-.empty-state { display: flex; flex-direction: column; align-items: center; padding: 48rpx 24rpx;
-  .empty-icon { font-size: 80rpx; margin-bottom: 16rpx; }
-  .empty-text { font-size: 28rpx; color: #64748b; }
+// 卡片更多链接
+.card-more {
+  font-size: $dt-font-sm;
+  color: $dt-primary;
+  font-weight: 500;
 }
 
-.streak-bar {
-  margin: 16rpx 24rpx; display: flex; align-items: center; gap: 24rpx;
-  .streak-icon { font-size: 48rpx; }
-  .streak-info { flex: 1; }
-  .streak-num { font-size: 48rpx; font-weight: 700; color: #f59e0b; display: block; line-height: 1; }
-  .streak-label { font-size: 24rpx; color: #94a3b8; }
-  .streak-btn { background: rgba(99,102,241,0.15); color: #818cf8; border: 1rpx solid rgba(99,102,241,0.3);
-    border-radius: 16rpx; padding: 16rpx 32rpx; font-size: 26rpx; min-width: 0; line-height: 1.4; }
+// 计划项
+.plan-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 20rpx 0;
+  gap: 20rpx;
+
+  & + .plan-item {
+    border-top: 1rpx solid $dt-divider;
+    @media (prefers-color-scheme: dark) { border-top-color: $dt-dark-border; }
+  }
+
+  &__check {
+    width: 44rpx;
+    height: 44rpx;
+    border-radius: 50%;
+    border: 3rpx solid $dt-border;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 4rpx;
+    transition: all 0.3s;
+
+    &--done {
+      background: $dt-success;
+      border-color: $dt-success;
+    }
+
+    &-icon {
+      color: #FFFFFF;
+      font-size: 24rpx;
+      font-weight: 700;
+    }
+  }
+
+  &__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8rpx;
+  }
+
+  &__title {
+    font-size: $dt-font-md;
+    color: $dt-text-primary;
+    font-weight: 500;
+    @media (prefers-color-scheme: dark) { color: $dt-dark-text-primary; }
+
+    &--done {
+      text-decoration: line-through;
+      color: $dt-text-placeholder;
+    }
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 12rpx;
+  }
+
+  &__tag {
+    font-size: 20rpx;
+    padding: 2rpx 12rpx;
+    border-radius: 6rpx;
+    font-weight: 500;
+
+    &.tag-p0 { background: rgba(239, 68, 68, 0.1); color: #EF4444; }
+    &.tag-p1 { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
+    &.tag-p2 { background: rgba(99, 102, 241, 0.1); color: #6366F1; }
+    &.tag-p3 { background: rgba(107, 114, 128, 0.1); color: #6B7280; }
+  }
+
+  &__category {
+    font-size: $dt-font-xs;
+    color: $dt-text-secondary;
+    @media (prefers-color-scheme: dark) { color: $dt-dark-text-secondary; }
+  }
+}
+
+// 迷你空状态
+.mini-empty {
+  padding: 40rpx 0;
+  text-align: center;
+
+  &__text {
+    font-size: $dt-font-sm;
+    color: $dt-text-placeholder;
+  }
+}
+
+// 每日一句
+.quote-card {
+  background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+  border-radius: $dt-radius-lg;
+  padding: 32rpx;
+  margin-bottom: $dt-space-lg;
+  position: relative;
+
+  @media (prefers-color-scheme: dark) {
+    background: linear-gradient(135deg, rgba(254, 243, 199, 0.15), rgba(253, 230, 138, 0.1));
+  }
+
+  .quote-mark {
+    font-size: 80rpx;
+    color: rgba(245, 158, 11, 0.3);
+    line-height: 1;
+    position: absolute;
+    top: 8rpx;
+    left: 16rpx;
+    font-family: Georgia, serif;
+  }
+
+  .quote-content {
+    font-size: $dt-font-md;
+    color: #92400E;
+    line-height: 1.8;
+    @media (prefers-color-scheme: dark) { color: #FBBF24; }
+  }
+
+  .quote-source {
+    display: block;
+    margin-top: 16rpx;
+    font-size: $dt-font-sm;
+    color: #B45309;
+    text-align: right;
+    @media (prefers-color-scheme: dark) { color: #F59E0B; }
+  }
 }
 </style>

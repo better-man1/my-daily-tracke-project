@@ -18,10 +18,10 @@ public class SummaryCreateRequest {
     @NotNull(message = "总结日期不能为空")
     private LocalDate summaryDate;
 
-    /** 心情（1~5） */
+    /** 心情（1~10） */
     @Min(value = 1, message = "心情评分最小为1")
-    @Max(value = 5, message = "心情评分最大为5")
-    private Integer mood = 3;
+    @Max(value = 10, message = "心情评分最大为10")
+    private Integer mood = 5;
 
     /** 今日评分（1~10） */
     @Min(value = 1, message = "今日评分最小为1")
