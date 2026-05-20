@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { PlusOutlined, EditOutlined, DeleteOutlined, TrophyOutlined } from '@ant-design/icons'
-import { Tree, Button, Modal, Form, Input, Select, DatePicker, Space, message, Popconfirm, Card, Row, Col, Statistic, Progress } from 'antd'
+import { Tree, Button, Modal, Form, Input, Select, DatePicker, Space, message, Popconfirm, Card, Row, Col, Statistic } from 'antd'
 import type { DataNode } from 'antd/es/tree'
-import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
 import { goalApi, type GoalItem, type CreateGoalRequest } from '@/api/goal'
 
@@ -10,21 +9,50 @@ const { TextArea } = Input
 const { Option } = Select
 
 /**
- * GoalPage — 目标管理页面
+ * ============================================================================
+ * 【目标管理页面组件 (src/pages/goal/GoalPage.tsx)】
+ * ============================================================================
+ *
+ * 【知识点解析：0-1 学习 React】
+ *
+ * 1. 【React 核心概念：递归树形结构数据转换 (Recursive Tree Transformation)】
+ *    - 场景：在目标管理中，目标通常具有“层级结构”（例如：五年目标 -> 年度目标 -> 月度目标 -> 周目标）。
+ *    - 挑战：后端接口返回的是一个含有 `children` 数组的嵌套目标数据，而 Ant Design 的 `<Tree>` 组件要求传入特定的 `DataNode[]` 数据契约结构。
+ *    - 解决方案：
+ *      a. 定义递归转换函数 `convertToTreeData(goals)`。
+ *      b. 函数内部遍历当前层级的每一个目标 `goal`：
+ *         - 为其定义 `title`（可以是任意复杂的 React 元素，不仅是字符串）。
+ *         - 设置唯一的 `key: goal.id`。
+ *         - **递归逻辑**：如果该目标存在子孙节点 `goal.children`，则递归调用自身 `convertToTreeData(goal.children)` 并将其赋予 `children` 属性；否则设为 `undefined`。
+ *      c. 这是在 React 中处理无限嵌套文件夹、菜单、汇报链时非常经典的数据转换模式。
+ *
+ * 2. 【React 核心概念：阻止树节点的事件冒泡 (Tree Node Bubbling Control)】
+ *    - 场景：在点击树节点的“编辑”或“删除”按钮时，由于按钮被包裹在树节点的 DOM 节点内，浏览器默认会将点击事件向上传播，进而导致树节点**被选中或折叠收起**。
+ *    - 实现：在按钮的点击事件回调中，调用 `e.stopPropagation()`（阻止事件冒泡），使事件局限在按钮本身，避免干扰树的正常交互。
  */
 const GoalPage: React.FC = () => {
+  // ============================================================================
+  // // 状态（State）
+  // ============================================================================
   const [loading, setLoading] = useState(false)
   const [goals, setGoals] = useState<GoalItem[]>([])
   const [modalVisible, setModalVisible] = useState(false)
   const [editingGoal, setEditingGoal] = useState<GoalItem | null>(null)
   const [form] = Form.useForm()
+  // 总目标、已完成目标及整体进度等统计指标
   const [statistics, setStatistics] = useState<any>(null)
 
+  // ============================================================================
+  // // 生命周期 (useEffect)
+  // ============================================================================
   useEffect(() => {
     fetchGoals()
     fetchStatistics()
   }, [])
 
+  // ============================================================================
+  // // 数据加载方法
+  // ============================================================================
   const fetchGoals = async () => {
     try {
       setLoading(true)
@@ -46,31 +74,39 @@ const GoalPage: React.FC = () => {
     }
   }
 
-  const convertToTreeData = (goals: GoalItem[]): DataNode[] => {
-    return goals.map(goal => ({
+  /**
+   * 递归数据转化方法：将 GoalItem[] 转换为 Antd Tree 所需的 DataNode[]
+   */
+  const convertToTreeData = (goalsList: GoalItem[]): DataNode[] => {
+    return goalsList.map(goal => ({
+      // title 传入 React 元素：渲染目标标题 + 进度百分比标签 + 动作按钮
       title: (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', minWidth: 250 }}>
           <span>
-            <span style={{ marginRight: 8 }}>{goal.title}</span>
+            <span style={{ marginRight: 8, fontWeight: goal.status === 'COMPLETED' ? 'normal' : 'bold' }}>
+              {goal.title}
+            </span>
             <span style={{ fontSize: 12, color: '#999' }}>
               {goal.status === 'COMPLETED' && '✓ '}
               {goal.progress}%
             </span>
           </span>
-          <Space size="small">
+          {/* 操作区：带冒泡阻止保护 */}
+          <Space size="small" style={{ marginLeft: 16 }}>
             <Button
               type="link"
               size="small"
               icon={<EditOutlined />}
               onClick={(e) => {
+                // 阻止事件向树节点 DOM 冒泡传播，防误触折叠
                 e.stopPropagation()
                 handleEdit(goal)
               }}
             />
             <Popconfirm
-              title="确定删除？"
+              title="确定删除此目标及其子目标？"
               onConfirm={(e) => {
-                e?.stopPropagation()
+                e?.stopPropagation() // 确定时阻止冒泡
                 handleDelete(goal.id)
               }}
               okText="确定"
@@ -81,17 +117,21 @@ const GoalPage: React.FC = () => {
                 size="small"
                 danger
                 icon={<DeleteOutlined />}
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()} // 点击删除图标弹出确认框时阻止冒泡
               />
             </Popconfirm>
           </Space>
         </div>
       ),
       key: goal.id,
+      // 核心细节：若有 children 数组，继续向下递归转换，否则设为 undefined
       children: goal.children ? convertToTreeData(goal.children) : undefined
     }))
   }
 
+  // ============================================================================
+  // // 交互处理
+  // ============================================================================
   const handleAdd = (parentId: number | null = null) => {
     setEditingGoal(null)
     form.resetFields()
@@ -149,6 +189,7 @@ const GoalPage: React.FC = () => {
 
   return (
     <div>
+      {/* 头部标题控制栏 */}
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2>目标管理</h2>
         <Button type="primary" icon={<PlusOutlined />} onClick={() => handleAdd()}>
@@ -156,7 +197,7 @@ const GoalPage: React.FC = () => {
         </Button>
       </div>
 
-      {/* 统计卡片 */}
+      {/* 统计图表面板 */}
       {statistics && (
         <Row gutter={16} style={{ marginBottom: 16 }}>
           <Col span={6}>
@@ -189,7 +230,7 @@ const GoalPage: React.FC = () => {
           <Col span={6}>
             <Card>
               <Statistic
-                title="整体进度"
+                title="整体平均进度"
                 value={statistics.overallProgress}
                 suffix="%"
                 precision={1}
@@ -199,14 +240,17 @@ const GoalPage: React.FC = () => {
         </Row>
       )}
 
-      <Card title="目标树" bordered={false}>
+      {/* 目标树形卡片展示区 */}
+      <Card title="目标树" bordered={false} loading={loading}>
+        {/* Antd Tree 树形图组件，通过 treeData 绑定递归生成的数据结构 */}
         <Tree
           treeData={convertToTreeData(goals)}
-          showLine
-          defaultExpandAll
+          showLine            // 开启连线示意图，方便查看父子归属
+          defaultExpandAll    // 默认展开所有分支层级
         />
       </Card>
 
+      {/* 新增/编辑目标 Modal */}
       <Modal
         title={editingGoal ? '编辑目标' : '新建目标'}
         open={modalVisible}

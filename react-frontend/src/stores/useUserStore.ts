@@ -1,263 +1,149 @@
 /**
  * ============================================================================
- * 【用户状态管理模块（User Store）】
+ * 【用户认证与全局状态管理模块 (src/stores/useUserStore.ts)】
  * ============================================================================
  *
- * 【模块用途】
- * 使用 Zustand 管理用户相关的全局状态，包括用户信息、认证 Token、
- * 登录状态判断等。这是整个应用中最核心的 Store 之一。
+ * 【知识点解析：0-1 学习 React】
  *
- * 【设计思想】
- * 1. Zustand 的简洁性：
- *    Zustand 是一个轻量级的状态管理库，相比 Redux 更加简洁。
- *    不需要创建 Provider，不需要 action/reducer，直接使用 hooks 即可。
+ * 1. 为什么用户状态需要全局化和持久化？
+ *    - 用户是否登录（`isLoggedIn`）决定了路由守卫是否放行、侧边栏菜单展示哪些内容、以及全局请求头是否携带 JWT 令牌。
+ *    - 仅存在内存中（Zustand/useState）的状态，会在用户**手动刷新网页时瞬间丢失**。
+ *    - 因此，必须采用“内存（Zustand）与物理存储（localStorage）双写同步”的持久化策略：
+ *      - 初始化时：优先从 localStorage 读取数据并填充到 Zustand。
+ *      - 登录成功时：同步存入 Zustand 和 localStorage。
+ *      - 退出登录时：同步清空 Zustand 和 localStorage。
  *
- * 2. 持久化策略：
- *    用户信息和 Token 同时存储在 Zustand（内存）和 localStorage（磁盘）中。
- *    - Zustand：提供响应式数据，页面刷新后丢失
- *    - localStorage：提供持久化存储，页面刷新后恢复
- *    - 初始化时从 localStorage 读取数据到 Zustand，确保刷新后状态不丢失
+ * 2. 【TypeScript 实战技巧：Partial<T> 工具类型】
+ *    - 接口 `LoginResponse` 定义了登录成功后后端返回的完整字段（含头像、用户名等）。
+ *    - 但在未登录状态下，用户对象是个空对象 `{}`，此时不满足 `LoginResponse` 的必填属性契约。
+ *    - `Partial<LoginResponse>` 会将 `LoginResponse` 中的所有属性都变为“可选”（即带 `?`），
+ *      这样初始化为 `{}` 时才不会触发 TS 报错。
  *
- * 3. Partial<T> 的使用：
- *    userInfo 使用 Partial<LoginResponse> 类型，因为初始化时可能为空对象 {}，
- *    而登录后才包含完整数据。
- *
- * 【学习要点】
- * - Zustand 的基本用法（create、getState、setState）
- * - React 组件中使用 Zustand store
- * - localStorage 与 Zustand 状态的同步策略
- * - TypeScript Partial<T> 工具类型的应用
- *
- * ============================================================================
+ * 3. 什么是 Zustand 中的 Getters（计算属性）？
+ *    - Zustand 没有直接提供 Vuex 那样的 getters 字段，但我们可以通过定义返回值的“无参函数”来变相实现：
+ *      `isLoggedIn: () => !!get().accessToken`
+ *    - 外部组件使用时，只需调用 `const isLoggedIn = useUserStore(state => state.isLoggedIn())` 即可。
+ *    - 其中的 `!!`（双重否定）是 JS 常用技巧：将字符串转为布尔值。`!!""` 为 `false`，`!!"token"` 为 `true`。
  */
 
 import { create } from 'zustand'
 import type { LoginResponse } from '@/api/auth'
 
 /**
- * UserState — 用户状态类型定义
+ * UserState — 用户状态管理接口定义
  */
 interface UserState {
-  /**
-   * userInfo — 用户信息对象
-   * 存储 LoginResponse 中的用户基本信息。使用 Partial<LoginResponse> 类型
-   * 是因为在未登录时这是一个空对象 {}。
-   */
+  // 用户基本信息，初始化可能为空对象，故使用 Partial
   userInfo: Partial<LoginResponse>
 
-  /**
-   * accessToken — 访问令牌
-   * 存储当前的 JWT Access Token，用于 API 请求的身份认证。
-   */
+  // 访问令牌，用于 Axios 请求拦截器中自动附加 Authorization 头
   accessToken: string
 
-  /**
-   * refreshToken — 刷新令牌
-   * 存储当前的 JWT Refresh Token，用于在 Access Token 过期后获取新 Token。
-   */
+  // 刷新令牌，用于主令牌过期后的静默刷新（无感登录）
   refreshToken: string
 
-  /**
-   * isLoggedIn — 是否已登录
-   * 计算属性，通过检查 accessToken 是否存在来判断
-   */
+  // 计算属性：判断当前是否已登录
   isLoggedIn: () => boolean
 
-  /**
-   * userId — 当前用户 ID
-   * 计算属性，从 userInfo 中提取
-   */
+  // 计算属性：安全地获取当前用户的 ID
   userId: () => number | undefined
 
-  /**
-   * username — 当前用户名
-   * 计算属性，从 userInfo 中提取
-   */
+  // 计算属性：获取当前用户名
   username: () => string | undefined
 
-  /**
-   * nickname — 当前用户昵称
-   * 计算属性，优先显示 nickname，如果未设置则回退显示 username
-   */
+  // 计算属性：获取用户昵称（若无则降级显示用户名）
   nickname: () => string | undefined
 
-  /**
-   * avatar — 当前用户头像 URL
-   * 计算属性，可能为 undefined（未设置头像）
-   */
+  // 计算属性：获取头像 URL
   avatar: () => string | null | undefined
 
-  /**
-   * setLoginData — 保存登录数据
-   * 在用户登录成功后调用，将登录响应数据保存到 Zustand 状态和 localStorage 中。
-   */
+  // 动作方法：登录成功后存储整套认证数据
   setLoginData: (data: LoginResponse) => void
 
-  /**
-   * logout — 退出登录
-   * 清除所有用户状态和持久化数据，将应用恢复到未登录状态。
-   */
+  // 动作方法：退出登录，清理内存和本地物理磁盘的存储
   logout: () => void
 
-  /**
-   * updateUserInfo — 部分更新用户信息
-   * 在用户修改个人资料后调用，只更新变化的字段。
-   */
+  // 动作方法：当用户在个人中心修改头像或昵称时，局部更新信息
   updateUserInfo: (data: Partial<LoginResponse>) => void
 }
 
 /**
- * useUserStore — 用户状态管理 Hook
- *
- * 使用 Zustand 的 create 函数创建 store。
- * 参数是一个函数，返回 store 的状态和方法。
- *
- * 使用方式：
- * ```tsx
- * import { useUserStore } from '@/stores/useUserStore'
- *
- * function Component() {
- *   const isLoggedIn = useUserStore(state => state.isLoggedIn())
- *   const nickname = useUserStore(state => state.nickname())
- *   const logout = useUserStore(state => state.logout)
- *
- *   return (
- *     <div>
- *       {isLoggedIn ? (
- *         <>
- *           <span>{nickname}</span>
- *           <button onClick={logout}>退出登录</button>
- *         </>
- *       ) : (
- *         <Link to="/login">登录</Link>
- *       )}
- *     </div>
- *   )
- * }
- * ```
+ * useUserStore — 创建全局用户状态 Hook
  */
 export const useUserStore = create<UserState>((set, get) => ({
-  // ---- 状态（State）----
+  // ============================================================================
+  // ---- 状态数据（State） ----
+  // ============================================================================
 
-  /**
-   * userInfo — 用户信息对象
-   * 从 localStorage 初始化，确保页面刷新后状态不丢失
-   */
+  // 惰性加载：初始化时直接从磁盘读取。即使刷新页面，状态也能完好无损地复原
   userInfo: JSON.parse(localStorage.getItem('user_info') || '{}'),
-
-  /**
-   * accessToken — 访问令牌
-   * 从 localStorage 初始化
-   */
   accessToken: localStorage.getItem('access_token') || '',
-
-  /**
-   * refreshToken — 刷新令牌
-   * 从 localStorage 初始化
-   */
   refreshToken: localStorage.getItem('refresh_token') || '',
 
-  // ---- 计算属性（Getters）----
+  // ============================================================================
+  // ---- 计算属性（Getters） ----
+  // ============================================================================
 
-  /**
-   * isLoggedIn — 是否已登录
-   * 通过检查 accessToken 是否存在来判断用户是否已登录。
-   * !! 双重否定将 string 转换为 boolean：
-   *   - '' => false（未登录）
-   *   - 'eyJhbG...' => true（已登录）
-   */
+  // 基于当前 accessToken 的有无来计算登录状态
   isLoggedIn: () => !!get().accessToken,
 
-  /**
-   * userId — 当前用户 ID
-   * 从 userInfo 中提取 userId
-   */
   userId: () => get().userInfo.userId,
 
-  /**
-   * username — 当前用户名
-   * 从 userInfo 中提取 username
-   */
   username: () => get().userInfo.username,
 
-  /**
-   * nickname — 当前用户昵称
-   * 优先显示 nickname，如果未设置则回退显示 username
-   */
   nickname: () => get().userInfo.nickname || get().userInfo.username,
 
-  /**
-   * avatar — 当前用户头像 URL
-   * 可能为 undefined（未设置头像），前端需要处理空值显示默认头像
-   */
   avatar: () => get().userInfo.avatar,
 
-  // ---- 方法（Actions）----
+  // ============================================================================
+  // ---- 动作方法（Actions） ----
+  // ============================================================================
 
   /**
-   * setLoginData — 保存登录数据
-   *
-   * 在用户登录成功后调用，将登录响应数据保存到 Zustand 状态和 localStorage 中。
-   *
-   * 双写策略：
-   * 1. 更新 Zustand 状态（set()）— 使 React 组件响应式更新
-   * 2. 写入 localStorage（localStorage.setItem）— 实现持久化存储
-   *
-   * @param data - 登录成功后后端返回的完整数据
-   *   包含：userId, username, nickname, avatar, accessToken, refreshToken, accessTokenExpireIn
+   * 保存登录数据
+   * @param data 登录成功后，API 接口返回的用户令牌及基础资料
    */
   setLoginData: (data: LoginResponse) => {
-    // 更新 Zustand 状态
+    // 1. 更新内存状态，通知所有订阅了该 Store 的 React 组件进行响应式界面重绘
     set({
       userInfo: data,
       accessToken: data.accessToken,
       refreshToken: data.refreshToken
     })
-    // 同步到 localStorage（持久化）
+    // 2. 同步写入浏览器的物理存储（localStorage），防止页面刷新丢失
     localStorage.setItem('user_info', JSON.stringify(data))
     localStorage.setItem('access_token', data.accessToken)
     localStorage.setItem('refresh_token', data.refreshToken)
   },
 
   /**
-   * logout — 退出登录
-   *
-   * 清除所有用户状态和持久化数据，将应用恢复到未登录状态。
-   * 通常在用户点击"退出登录"按钮时调用。
-   *
-   * 清除的内容：
-   * - Zustand 状态：userInfo、accessToken、refreshToken 重置为空
-   * - localStorage：删除 user_info、access_token、refresh_token 三个键
-   *
-   * 注意：此方法只清除前端数据，不会通知后端使 Token 失效。
-   * 如果需要更高的安全性，可以在此方法中调用后端的 logout API。
+   * 退出登录
+   * 将所有的状态数据还原，并彻底从 localStorage 中抹去
    */
   logout: () => {
-    // 清除 Zustand 状态
+    // 1. 重置 Zustand 中的全局状态为初始空值
     set({
       userInfo: {},
       accessToken: '',
       refreshToken: ''
     })
-    // 清除 localStorage 持久化数据
+    // 2. 擦除本地物理存储，防止下一次无凭证自动登录
     localStorage.removeItem('user_info')
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
   },
 
   /**
-   * updateUserInfo — 部分更新用户信息
-   *
-   * 在用户修改个人资料后调用，只更新变化的字段。
-   * 使用对象展开运算符合并新旧数据。
-   *
-   * @param data - 要更新的字段（只传需要修改的）
+   * 局部更新用户信息（例如在个人中心修改了昵称或上传了新头像）
+   * @param data 仅包含需要修改的字段，例如 { nickname: '新昵称' }
    */
   updateUserInfo: (data: Partial<LoginResponse>) => {
+    // 使用对象解构展开展开合并：保留旧的 userInfo 信息，用传入的 data 覆盖已修改的字段
     const newUserInfo = { ...get().userInfo, ...data }
-    // 更新 Zustand 状态
+    
+    // 更新内存状态
     set({ userInfo: newUserInfo })
-    // 同步更新 localStorage
+    // 同步更新本地存储
     localStorage.setItem('user_info', JSON.stringify(newUserInfo))
   }
 }))

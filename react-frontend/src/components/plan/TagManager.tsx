@@ -17,6 +17,15 @@ import { tagApi } from '@/api/plan'
 import type { TagItem } from '@/api/plan'
 import './TagManager.css'
 
+/**
+ * TagManagerProps — 声明组件外部接口的属性
+ * 
+ * 1. 【React 核心概念：单向数据流与父子组件通信 (Parent-Child Callback)】
+ *    - 在 React 中，数据流动是单向的（自上而下，即父传子）。
+ *    - 如果子组件修改了数据，不能直接篡改父组件传入的属性值，而是必须通过“调用父组件传下来的回调函数”通知父组件：
+ *      - `selectedTagIds`：父组件传递进来的已选中标签数组（父传子）。
+ *      - `onChange`：一个可选的回调函数。当子组件的选中项发生变化时，调用该方法通知父组件更新数据（子传父）。
+ */
 interface TagManagerProps {
   onChange?: (tagIds: number[]) => void
   selectedTagIds?: number[]
@@ -31,9 +40,18 @@ const presetColors = [
 
 const TagManager: React.FC<TagManagerProps> = ({ onChange, selectedTagIds = [] }) => {
   // ============================================================================
-  // // 状态
+  // // 状态（State）
   // ============================================================================
+  
+  // 标签数据库列表状态
   const [tags, setTags] = useState<TagItem[]>([])
+  
+  /**
+   * 2. 【React 核心概念：派生状态与 Props 同步 (Syncing State with Props)】
+   *    - 挑战：父组件可能在外部清除选中标签，此时子组件的本地 `localSelectedTagIds` 如何保持最新？
+   *    - 方案：通过 `useState(selectedTagIds)` 进行初始化，并配合底层的 `useEffect` 副作用监听：
+   *      - 一旦父组件传入的 `selectedTagIds` 引用或内容发生变化，就自动调用 `setLocalSelectedTagIds` 进行本地覆盖同步。
+   */
   const [localSelectedTagIds, setLocalSelectedTagIds] = useState<number[]>(selectedTagIds)
   const [showTagDialog, setShowTagDialog] = useState(false)
   const [editingTag, setEditingTag] = useState<TagItem | null>(null)
@@ -49,7 +67,7 @@ const TagManager: React.FC<TagManagerProps> = ({ onChange, selectedTagIds = [] }
       const data = await tagApi.list()
       setTags(data)
     } catch (error) {
-      console.error('Failed to load tags', error)
+      console.error('加载标签失败', error)
     }
   }
 
@@ -58,19 +76,11 @@ const TagManager: React.FC<TagManagerProps> = ({ onChange, selectedTagIds = [] }
   // ============================================================================
   /**
    * 打开新建标签弹窗
-   *
-   * 功能说明：初始化表单并显示弹窗（新增模式）
-   * 业务逻辑：
-   * 1. 清空编辑标识（设置为null表示新增）
-   * 2. 重置表单名称为空字符串
-   * 3. 随机选择一个预设颜色
-   * 4. 显示弹窗
-   *
-   * 使用场景：用户点击"新建标签"按钮时调用
    */
   const handleCreateTag = () => {
     setEditingTag(null)
     form.resetFields()
+    // 随机挑选预设颜色，提升用户体验
     const randomColor = presetColors[Math.floor(Math.random() * presetColors.length)]
     setSelectedColor(randomColor)
     form.setFieldsValue({ color: randomColor })
@@ -78,51 +88,27 @@ const TagManager: React.FC<TagManagerProps> = ({ onChange, selectedTagIds = [] }
   }
 
   /**
-   * 切换标签选中状态
-   *
-   * 功能说明：点击标签项时切换其选中/未选中状态
-   * 业务逻辑：
-   * 1. 查找标签ID是否在选中列表中
-   * 2. 如果已选中，则移除（取消选中）
-   * 3. 如果未选中，则添加（选中）
-   * 4. 向父组件发出change事件，传递更新后的选中ID列表
-   *
-   * 使用场景：用户点击标签项时调用
-   *
-   * @param tagId - 标签ID
+   * 切换标签的选中/取消状态
    */
   const toggleTag = (tagId: number) => {
     const index = localSelectedTagIds.indexOf(tagId)
     let newIds: number[]
 
+    // 若已经选中过，过滤掉它（取消选择）；否则使用解构追加到新数组（选择）
     if (index > -1) {
       newIds = localSelectedTagIds.filter(id => id !== tagId)
     } else {
       newIds = [...localSelectedTagIds, tagId]
     }
 
+    // 1. 更新本地组件渲染状态
     setLocalSelectedTagIds(newIds)
+    // 2. 触发回调，通知父组件：最新的已选标签 ID 数组为 newIds
     onChange?.(newIds)
   }
 
   /**
-   * 处理标签操作命令
-   *
-   * 功能说明：处理标签项的编辑和删除操作
-   * 业务逻辑：
-   * - 编辑命令：
-   *   1. 设置编辑标识为当前标签
-   *   2. 填充表单数据
-   *   3. 显示弹窗
-   * - 删除命令：
-   *   1. 弹出确认对话框
-   *   2. 调用API删除标签
-   *   3. 成功后刷新标签列表
-   *
-   * 使用场景：用户点击标签项的操作菜单时调用
-   *
-   * @param cmd - 命令类型：'edit' 或 'delete'
-   * @param tag - 标签对象
+   * 编辑/删除标签的下拉选项操作
    */
   const handleTagCommand = (cmd: 'edit' | 'delete', tag: TagItem) => {
     if (cmd === 'edit') {
@@ -142,15 +128,16 @@ const TagManager: React.FC<TagManagerProps> = ({ onChange, selectedTagIds = [] }
           try {
             await tagApi.delete(tag.id)
             message.success('删除成功')
-            loadTags()
+            loadTags() // 刷新列表
           } catch (error) {
-            console.error('Failed to delete tag', error)
+            console.error('删除标签失败', error)
           }
         }
       })
     }
   }
 
+  // 生成操作菜单项的数据格式 (Antd Dropdown 规范)
   const getDropdownItems = (tag: TagItem): MenuProps => ({
     items: [
       {
@@ -169,18 +156,6 @@ const TagManager: React.FC<TagManagerProps> = ({ onChange, selectedTagIds = [] }
   // ============================================================================
   // // 表单提交
   // ============================================================================
-  /**
-   * 保存标签
-   *
-   * 功能说明：新增或编辑标签
-   * 业务逻辑：
-   * 1. 验证表单数据
-   * 2. 根据editingBlock状态判断新增或编辑
-   * 3. 调用API保存数据
-   * 4. 成功后关闭弹窗并刷新标签列表
-   *
-   * 使用场景：用户在标签弹窗中点击"确定"按钮时调用
-   */
   const saveTag = async () => {
     try {
       const values = await form.validateFields()
@@ -197,7 +172,7 @@ const TagManager: React.FC<TagManagerProps> = ({ onChange, selectedTagIds = [] }
       setShowTagDialog(false)
       loadTags()
     } catch (error) {
-      console.error('Failed to save tag', error)
+      console.error('保存标签失败', error)
       if (error instanceof Error && error.message !== 'Validation failed') {
         message.error('保存失败')
       }
@@ -209,10 +184,13 @@ const TagManager: React.FC<TagManagerProps> = ({ onChange, selectedTagIds = [] }
   // ============================================================================
   // // 生命周期
   // ============================================================================
+  
+  // 首次挂载时，从数据库获取最新标签列表
   useEffect(() => {
     loadTags()
   }, [])
 
+  // 依赖项包含 selectedTagIds，当父组件在外部做清除/变动时，实时同步更新本地 state
   useEffect(() => {
     setLocalSelectedTagIds(selectedTagIds)
   }, [selectedTagIds])
@@ -222,6 +200,7 @@ const TagManager: React.FC<TagManagerProps> = ({ onChange, selectedTagIds = [] }
   // ============================================================================
   return (
     <div className="tag-manager">
+      {/* 头部标题区 */}
       <div className="tag-header">
         <h4>标签管理</h4>
         <Button type="primary" size="small" icon={<PlusOutlined />} onClick={handleCreateTag}>
@@ -229,27 +208,36 @@ const TagManager: React.FC<TagManagerProps> = ({ onChange, selectedTagIds = [] }
         </Button>
       </div>
 
+      {/* 标签网格列表展示 */}
       <div className="tag-list">
         {tags.map(tag => (
           <div
             key={tag.id}
+            // 动态设置选中样式类
             className={`tag-item ${localSelectedTagIds.includes(tag.id) ? 'selected' : ''}`}
             onClick={() => toggleTag(tag.id)}
           >
             <span className="tag-dot" style={{ background: tag.color }}></span>
             <span className="tag-name">{tag.name}</span>
+            {/*
+              阻止事件冒泡 e.stopPropagation()：
+              Dropdown 上的三个点操作按钮本身被放置在 .tag-item 卡片里。
+              我们点击“下拉操作”时，并不希望触发 toggleTag 切换其选中状态。
+              故必须通过调用 stopPropagation() 截断事件向上层 DOM 冒泡传播。
+            */}
             <Dropdown menu={getDropdownItems(tag)} trigger={['click']}>
               <Button
                 type="text"
                 size="small"
                 icon={<MoreOutlined />}
-                onClick={e => e.stopPropagation()}
+                onClick={e => e.stopPropagation()} // 阻止冒泡，避免触发切换标签选中
                 className="tag-more"
               />
             </Dropdown>
           </div>
         ))}
 
+        {/* 标签为空时的缺省提示 */}
         {tags.length === 0 && (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -285,6 +273,7 @@ const TagManager: React.FC<TagManagerProps> = ({ onChange, selectedTagIds = [] }
             label="标签颜色"
             initialValue={presetColors[0]}
           >
+            {/* 颜色选择小圆点面板 */}
             <div className="color-picker">
               {presetColors.map(color => (
                 <div
@@ -293,7 +282,7 @@ const TagManager: React.FC<TagManagerProps> = ({ onChange, selectedTagIds = [] }
                   style={{ background: color }}
                   onClick={() => {
                     setSelectedColor(color)
-                    form.setFieldsValue({ color })
+                    form.setFieldsValue({ color }) // 表单手动设置颜色字段的值
                   }}
                 ></div>
               ))}

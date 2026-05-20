@@ -1,116 +1,93 @@
 /**
  * ============================================================================
- * 【应用状态管理模块（App Store）】
+ * 【应用级全局状态管理模块 (src/stores/useAppStore.ts)】
  * ============================================================================
  *
- * 【模块用途】
- * 使用 Zustand 管理应用级别的全局状态，主要管理 Loading 状态。
- * 这是整个应用中最轻量级的 Store，主要用于控制全局 Loading 遮罩的显示。
+ * 【知识点解析：0-1 学习 React】
  *
- * 【设计思想】
- * 1. Zustand 的简洁性：
- *    Zustand 是一个轻量级的状态管理库，相比 Redux 更加简洁。
- *    不需要创建 Provider，不需要 action/reducer，直接使用 hooks 即可。
+ * 1. 为什么需要全局状态管理？
+ *    - 在 React 中，组件状态（useState）是局部的、私有的。
+ *    - 如果多个没有任何父子关系的组件（比如 Axios 拦截器、根布局组件、某个深层的业务卡片）
+ *      需要共享同一个状态（如：当前是否正在加载数据？），使用常规的传参极其困难。
+ *    - 全局状态库允许我们在组件树外部建立一个“公共状态池”（Store），任何组件都可以直接从池中
+ *      存取数据或调用方法，且同样具有 React 的响应式更新能力。
  *
- * 2. 请求计数器模式：
- *    为了正确控制 Loading 遮罩，使用请求计数器而不是布尔值。
- *    - 每个请求发出前：incrementRequest()
- *    - 每个请求完成后：decrementRequest()
- *    - 当计数器 > 0 时显示 Loading
- *    - 这样可以处理多个并发请求的情况
+ * 2. 什么是 Zustand？
+ *    - Zustand 是目前 React 社区非常流行的轻量级全局状态管理库。
+ *    - **对比 Redux**：极其简单，不需要写大量的 Action、Reducer、Dispatch 等样板代码，
+ *      也不需要在 Root 组件外层套上 `<Provider>` 容器。
+ *    - **对比 Context**：不会导致整颗组件树无脑重新渲染，支持“选择器（Selector）”机制，
+ *      只有订阅的具体属性改变时，组件才会重新渲染，性能表现极其优异。
  *
- * 【学习要点】
- * - Zustand 的基本用法（create、getState、setState）
- * - React 组件中使用 Zustand store
- * - 请求计数器模式的实现
+ * 3. 【React 核心概念：选择器订阅模式 (Selector Subscription)】
+ *    - 使用 Zustand Store 时，我们通过传入一个选择器函数来订阅状态：
+ *      `const isLoading = useAppStore(state => state.isLoading())`
+ *    - 这里的 `state => state.isLoading()` 就是选择器。Zustand 会监控这个表达式的返回值，
+ *      只有当 `isLoading()` 的值从 `false` 变成 `true`（或反过来）时，使用该 Hook 的组件才会重新渲染。
+ *      如果 Store 里的其他状态（比如未来增加的其它应用配置）变了，该组件**不会**发生无意义的重新渲染。
  *
- * ============================================================================
+ * 4. 【系统设计模式：请求计数器 (Request Counter) 模式】
+ *    - 场景：在单页应用中，页面可能会同时并发发出 3 个接口请求。
+ *    - 如果简单用布尔值 `isLoading: true/false` 控制：
+ *      - 请求 A 开始：`isLoading = true`（显示 loading）
+ *      - 请求 B 开始：`isLoading = true`
+ *      - 请求 A 完成：`isLoading = false`（Loading 遮罩关闭！但此时请求 B 还在运行中，页面出现残缺！）
+ *    - 计数器解决方案：
+ *      - 维护一个数字 `requestCount`。每个请求开始时 `+1`，完成时 `-1`。
+ *      - 只要 `requestCount > 0` 就显示 Loading。只有当所有并发请求都结束，计数器归零时，才关闭 Loading。
  */
 
 import { create } from 'zustand'
 
 /**
- * AppState — 应用状态类型定义
+ * AppState — 定义状态库的 TypeScript 接口类型
+ * 明确列出状态库里有哪些数据（State）和哪些改变状态的方法（Actions）
  */
 interface AppState {
-  /**
-   * requestCount — 当前正在进行的请求数量
-   * 用于判断是否应该显示全局 Loading 遮罩
-   */
+  // 正在进行中的 API 请求数量
   requestCount: number
 
-  /**
-   * incrementRequest — 增加请求计数器
-   * 在请求发出前调用
-   */
+  // 增加请求计数器（在 Axios 请求拦截器中调用）
   incrementRequest: () => void
 
-  /**
-   * decrementRequest — 减少请求计数器
-   * 在请求完成后调用
-   */
+  // 减少请求计数器（在 Axios 响应拦截器或异常捕获中调用）
   decrementRequest: () => void
 
-  /**
-   * isLoading — 是否正在加载
-   * 计算属性，当 requestCount > 0 时返回 true
-   */
+  // 计算属性：当前是否处于加载状态
   isLoading: () => boolean
 }
 
 /**
- * useAppStore — 应用状态管理 Hook
+ * useAppStore — Zustand 状态管理 Hook
  *
- * 使用 Zustand 的 create 函数创建 store。
- * 参数是一个函数，返回 store 的状态和方法。
- *
- * 使用方式：
- * ```tsx
- * import { useAppStore } from '@/stores/useAppStore'
- *
- * function Component() {
- *   const isLoading = useAppStore(state => state.isLoading())
- *   const incrementRequest = useAppStore(state => state.incrementRequest)
- *
- *   return (
- *     <div>
- *       {isLoading && <Spin />}
- *     </div>
- *   )
- * }
- * ```
+ * `create<AppState>((set, get) => ({ ... }))`
+ * - `set`：用于修改 Store 中的状态值。在 Zustand 中，状态是只读的，必须通过 `set` 统一修改。
+ * - `get`：用于在方法内部获取当前 Store 里的最新状态。
  */
 export const useAppStore = create<AppState>((set, get) => ({
-  // ---- 状态（State）----
-
-  /**
-   * requestCount — 请求计数器初始值为 0
-   */
+  // ---- 状态数据（State）----
   requestCount: 0,
 
-  // ---- 方法（Actions）----
+  // ---- 改变状态的方法（Actions）----
 
   /**
-   * incrementRequest — 增加请求计数器
-   *
-   * 使用 set() 更新状态，通过函数式更新确保正确性：
-   * (state) => ({ ...state, requestCount: state.requestCount + 1 })
+   * 增加请求计数
+   * 使用 set 函数，接受一个回调函数，回调参数 state 即为当前的最新状态。
+   * 必须返回一个包含要修改字段的新对象（Zustand 会自动与旧状态做浅层合并）。
    */
-  incrementRequest: () => set((state) => ({ ...state, requestCount: state.requestCount + 1 })),
+  incrementRequest: () => set((state) => ({ requestCount: state.requestCount + 1 })),
 
   /**
-   * decrementRequest — 减少请求计数器
-   *
-   * 使用函数式更新，确保不会出现负数：
-   * Math.max(0, state.requestCount - 1)
+   * 减少请求计数
+   * 使用 Math.max(0, ...) 兜底，防止因异常处理不当导致计数器扣减成负数。
    */
-  decrementRequest: () => set((state) => ({ ...state, requestCount: Math.max(0, state.requestCount - 1) })),
+  decrementRequest: () => set((state) => ({ requestCount: Math.max(0, state.requestCount - 1) })),
+
+  // ---- 计算属性（Getters）----
 
   /**
-   * isLoading — 判断是否正在加载
-   *
-   * 使用 get() 获取当前状态，而不是通过 set()。
-   * 这是一个计算属性，每次调用时动态计算。
+   * 判断是否显示加载遮罩
+   * get() 可以直接拿到当前整个 Store，从中提取 requestCount 进行计算
    */
   isLoading: () => get().requestCount > 0
 }))

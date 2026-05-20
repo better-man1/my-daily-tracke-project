@@ -9,22 +9,55 @@ import { summaryApi, type SummaryItem, type CreateSummaryRequest } from '@/api/s
 const { TextArea } = Input
 
 /**
- * SummaryPage — 每日总结页面
+ * ============================================================================
+ * 【每日总结页面组件 (src/pages/summary/SummaryPage.tsx)】
+ * ============================================================================
+ *
+ * 【知识点解析：0-1 学习 React】
+ *
+ * 1. 【React 核心概念：表格行嵌套展开渲染 (Expandable Table Rows)】
+ *    - 场景：每日总结包含“心情、评分、今日成就、改进空间、明日计划、感恩事项、健康记录”等极为丰富的内容。
+ *    - 挑战：如果全部直接渲染为表格的列，屏幕空间会被挤爆，影响美观和易读性。
+ *    - 解决方案：
+ *      a. 表格列仅展示核心摘要：日期、心情星星、综合评分。
+ *      b. 使用 Antd Table 的 `expandable` 配置参数提供折叠展开面板：
+ *         `<Table expandable={{ expandedRowRender: (record) => ( ... ) }} />`
+ *      c. `expandedRowRender` 是一个渲染回调函数：当用户点击左侧的 `+` 展开按钮时，它会动态渲染出一个内嵌的卡片网格布局，将复杂的文本详情呈现出来，节省空间又富有视觉冲击力。
+ *
+ * 2. 【React 核心概念：自定义渲染回调字符 (Rate Customization)】
+ *    - 在评定“心情”时，默认显示的是小星星，这不太符合“心情”的语义。
+ *    - 我们希望将其替换为可爱的表情包 `['😞', '😐', '🙂', '😊', '🤩']`。
+ *    - `<Rate character={({ index = 0 }) => moodEmojis[index]} />`
+ *      - `character` 参数接收一个返回 ReactNode 节点的函数。
+ *      - React 会自动传入当前的 `index`（0-4），我们基于此定位并渲染出对应的 Emoji 表情符号，实现个性化评分器。
  */
 const SummaryPage: React.FC = () => {
+  // ============================================================================
+  // // 状态（State）
+  // ============================================================================
   const [loading, setLoading] = useState(false)
   const [summaries, setSummaries] = useState<SummaryItem[]>([])
   const [modalVisible, setModalVisible] = useState(false)
   const [editingSummary, setEditingSummary] = useState<SummaryItem | null>(null)
+  
+  // 日历过滤月份状态，默认为今天
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs())
+  // 打卡统计（连续打卡天数、最长连续打卡天数）
   const [streak, setStreak] = useState<{ currentStreak: number; longestStreak: number } | null>(null)
+  
   const [form] = Form.useForm()
 
+  // ============================================================================
+  // // 副作用处理 (useEffect)
+  // ============================================================================
   useEffect(() => {
     fetchSummaries()
     fetchStreak()
   }, [selectedDate])
 
+  // ============================================================================
+  // // 数据加载方法
+  // ============================================================================
   const fetchSummaries = async () => {
     try {
       setLoading(true)
@@ -48,13 +81,17 @@ const SummaryPage: React.FC = () => {
     }
   }
 
+  // ============================================================================
+  // // 交互行为
+  // ============================================================================
   const handleAdd = () => {
     setEditingSummary(null)
     form.resetFields()
+    // 为新表单项赋予人性化的缺省状态值
     form.setFieldsValue({
       summaryDate: dayjs(),
-      mood: 3,
-      score: 75
+      mood: 3, // 默认心情：微笑
+      score: 75 // 默认评分：75
     })
     setModalVisible(true)
   }
@@ -102,6 +139,9 @@ const SummaryPage: React.FC = () => {
     }
   }
 
+  // ============================================================================
+  // // 表格列配置
+  // ============================================================================
   const columns: ColumnsType<SummaryItem> = [
     {
       title: '日期',
@@ -114,7 +154,8 @@ const SummaryPage: React.FC = () => {
       dataIndex: 'mood',
       key: 'mood',
       width: 150,
-      render: (mood) => <Rate disabled value={mood} />
+      // 禁用编辑态，纯作只读星星展示，并在内部渲染自定义表情包
+      render: (mood) => <Rate disabled value={mood} character={({ index = 0 }) => moodEmojis[index]} />
     },
     {
       title: '综合评分',
@@ -122,6 +163,7 @@ const SummaryPage: React.FC = () => {
       key: 'score',
       width: 120,
       render: (score) => (
+        // 根据分数级别，动态赋予文字红/黄/绿不同色彩
         <span style={{ fontWeight: 'bold', color: score >= 80 ? '#52c41a' : score >= 60 ? '#faad14' : '#ff4d4f' }}>
           {score}
         </span>
@@ -164,10 +206,12 @@ const SummaryPage: React.FC = () => {
     }
   ]
 
+  // 心情表情库
   const moodEmojis = ['😞', '😐', '🙂', '😊', '🤩']
 
   return (
     <div>
+      {/* 顶部控制栏 */}
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2>每日总结</h2>
         <Space>
@@ -181,7 +225,7 @@ const SummaryPage: React.FC = () => {
         </Space>
       </div>
 
-      {/* 打卡统计 */}
+      {/* 连续打卡统计 */}
       {streak && (
         <Row gutter={16} style={{ marginBottom: 16 }}>
           <Col span={12}>
@@ -207,15 +251,18 @@ const SummaryPage: React.FC = () => {
         </Row>
       )}
 
+      {/* 展开式表格 */}
       <Table
         columns={columns}
         dataSource={summaries}
         rowKey="id"
         loading={loading}
         pagination={false}
+        // 核心细节：嵌套数据展开渲染器
         expandable={{
           expandedRowRender: (record) => (
             <div style={{ padding: 16 }}>
+              {/* 利用卡片式网络排布展示感恩、成就、改进等长文字内容 */}
               <Row gutter={16}>
                 <Col span={12}>
                   <Card title="今日成就" size="small">
@@ -250,6 +297,7 @@ const SummaryPage: React.FC = () => {
         }}
       />
 
+      {/* 新增/编辑弹窗 */}
       <Modal
         title={editingSummary ? '编辑总结' : '新建总结'}
         open={modalVisible}
@@ -267,6 +315,7 @@ const SummaryPage: React.FC = () => {
           </Form.Item>
 
           <Form.Item name="mood" label="心情" rules={[{ required: true, message: '请选择心情' }]}>
+            {/* 注入心情表情 */}
             <Rate character={({ index = 0 }) => moodEmojis[index]} />
           </Form.Item>
 
