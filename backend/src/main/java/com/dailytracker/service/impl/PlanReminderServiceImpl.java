@@ -24,14 +24,31 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 任务提醒服务实现
+ * 任务提醒服务实现类（Plan Reminder Service Implementation）
+ *
+ * 【类设计说明】
+ * 本类是 PlanReminderService 接口的具体实现，负责任务提醒功能的全部业务逻辑。
+ * 包括提醒的设置、删除、查询，以及定时扫描并发送到期提醒。
+ *
+ * 【注解解释】
+ * @Slf4j      - Lombok 注解，自动生成 SLF4J 日志记录器
+ * @Service    - Spring 注解，标记为业务层 Bean
+ * @RequiredArgsConstructor - Lombok 注解，通过构造器注入依赖
+ *
+ * 【核心设计】
+ * - 替换式提醒设置：每次设置新提醒前先删除旧提醒（每个任务只保留一条提醒记录）
+ * - 定时任务扫描：使用 @Scheduled 注解每分钟扫描一次到期提醒
+ * - 容错处理：单条提醒发送失败不影响其他提醒的处理
+ * - 多种提醒类型：支持任务开始提醒（START）、截止提醒（DUE）、自定义时间提醒（CUSTOM）
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class PlanReminderServiceImpl implements PlanReminderService {
 
+    /** 提醒数据访问层 */
     private final PlanReminderMapper reminderMapper;
+    /** 每日计划数据访问层（用于查询关联的任务信息） */
     private final DailyPlanMapper planMapper;
 
     @Override
@@ -100,6 +117,20 @@ public class PlanReminderServiceImpl implements PlanReminderService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 定时任务：扫描并发送到期提醒
+     *
+     * 【注解解释】
+     * @Scheduled(cron = "0 * * * * ?") - Spring 定时任务注解，使用 Cron 表达式定义执行频率。
+     *   "0 * * * * ?" 表示每小时的每一分钟的 0 秒执行一次（即每分钟执行一次）。
+     *   Cron 表达式格式：秒 分 时 日 月 周
+     * @Transactional - 确保提醒状态的更新在事务中执行
+     *
+     * 【执行逻辑】
+     * 1. 查询所有"未发送"且"提醒时间 <= 当前时间"的提醒记录
+     * 2. 逐条处理：获取关联的任务信息，执行通知发送，标记为已发送
+     * 3. 单条处理失败不影响其他提醒（try-catch 容错）
+     */
     @Override
     @Scheduled(cron = "0 * * * * ?")
     @Transactional
@@ -136,7 +167,17 @@ public class PlanReminderServiceImpl implements PlanReminderService {
     }
 
     /**
-     * 计算提醒时间
+     * 计算提醒时间（私有方法）
+     *
+     * 根据不同的提醒类型计算实际的提醒触发时间：
+     * - CUSTOM: 使用用户指定的自定义时间
+     * - START: 基于任务开始时间（默认 09:00）减去提前分钟数
+     * - DUE: 基于任务截止时间（默认 18:00）减去提前分钟数
+     *
+     * @param plan    任务实体
+     * @param request 提醒设置请求
+     * @return LocalDateTime 计算后的提醒时间
+     * @throws BusinessException 无法确定提醒时间时抛出异常
      */
     private LocalDateTime calculateReminderTime(DailyPlan plan, ReminderSetRequest request) {
         if ("CUSTOM".equals(request.getReminderType())) {

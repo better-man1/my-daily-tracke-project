@@ -1,3 +1,22 @@
+<!--
+/**
+ * ============================================================================
+ * DashboardView.vue — 数据看板页面组件
+ * ============================================================================
+ *
+ * 【组件说明】
+ * 个人数据看板，展示计划/记账/摘录/总结/目标的多维度统计。
+ *
+ * 【主要功能】
+ * - 四大核心数据统计卡片
+ * - ECharts 图表展示（计划趋势、情绪趋势、分类分布）
+ * - 时间周期切换（今日/本周/本月/本年）
+ * - AI 智能洞察建议
+ * - 快捷操作入口
+ * ============================================================================
+ */
+-->
+
 <template>
   <div class="dashboard">
     <!-- 标题 -->
@@ -282,6 +301,14 @@ echarts.use([
   CanvasRenderer
 ])
 
+// ============================================================================
+// // 状态
+// ============================================================================
+
+// ============================================================================
+// // 状态
+// ============================================================================
+
 const userStore = useUserStore()
 const period = ref<'today' | 'week' | 'month' | 'year'>('today')
 const isDark = useDark()
@@ -460,6 +487,35 @@ function formatAmount(val: any) {
   return n >= 10000 ? (n / 10000).toFixed(1) + 'w' : n.toFixed(2)
 }
 
+// ============================================================================
+// // 数据加载
+// ============================================================================
+
+// ============================================================================
+// // 数据加载
+// ============================================================================
+
+/**
+ * 加载仪表板数据
+ *
+ * 功能说明：根据选择的时间周期（今日/本周/本月/本年）加载对应统计数据
+ * 业务逻辑：
+ * 1. 默认获取今日数据作为备用数据源（用于部分接口不返回的字段）
+ * 2. 根据period值调用不同的API接口：
+ *    - today：调用getToday()，获取当日所有数据
+ *    - week：调用getWeek()，计算本周完成率、收支、摘录数
+ *    - month：调用getMonth()，获取月度统计
+ *    - year：调用getYear()，获取年度目标和总结统计
+ * 3. 始终加载本周数据用于图表展示
+ * 4. 加载30天情绪趋势数据
+ * 5. 加载连续打卡天数
+ * 6. 加载近7天趋势分析数据
+ * 7. 等待DOM更新完成后渲染所有图表
+ *
+ * 使用场景：组件初始化、用户切换时间周期时调用
+ *
+ * @returns Promise<void>
+ */
 async function loadData() {
   // 根据不同的 period 获取对应的数据并映射到卡片变量上
   // 为了保证 "目标进度" 在本周/本月切换时也有基础数据，我们默认获取 today 的 goalStats
@@ -484,10 +540,10 @@ async function loadData() {
     goalStats.value = fallbackGoalStats
   } else if (period.value === 'month') {
     const res = await dashboardApi.getMonth()
-    planStats.value = { 
-      total: res.monthPlanTotal ?? 0, 
-      done: res.monthPlanDone ?? 0, 
-      completionRate: res.monthCompletionRate ?? 0 
+    planStats.value = {
+      total: res.monthPlanTotal ?? 0,
+      done: res.monthPlanDone ?? 0,
+      completionRate: res.monthCompletionRate ?? 0
     }
     accountingStats.value = { income: res.monthIncome ?? 0, expense: res.monthExpense ?? 0 }
     excerptCount.value = 0 // 本月摘录数接口未返回
@@ -501,8 +557,8 @@ async function loadData() {
     summaryInfo.value = { days: res.summaryDays ?? 0 }
     const totalGoal = res.yearlyGoalTotal ?? 0
     const doneGoal = res.yearlyGoalDone ?? 0
-    goalStats.value = { 
-      total: totalGoal, 
+    goalStats.value = {
+      total: totalGoal,
       done: doneGoal,
       completionRate: totalGoal ? Math.round(doneGoal * 100 / totalGoal) : 0
     }
@@ -531,6 +587,19 @@ async function loadData() {
   renderAllCharts()
 }
 
+/**
+ * 渲染所有图表
+ *
+ * 功能说明：统一调用各图表的渲染方法
+ * 业务逻辑：
+ * 依次渲染四个图表：
+ * 1. 计划趋势柱状图
+ * 2. 情绪趋势图（支持切换趋势图/热力图）
+ * 3. 财务收支趋势图（支持切换折线图/瀑布图）
+ * 4. 摘录趋势柱状图
+ *
+ * 使用场景：数据加载完成后、暗色模式切换后调用
+ */
 function renderAllCharts() {
   renderPlanChart()
   renderMoodChart()
@@ -538,6 +607,29 @@ function renderAllCharts() {
   renderExcerptChart()
 }
 
+/**
+ * 渲染本周计划趋势图（柱状图）
+ *
+ * 功能说明：展示近7天每天的任务数量和完成情况
+ * 业务逻辑：
+ * 1. 获取本周每天的计划数和完成数
+ * 2. 计算每天的完成率
+ * 3. 使用双柱状图展示：
+ *    - 浅色柱：总任务数
+ *    - 深色柱：已完成数
+ *    - 顶部标签：完成率百分比
+ * 4. 根据完成率显示不同颜色：
+ *    - 完成率 < 50%：红色
+ *    - 完成率 < 80%：橙色
+ *    - 完成率 >= 80%：绿色
+ *
+ * 图表特性：
+ * - 自定义tooltip：显示日期、任务数、完成数、完成率
+ * - 动画效果：柱状图渐入动画
+ * - 响应式：跟随暗色模式切换
+ *
+ * 使用场景：renderAllCharts()调用
+ */
 function renderPlanChart() {
   if (!planChartRef.value) return
   if (!planChart) {
@@ -1247,6 +1339,14 @@ function renderExcerptChart() {
     ]
   })
 }
+
+// ============================================================================
+// // 生命周期
+// ============================================================================
+
+// ============================================================================
+// // 生命周期
+// ============================================================================
 
 onMounted(() => {
   loadData()

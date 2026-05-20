@@ -1,3 +1,17 @@
+<!--
+/**
+ * ============================================================================
+ * accounting.vue — 记账管理页面（Tab 页）
+ * ============================================================================
+ *
+ * 【页面说明】展示本月收支概览和记账记录列表，支持类型筛选和分页加载
+ * 【路由路径】/pages/accounting/accounting（Tab 页，uni.switchTab）
+ * 【页面传参】无
+ * 【关键 API】uni.navigateTo / uni.showModal / onShow
+ * ============================================================================
+ */
+-->
+
 <template>
   <view class="page-container">
     <dt-navbar title="记账">
@@ -102,10 +116,15 @@
 </template>
 
 <script setup lang="ts">
+// Vue 3 Composition API
 import { ref, computed } from 'vue'
+// Uni-app 生命周期
 import { onShow } from '@dcloudio/uni-app'
+// 记账 API — 分页列表/月度统计/删除
 import { accountingApi, type AccountingItem, type AccountingStats } from '@/api/accounting'
+// 金额格式化
 import { formatMoney } from '@/utils/date'
+// dayjs 日期处理
 import dayjs from 'dayjs'
 
 const currentMonth = computed(() => dayjs().format('YYYY年M月'))
@@ -143,6 +162,10 @@ function formatTime(t: string | null): string {
   return t.substring(0, 5)
 }
 
+
+// ============================================================================
+// 数据加载
+// ============================================================================
 async function loadStats() {
   const now = dayjs()
   monthStats.value = await accountingApi.monthlyStats(now.year(), now.month() + 1)
@@ -200,10 +223,18 @@ function deleteRecord(item: AccountingItem) {
   })
 }
 
+
+// ============================================================================
+// 页面导航
+// ============================================================================
 function goAdd() {
   uni.navigateTo({ url: '/sub-pages/accounting-add/accounting-add' })
 }
 
+
+// ============================================================================
+// 生命周期
+// ============================================================================
 onShow(() => {
   loadStats()
   loadRecords()

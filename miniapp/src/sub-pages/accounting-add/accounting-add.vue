@@ -1,3 +1,17 @@
+<!--
+/**
+ * ============================================================================
+ * accounting-add.vue — 记账新增页面
+ * ============================================================================
+ *
+ * 【页面说明】记录一笔收支，选择类型/分类/金额/日期/账户
+ * 【路由路径】/sub-pages/accounting-add/accounting-add
+ * 【页面传参】无
+ * 【关键 API】uni.navigateBack / uni.showToast / picker / onMounted
+ * ============================================================================
+ */
+-->
+
 <template>
   <view class="page-container">
     <dt-navbar title="记一笔" show-back />
@@ -113,9 +127,13 @@
 </template>
 
 <script setup lang="ts">
+// Vue 3 Composition API
 import { ref, onMounted } from 'vue'
+// 记账 API — 创建/获取分类
 import { accountingApi } from '@/api/accounting'
+// 日期工具
 import { getToday } from '@/utils/date'
+// dayjs 日期处理
 import dayjs from 'dayjs'
 
 const loading = ref(false)
@@ -147,6 +165,10 @@ function getCatEmoji(name: string): string {
   return '📦'
 }
 
+
+// ============================================================================
+// 数据加载
+// ============================================================================
 async function loadCategories() {
   const res = await accountingApi.getCategories(form.value.type).catch(() => [])
   categories.value = res || []
@@ -155,6 +177,10 @@ async function loadCategories() {
   }
 }
 
+
+// ============================================================================
+// 表单提交
+// ============================================================================
 async function handleSubmit() {
   const amount = parseFloat(form.value.amount)
   if (!amount || amount <= 0) {
@@ -186,6 +212,10 @@ async function handleSubmit() {
   }
 }
 
+
+// ============================================================================
+// 生命周期
+// ============================================================================
 onMounted(() => {
   loadCategories()
 })

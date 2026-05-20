@@ -33,16 +33,35 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 记账服务实现
+ * 记账服务实现类（Accounting Service Implementation）
+ *
+ * 【类设计说明】
+ * 本类是 AccountingService 接口的具体实现，负责记账模块的全部业务逻辑。
+ * 包括账目 CRUD、多维度统计（日/月/年/分类）、预算管理、分类树查询等。
+ *
+ * 【注解解释】
+ * @Slf4j      - Lombok 注解，自动生成 SLF4J 日志记录器
+ * @Service    - Spring 注解，标记为业务层 Bean
+ * @RequiredArgsConstructor - Lombok 注解，通过构造器注入所有 final 依赖
+ *
+ * 【核心技术点】
+ * - MyBatis-Plus 的 LambdaQueryWrapper：类型安全的条件构造器
+ * - BeanUtils.copyProperties：Spring 提供的对象属性拷贝工具
+ * - BigDecimal 精确计算：金融场景必须使用 BigDecimal 而非 double/float
+ * - Jackson ObjectMapper：JSON 序列化/反序列化（处理图片列表等字段）
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AccountingServiceImpl implements AccountingService {
 
+    /** 记账数据访问层 */
     private final AccountingMapper accountingMapper;
+    /** 记账分类数据访问层 */
     private final AccountingCategoryMapper categoryMapper;
+    /** 预算数据访问层 */
     private final BudgetMapper budgetMapper;
+    /** Jackson JSON 序列化工具（用于将图片列表等字段序列化为 JSON 字符串存储） */
     private final ObjectMapper objectMapper;
 
     @Override
@@ -250,8 +269,18 @@ public class AccountingServiceImpl implements AccountingService {
         }).collect(Collectors.toList());
     }
 
-    // =================== 私有方法 ===================
+    // =================== 私有辅助方法 ===================
 
+    /**
+     * 查询并校验账目归属（私有方法）
+     *
+     * 根据ID和用户ID查询账目，如果不存在则抛出异常。
+     * 同时校验数据归属，确保用户只能操作自己的数据（数据安全）。
+     *
+     * @param id 账目ID
+     * @return Accounting 账目实体
+     * @throws BusinessException 账目不存在或不属于当前用户时抛出异常
+     */
     private Accounting getAndValidate(Long id) {
         Long userId = SecurityUtils.getCurrentUserId();
         Accounting accounting = accountingMapper.selectOne(
@@ -264,6 +293,16 @@ public class AccountingServiceImpl implements AccountingService {
         return accounting;
     }
 
+    /**
+     * 构建指定时间段的收支统计（私有方法）
+     *
+     * 查询指定时间范围内的所有记账记录，使用 BigDecimal 精确计算
+     * 收入总额、支出总额和余额。
+     *
+     * @param startDate 开始日期
+     * @param endDate   结束日期
+     * @return AccountingStatsResponse 统计结果
+     */
     private AccountingStatsResponse buildStats(LocalDate startDate, LocalDate endDate) {
         Long userId = SecurityUtils.getCurrentUserId();
         List<Accounting> list = accountingMapper.selectList(
@@ -291,6 +330,16 @@ public class AccountingServiceImpl implements AccountingService {
         return stats;
     }
 
+    /**
+     * 实体转响应 DTO（私有方法）
+     *
+     * 将 Accounting 实体和 AccountingCategory 实体组装为前端需要的响应格式。
+     * 同时查询父分类名称，提供完整的分类层级信息。
+     *
+     * @param accounting 账目实体
+     * @param category   分类实体（可为 null）
+     * @return AccountingResponse 响应 DTO
+     */
     private AccountingResponse toResponse(Accounting accounting, AccountingCategory category) {
         AccountingResponse response = new AccountingResponse();
         BeanUtils.copyProperties(accounting, response);
@@ -307,6 +356,15 @@ public class AccountingServiceImpl implements AccountingService {
         return response;
     }
 
+    /**
+     * 对象转 JSON 字符串（私有工具方法）
+     *
+     * 封装 Jackson 的序列化操作，处理异常时返回 null 并记录日志。
+     * 用于将图片列表等 Java 对象序列化为 JSON 字符串存储到数据库。
+     *
+     * @param obj 待序列化的对象
+     * @return JSON 字符串，序列化失败时返回 null
+     */
     private String toJson(Object obj) {
         try {
             return objectMapper.writeValueAsString(obj);

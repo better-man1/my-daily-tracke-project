@@ -29,14 +29,37 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 每日计划服务实现
+ * 每日计划服务实现类（Daily Plan Service Implementation）
+ *
+ * 【类设计说明】
+ * 本类是 DailyPlanService 接口的具体实现，是系统中功能最丰富的服务实现之一。
+ * 负责每日计划的全部业务逻辑，包括任务 CRUD、状态管理、排序、顺延、重复任务生成、
+ * 子任务管理、模板管理、时间块管理、批量操作和数据统计等。
+ *
+ * 【注解解释】
+ * @Slf4j      - Lombok 注解，自动生成 SLF4J 日志记录器
+ * @Service    - Spring 注解，标记为业务层 Bean，由 Spring IoC 容器管理
+ * @RequiredArgsConstructor - Lombok 注解，自动生成包含所有 final 字段的构造器实现依赖注入
+ *
+ * 【核心设计思想】
+ * - 重复任务策略模式：通过 shouldCreateOnDate 方法和 matchXxxPattern 系列方法，
+ *   实现了每日/每周/每月/自定义四种重复策略的判断逻辑。
+ * - 子任务级联更新：子任务状态变化时自动更新父任务的计数器，保证数据一致性。
+ * - 数据归属校验：所有操作都通过 getAndValidate 方法校验任务归属当前用户，
+ *   实现了数据层面的权限隔离。
+ *
+ * 【事务管理】
+ * 所有涉及数据修改的方法都标注了 @Transactional 注解，
+ * 确保多个数据库操作要么全部成功，要么全部回滚。
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class DailyPlanServiceImpl implements DailyPlanService {
 
+    /** 每日计划数据访问层（Mapper） */
     private final DailyPlanMapper dailyPlanMapper;
+    /** Jackson JSON 序列化工具（用于解析重复规则的 JSON 配置） */
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -397,8 +420,24 @@ public class DailyPlanServiceImpl implements DailyPlanService {
         log.info("子任务转为主任务: id={}", id);
     }
 
-    // =================== 私有方法 ===================
+    // =================== 私有辅助方法 ===================
 
+    /**
+     * 查询并校验任务归属（私有方法）
+     *
+     * 【设计说明】
+     * 这是整个类中最核心的私有方法，几乎所有公共方法都需要调用它。
+     * 它封装了两个关键逻辑：
+     * 1. 数据查询：根据ID获取任务实体
+     * 2. 权限校验：确保任务属于当前登录用户
+     *
+     * 这种设计体现了"数据权限隔离"的安全思想——
+     * 用户只能操作自己的数据，无法通过篡改ID访问他人的任务。
+     *
+     * @param id 任务ID
+     * @return DailyPlan 任务实体
+     * @throws BusinessException 任务不存在或不属于当前用户时抛出异常
+     */
     private DailyPlan getAndValidate(Long id) {
         Long userId = SecurityUtils.getCurrentUserId();
         DailyPlan plan = dailyPlanMapper.selectOne(
@@ -412,6 +451,15 @@ public class DailyPlanServiceImpl implements DailyPlanService {
         return plan;
     }
 
+    /**
+     * 实体转响应 DTO（私有方法）
+     *
+     * 使用 Spring 的 BeanUtils.copyProperties 将实体属性复制到响应 DTO。
+     * 如果字段名和类型一致，会自动映射；不一致的需要手动设置。
+     *
+     * @param plan 计划实体
+     * @return PlanResponse 响应 DTO
+     */
     private PlanResponse toResponse(DailyPlan plan) {
         PlanResponse response = new PlanResponse();
         BeanUtils.copyProperties(plan, response);
@@ -527,7 +575,12 @@ public class DailyPlanServiceImpl implements DailyPlanService {
     }
 
     /**
-     * 更新父任务的子任务计数
+     * 更新父任务的子任务计数（级联更新）
+     *
+     * 统计父任务下所有子任务的数量和已完成数量，更新到父任务记录中。
+     * 这保证了父任务的 subtaskCount 和 completedSubtaskCount 字段始终准确。
+     *
+     * @param parentId 父任务ID
      */
     private void updateParentSubtaskCount(Long parentId) {
         List<DailyPlan> subtasks = dailyPlanMapper.selectList(
@@ -693,7 +746,17 @@ public class DailyPlanServiceImpl implements DailyPlanService {
     }
 
     /**
-     * 检查两个时间段是否重叠
+     * 检查两个时间段是否重叠（私有方法）
+     *
+     * 【算法】时间段重叠的充要条件：start1 < end2 && end1 > start2
+     * 即：第一个时间段的开始时间在第二个时间段结束之前，
+     *     且第一个时间段的结束时间在第二个时间段开始之后。
+     *
+     * @param start1 第一个时间段的开始时间
+     * @param end1   第一个时间段的结束时间
+     * @param start2 第二个时间段的开始时间
+     * @param end2   第二个时间段的结束时间
+     * @return true 表示重叠，false 表示不重叠
      */
     private boolean isTimeOverlap(LocalTime start1, LocalTime end1,
                                     LocalTime start2, LocalTime end2) {

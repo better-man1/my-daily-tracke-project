@@ -1,3 +1,17 @@
+<!--
+/**
+ * ============================================================================
+ * summary.vue — 每日总结页面
+ * ============================================================================
+ *
+ * 【页面说明】填写今日心情/评分/成就/改进/明日计划/感恩，支持编辑已有总结
+ * 【路由路径】/sub-pages/summary/summary
+ * 【页面传参】无
+ * 【关键 API】uni.navigateBack / uni.showToast / onShow
+ * ============================================================================
+ */
+-->
+
 <template>
   <view class="page-container">
     <dt-navbar title="每日总结" show-back />
@@ -112,9 +126,13 @@
 </template>
 
 <script setup lang="ts">
+// Vue 3 Composition API
 import { ref } from 'vue'
+// Uni-app 生命周期
 import { onShow } from '@dcloudio/uni-app'
+// 总结 API — 打卡/今日总结/创建/更新
 import { summaryApi, type SummaryItem } from '@/api/summary'
+// 日期工具
 import { getToday } from '@/utils/date'
 
 const today = getToday()
@@ -141,6 +159,10 @@ const moods = [
   { emoji: '🥳', label: '超棒', value: 10 }
 ]
 
+
+// ============================================================================
+// 数据加载
+// ============================================================================
 async function loadData() {
   try {
     const [todaySummary, streakData] = await Promise.all([
@@ -168,6 +190,10 @@ async function loadData() {
   }
 }
 
+
+// ============================================================================
+// 表单提交
+// ============================================================================
 async function handleSubmit() {
   loading.value = true
   try {
@@ -197,6 +223,10 @@ async function handleSubmit() {
   }
 }
 
+
+// ============================================================================
+// 生命周期
+// ============================================================================
 onShow(() => {
   loadData()
 })

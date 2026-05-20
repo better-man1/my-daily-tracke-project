@@ -1,5 +1,65 @@
 {
+  /**
+   * ============================================================================
+   * 文件：tsconfig.json — TypeScript 项目根配置文件
+   * ============================================================================
+   *
+   * 【文件用途】
+   * 这是 TypeScript 项目的根配置文件，告诉 TypeScript 编译器如何编译项目中的 .ts 文件。
+   * 同时也被 VS Code 等 IDE 使用，提供代码智能提示、类型检查、自动补全等功能。
+   *
+   * 【在项目中的位置】
+   * frontend/tsconfig.json
+   * 位于前端项目根目录，编辑器和构建工具会自动查找并读取此文件。
+   *
+   * 【相关技术知识 — TypeScript 配置体系】
+   *
+   * 【tsconfig.json 的继承机制】
+   * TypeScript 支持 extends 字段来继承其他配置文件，类似于类的继承。
+   * 子配置可以覆盖父配置中的选项。
+   *
+   * 【本项目的配置结构】
+   * tsconfig.json（根配置 — 你正在看的文件）
+   *   ├── tsconfig.app.json（应用源码配置 — 编译 src/ 下的代码）
+   *   └── tsconfig.node.json（Node.js 环境配置 — 编译 vite.config.ts）
+   *
+   * 【为什么要分成多个配置文件？】
+   * 因为前端源码（src/）和构建脚本（vite.config.ts）运行在不同的环境中：
+   *   - src/ 下的代码运行在浏览器中 → 需要 DOM 类型、ES Module 支持
+   *   - vite.config.ts 运行在 Node.js 中 → 需要 Node.js 类型、不同的编译目标
+   *
+   * 分开配置可以让 TypeScript 为每种环境提供正确的类型检查。
+   *
+   * 【知识扩展：TypeScript 的作用】
+   * TypeScript 是 JavaScript 的超集，添加了：
+   *   - 静态类型检查（编译时发现错误，而不是运行时）
+   *   - 更好的 IDE 支持（智能提示、重构、跳转定义）
+   *   - 接口、泛型、枚举等高级特性
+   *   - 最新 ECMAScript 特性的支持（编译降级）
+   * ============================================================================
+   */
+
+  /**
+   * "files": [] — 空数组，表示根配置本身不直接编译任何文件。
+   * 真正的编译工作委托给 references 中引用的子配置文件。
+   */
   "files": [],
+
+  /**
+   * "references" — TypeScript 项目引用（Project References）。
+   *
+   * 【作用】
+   * 将一个大型 TypeScript 项目拆分为多个子项目，每个子项目有独立的配置。
+   * 这是 TypeScript 3.0 引入的功能，主要优点：
+   *
+   * 1. 更快的编译速度：只重新编译修改过的子项目
+   * 2. 更清晰的代码组织：不同环境的代码使用不同的配置
+   * 3. 更强的类型隔离：子项目之间有明确的依赖关系
+   *
+   * 【两个子配置的说明】
+   * - tsconfig.app.json：负责编译 src/ 目录下的应用源码（运行在浏览器）
+   * - tsconfig.node.json：负责编译 vite.config.ts 等构建脚本（运行在 Node.js）
+   */
   "references": [
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }

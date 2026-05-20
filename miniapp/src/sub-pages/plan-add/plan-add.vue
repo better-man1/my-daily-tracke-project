@@ -1,3 +1,17 @@
+<!--
+/**
+ * ============================================================================
+ * plan-add.vue — 计划新建/编辑页面
+ * ============================================================================
+ *
+ * 【页面说明】创建或编辑每日计划，通过 id 参数区分编辑模式
+ * 【路由路径】/sub-pages/plan-add/plan-add?date=...&id=...
+ * 【参数】date（计划日期）id（编辑时传入）
+ * 【关键 API】uni.navigateBack / uni.showToast / onLoad / picker
+ * ============================================================================
+ */
+-->
+
 <template>
   <view class="page-container">
     <dt-navbar :title="isEdit ? '编辑计划' : '新建计划'" show-back />
@@ -111,9 +125,13 @@
 </template>
 
 <script setup lang="ts">
+// Vue 3 Composition API
 import { ref, computed, onMounted } from 'vue'
+// Uni-app onLoad — 页面加载时接收参数
 import { onLoad } from '@dcloudio/uni-app'
+// 计划 API — 创建/更新
 import { planApi, type PlanItem } from '@/api/plan'
+// 日期工具
 import { getToday } from '@/utils/date'
 
 const loading = ref(false)
@@ -145,6 +163,24 @@ const categories = [
   { icon: '🏃', label: '健康', value: 'HEALTH' }
 ]
 
+
+// ============================================================================
+// 生命周期
+// ============================================================================
+
+/**
+ * 页面加载
+ *
+ * 功能说明：接收路由参数并初始化表单
+ * 业务逻辑：
+ * 1. 获取date参数（计划日期），如果有则更新表单
+ * 2. 获取id参数（计划ID），如果有则表示编辑模式
+ * 3. 编辑模式下可以加载现有数据（预留接口）
+ *
+ * 使用场景：页面加载时自动触发
+ *
+ * @param options - 路由参数对象
+ */
 onLoad((options: any) => {
   if (options?.date) {
     form.value.planDate = options.date
@@ -155,6 +191,31 @@ onLoad((options: any) => {
   }
 })
 
+
+// ============================================================================
+// 表单提交
+// ============================================================================
+
+/**
+ * 提交表单（新增或编辑）
+ *
+ * 功能说明：保存计划数据到后端
+ * 业务逻辑：
+ * 1. 表单验证：标题不能为空
+ * 2. 设置加载状态为true
+ * 3. 构建请求数据：
+ *    - 标题去除首尾空格
+ *    - 描述可选
+ *    - 预估时间转换为数字
+ *    - 时间块标志根据是否有起止时间决定
+ * 4. 根据isEdit状态调用不同API：
+ *    - 编辑模式：调用update
+ *    - 新增模式：调用create
+ * 5. 成功后显示提示，延迟800ms后返回上一页
+ * 6. 失败时显示错误提示
+ *
+ * 使用场景：用户点击提交按钮时调用
+ */
 async function handleSubmit() {
   if (!form.value.title.trim()) {
     uni.showToast({ title: '请输入任务标题', icon: 'none' })

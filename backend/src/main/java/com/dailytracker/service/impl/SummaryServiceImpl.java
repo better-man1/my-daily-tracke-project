@@ -23,14 +23,31 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 每日总结服务实现
+ * 每日总结服务实现类（Summary Service Implementation）
+ *
+ * 【类设计说明】
+ * 本类是 SummaryService 接口的具体实现，负责每日总结模块的全部业务逻辑。
+ * 包括总结 CRUD、今日总结查询、连续打卡统计、情绪趋势分析等。
+ *
+ * 【注解解释】
+ * @Slf4j      - Lombok 注解，自动生成 SLF4J 日志记录器
+ * @Service    - Spring 注解，标记为业务层 Bean
+ * @RequiredArgsConstructor - Lombok 注解，通过构造器注入依赖
+ *
+ * 【核心设计】
+ * - 逻辑删除恢复机制：创建总结时，如果发现已被逻辑删除的同日期记录，
+ *   会恢复并更新该记录（而非插入新记录），避免唯一索引冲突。
+ * - 连续天数算法：通过遍历排序后的日期列表，计算当前连续天数和历史最长连续天数。
+ * - JSON 字段存储：感恩事项（gratitude）和标签（tags）以 JSON 格式存储在数据库中。
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class SummaryServiceImpl implements SummaryService {
 
+    /** 每日总结数据访问层 */
     private final DailySummaryMapper summaryMapper;
+    /** Jackson JSON 序列化工具 */
     private final ObjectMapper objectMapper;
 
     @Override
@@ -187,8 +204,15 @@ public class SummaryServiceImpl implements SummaryService {
         }).collect(Collectors.toList());
     }
 
-    // =================== 私有方法 ===================
+    // =================== 私有辅助方法 ===================
 
+    /**
+     * 查询并校验总结归属（私有方法）
+     *
+     * @param id 总结ID
+     * @return DailySummary 总结实体
+     * @throws BusinessException 总结不存在或不属于当前用户时抛出异常
+     */
     private DailySummary getAndValidate(Long id) {
         Long userId = SecurityUtils.getCurrentUserId();
         DailySummary summary = summaryMapper.selectOne(
@@ -201,12 +225,26 @@ public class SummaryServiceImpl implements SummaryService {
         return summary;
     }
 
+    /**
+     * 实体转响应 DTO（私有方法）
+     *
+     * @param summary 总结实体
+     * @return SummaryResponse 响应 DTO
+     */
     private SummaryResponse toResponse(DailySummary summary) {
         SummaryResponse response = new SummaryResponse();
         BeanUtils.copyProperties(summary, response);
         return response;
     }
 
+    /**
+     * 对象转 JSON 字符串（私有工具方法）
+     *
+     * 增加 null 检查，避免对 null 对象进行序列化。
+     *
+     * @param obj 待序列化的对象
+     * @return JSON 字符串，obj 为 null 时返回 null
+     */
     private String toJson(Object obj) {
         if (obj == null) return null;
         try {

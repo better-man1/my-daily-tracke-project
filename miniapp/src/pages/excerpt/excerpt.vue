@@ -1,3 +1,17 @@
+<!--
+/**
+ * ============================================================================
+ * excerpt.vue — 感悟摘录页面（Tab 页）
+ * ============================================================================
+ *
+ * 【页面说明】展示摘录列表，支持随机回顾、来源筛选、收藏、详情弹窗
+ * 【路由路径】/pages/excerpt/excerpt（Tab 页，uni.switchTab）
+ * 【页面传参】无
+ * 【关键 API】uni.navigateTo / uni.showModal / onShow
+ * ============================================================================
+ */
+-->
+
 <template>
   <view class="page-container">
     <dt-navbar title="感悟摘录">
@@ -127,8 +141,11 @@
 </template>
 
 <script setup lang="ts">
+// Vue 3 Composition API
 import { ref } from 'vue'
+// Uni-app 生命周期
 import { onShow } from '@dcloudio/uni-app'
+// 摘录 API — 随机/列表/收藏/删除
 import { excerptApi, type ExcerptItem } from '@/api/excerpt'
 
 const excerpts = ref<ExcerptItem[]>([])
@@ -149,6 +166,10 @@ const sourceTypes = [
   { label: '随想', value: 'THOUGHT' }
 ]
 
+
+// ============================================================================
+// 数据加载
+// ============================================================================
 async function loadRandom() {
   randomItem.value = await excerptApi.getRandom().catch(() => null)
 }
@@ -179,6 +200,10 @@ async function loadMore() {
   }
 }
 
+
+// ============================================================================
+// 交互操作
+// ============================================================================
 async function toggleFavorite(item: ExcerptItem) {
   await excerptApi.toggleFavorite(item.id).catch(() => null)
   item.isFavorite = item.isFavorite ? 0 : 1
@@ -202,10 +227,18 @@ function deleteExcerpt(item: ExcerptItem) {
   })
 }
 
+
+// ============================================================================
+// 页面导航
+// ============================================================================
 function goAdd() {
   uni.navigateTo({ url: '/sub-pages/excerpt-add/excerpt-add' })
 }
 
+
+// ============================================================================
+// 生命周期
+// ============================================================================
 onShow(() => {
   loadRandom()
   loadList()

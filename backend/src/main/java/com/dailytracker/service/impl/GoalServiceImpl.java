@@ -25,14 +25,31 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 目标管理服务实现
+ * 目标管理服务实现类（Goal Service Implementation）
+ *
+ * 【类设计说明】
+ * 本类是 GoalService 接口的具体实现，负责目标管理模块的业务逻辑。
+ * 支持多级目标（父子关系）、OKR 模式（目标+关键结果）、进度追踪和自动状态更新。
+ *
+ * 【注解解释】
+ * @Slf4j      - Lombok 注解，自动生成 SLF4J 日志记录器
+ * @Service    - Spring 注解，标记为业务层 Bean
+ * @RequiredArgsConstructor - Lombok 注解，通过构造器注入依赖
+ *
+ * 【核心设计】
+ * - 树形结构构建（getTree 方法）：遍历所有目标，按 parentId 构建父子层级关系
+ * - OKR 进度计算（saveKeyResults 方法）：根据关键结果的当前值/目标值自动计算进度百分比
+ * - 自动状态更新（updateProgress 方法）：进度达 100% 时自动标记为 COMPLETED
+ * - 先删后增策略（update 方法）：更新关键结果时，先删除旧的再插入新的，实现简单
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class GoalServiceImpl implements GoalService {
 
+    /** 目标计划数据访问层 */
     private final GoalPlanMapper goalPlanMapper;
+    /** 目标关键结果数据访问层 */
     private final GoalKrMapper goalKrMapper;
 
     @Override
@@ -182,8 +199,15 @@ public class GoalServiceImpl implements GoalService {
         return stats;
     }
 
-    // =================== 私有方法 ===================
+    // =================== 私有辅助方法 ===================
 
+    /**
+     * 查询并校验目标归属（私有方法）
+     *
+     * @param id 目标ID
+     * @return GoalPlan 目标实体
+     * @throws BusinessException 目标不存在或不属于当前用户时抛出异常
+     */
     private GoalPlan getAndValidate(Long id) {
         Long userId = SecurityUtils.getCurrentUserId();
         GoalPlan goal = goalPlanMapper.selectOne(
@@ -196,6 +220,14 @@ public class GoalServiceImpl implements GoalService {
         return goal;
     }
 
+    /**
+     * 实体转响应 DTO（私有方法）
+     *
+     * 将目标实体转换为响应 DTO，同时查询关联的关键结果列表。
+     *
+     * @param goal 目标实体
+     * @return GoalResponse 响应 DTO（含关键结果列表）
+     */
     private GoalResponse toResponse(GoalPlan goal) {
         GoalResponse response = new GoalResponse();
         BeanUtils.copyProperties(goal, response);
@@ -215,6 +247,16 @@ public class GoalServiceImpl implements GoalService {
         return response;
     }
 
+    /**
+     * 保存关键结果列表（私有方法）
+     *
+     * 遍历关键结果请求列表，为每个关键结果计算进度百分比：
+     * progress = (currentValue / targetValue) * 100，上限为 100。
+     *
+     * @param goalId     目标ID
+     * @param userId     用户ID
+     * @param keyResults 关键结果请求列表
+     */
     private void saveKeyResults(Long goalId, Long userId, List<GoalKrRequest> keyResults) {
         if (keyResults == null || keyResults.isEmpty()) {
             return;

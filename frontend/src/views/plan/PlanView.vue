@@ -1,3 +1,25 @@
+<!--
+/**
+ * ============================================================================
+ * PlanView.vue — 每日计划主页面组件
+ * ============================================================================
+ *
+ * 【组件说明】
+ * 每日计划主页面，集成了任务列表、数据统计、时间块、日历四个子视图。
+ *
+ * 【主要功能】
+ * - 任务列表（支持拖拽排序、批量操作）
+ * - 数据统计（完成率、各状态数量）
+ * - 时间块视图（时间线展示）
+ * - 日历视图（月历展示）
+ * - 命令面板（快捷操作）
+ * - 标签管理
+ * - 重复任务
+ * - 提醒设置
+ * ============================================================================
+ */
+-->
+
 <template>
   <div class="plan-view">
     <!-- 标题 + 日期选择 -->
@@ -403,6 +425,14 @@ import CalendarView from './CalendarView.vue'
 import CommandPalette from '../../components/plan/CommandPalette.vue'
 import { useKeyboardShortcuts } from '@/composables/useKeyboardShortcuts'
 
+// ============================================================================
+// // 状态
+// ============================================================================
+
+// ============================================================================
+// // 状态
+// ============================================================================
+
 const selectedDate = ref(dayjs().format('YYYY-MM-DD'))
 const filterCategory = ref('')
 const activeTab = ref('list')
@@ -506,12 +536,28 @@ function repeatTypeLabel(val: string) {
   return repeatTypes.find((t) => t.value === val)?.label ?? val
 }
 
+// ============================================================================
+// // 交互处理
+// ============================================================================
+
+// ============================================================================
+// // 交互处理
+// ============================================================================
+
 function handleRepeatTypeChange() {
   // 切换重复类型时清空选择
   weeklyDays.value = []
   monthlyDays.value = []
   form.repeatPattern = ''
 }
+
+// ============================================================================
+// // 数据加载
+// ============================================================================
+
+// ============================================================================
+// // 数据加载
+// ============================================================================
 
 async function loadTags() {
   try {
@@ -521,6 +567,20 @@ async function loadTags() {
   }
 }
 
+/**
+ * 构建重复模式字符串
+ *
+ * 功能说明：将用户选择的重复配置转换为JSON字符串格式
+ * 业务逻辑：
+ * 1. 检查重复类型和选择的日期
+ * 2. 如果是"每周重复"且有选择星期，生成格式：{"days": [1,3,5]}
+ * 3. 如果是"每月重复"且有选择日期，生成格式：{"days": [1,15]}
+ * 4. 否则返回空字符串
+ *
+ * 使用场景：保存任务时调用，将表单数据转换为API需要的格式
+ *
+ * @returns 重复模式的JSON字符串，或空字符串
+ */
 function buildRepeatPattern() {
   if (form.repeatType === 'WEEKLY' && weeklyDays.value.length > 0) {
     return JSON.stringify({ days: weeklyDays.value.map(Number) })
@@ -530,18 +590,37 @@ function buildRepeatPattern() {
   return ''
 }
 
-function handleReminderTypeChange() {
-  // 切换提醒类型时重置提醒时间
-  form.advanceMinutes = 0
-  form.reminderTime = ''
-}
-
-// 子任务相关函数
+/**
+ * 计算子任务完成进度百分比
+ *
+ * 功能说明：计算单个任务的子任务完成率
+ * 业务逻辑：（已完成数 / 总数）* 100，四舍五入取整
+ *
+ * 使用场景：在任务卡片上显示子任务进度条时调用
+ *
+ * @param plan - 任务对象，包含subtaskCount和completedSubtaskCount字段
+ * @returns 完成进度百分比（0-100）
+ */
 function subtaskProgress(plan: PlanItem) {
   if (!plan.subtaskCount || plan.subtaskCount === 0) return 0
   return Math.round(((plan.completedSubtaskCount || 0) / plan.subtaskCount) * 100)
 }
 
+/**
+ * 展开/收起子任务列表
+ *
+ * 功能说明：切换任务子任务的展开状态
+ * 业务逻辑：
+ * 1. 检查任务ID是否已在展开列表中
+ * 2. 如果已展开，则移除（收起）
+ * 3. 如果未展开，则添加（展开）
+ * 4. 展开时，如果缓存中没有该任务的子任务数据，则从后端加载
+ * 5. 将加载的子任务数据存入缓存
+ *
+ * 使用场景：用户点击任务标题前的展开图标时调用
+ *
+ * @param planId - 任务ID
+ */
 async function toggleExpand(planId: number) {
   const index = expandedTasks.value.indexOf(planId)
   if (index > -1) {
@@ -559,10 +638,20 @@ async function toggleExpand(planId: number) {
   }
 }
 
-function getSubtasksForPlan(planId: number) {
-  return subtasksCache.value[planId] || []
-}
-
+/**
+ * 切换子任务状态
+ *
+ * 功能说明：切换子任务的完成状态
+ * 业务逻辑：
+ * 1. 计算下一个状态（TODO ↔ DONE）
+ * 2. 调用API更新状态
+ * 3. 本地更新状态以优化用户体验（乐观更新）
+ * 4. 更新父任务的已完成数统计
+ *
+ * 使用场景：用户点击子任务的复选框时调用
+ *
+ * @param subtask - 子任务对象
+ */
 async function toggleSubtaskStatus(subtask: PlanItem) {
   const next =
     subtask.status === 'TODO' ? 'DONE' : subtask.status === 'DONE' ? 'TODO' : 'DONE'
@@ -580,6 +669,20 @@ async function toggleSubtaskStatus(subtask: PlanItem) {
   }
 }
 
+/**
+ * 删除子任务
+ *
+ * 功能说明：删除指定的子任务并更新父任务统计
+ * 业务逻辑：
+ * 1. 调用API删除子任务
+ * 2. 从缓存中移除该子任务
+ * 3. 更新父任务的子任务总数
+ * 4. 如果被删除的子任务已完成，还需要减少已完成数
+ *
+ * 使用场景：用户点击子任务的删除图标时调用
+ *
+ * @param subtask - 子任务对象
+ */
 async function deleteSubtask(subtask: PlanItem) {
   try {
     await planApi.delete(subtask.id)
@@ -600,6 +703,22 @@ async function deleteSubtask(subtask: PlanItem) {
   }
 }
 
+/**
+ * 加载任务列表
+ *
+ * 功能说明：加载指定日期的任务列表和统计数据
+ * 业务逻辑：
+ * 1. 设置加载状态为true
+ * 2. 并行请求：
+ *    - 任务列表（按日期）
+ *    - 统计数据（完成率、各状态数量）
+ * 3. 为每个任务加载关联的标签
+ * 4. 等待DOM更新完成后初始化拖拽排序
+ *
+ * 使用场景：组件初始化、日期改变、任务增删改后调用
+ *
+ * @returns Promise<void>
+ */
 async function loadPlans() {
   loading.value = true
   try {
@@ -626,6 +745,23 @@ async function loadPlans() {
   }
 }
 
+/**
+ * 初始化拖拽排序
+ *
+ * 功能说明：使用 Sortable.js 实现任务列表的拖拽排序
+ * 业务逻辑：
+ * 1. 检查容器是否存在，如有旧实例则先销毁
+ * 2. 创建 Sortable 实例，配置：
+ *    - animation: 150ms 拖拽动画
+ *    - disabled: 只在"全部"分类下允许拖拽（避免分类筛选时混乱）
+ * 3. 拖拽结束后：
+ *    - 本地调整数组顺序（乐观更新）
+ *    - 构建ID到新索引的映射对象
+ *    - 调用批量排序接口保存新顺序
+ *    - 失败则恢复原列表
+ *
+ * 使用场景：任务列表加载完成后、切换视图到列表时调用
+ */
 function initSortable() {
   if (!taskListRef.value) return
   if (sortableInstance) sortableInstance.destroy()
@@ -635,15 +771,15 @@ function initSortable() {
     onEnd: async (evt) => {
       const { oldIndex, newIndex } = evt
       if (oldIndex === undefined || newIndex === undefined || oldIndex === newIndex) return
-      
+
       const movedItem = filteredPlans.value.splice(oldIndex, 1)[0]
       filteredPlans.value.splice(newIndex, 0, movedItem)
-      
+
       const sortMap: Record<number, number> = {}
       filteredPlans.value.forEach((p, idx) => {
         sortMap[p.id] = idx
       })
-      
+
       try {
         await planApi.batchSort(sortMap)
       } catch (error) {
@@ -755,6 +891,31 @@ function handleCommand(cmd: string, plan: PlanItem) {
   }
 }
 
+// ============================================================================
+// // 表单提交
+// ============================================================================
+
+/**
+ * 保存任务（新增或编辑）
+ *
+ * 功能说明：保存任务并关联提醒和标签
+ * 业务逻辑：
+ * 1. 表单验证
+ * 2. 设置保存状态为true
+ * 3. 构建重复模式JSON字符串
+ * 4. 构建请求数据（只提交有效字段）
+ * 5. 根据editing状态判断新增或编辑：
+ *    - 编辑：调用planApi.update()
+ *    - 新增：调用planApi.create()，并获取新任务ID
+ * 6. 保存提醒设置（如果有）
+ * 7. 保存标签关联（如果有）
+ * 8. 重置表单和状态
+ * 9. 重新加载任务列表
+ *
+ * 使用场景：用户在任务弹窗中点击"确定"按钮时调用
+ *
+ * @returns Promise<void>
+ */
 async function savePlan() {
   await formRef.value?.validate()
   saving.value = true
@@ -1055,6 +1216,14 @@ function handleTaskSelectFromPalette(task: PlanItem) {
     }
   }
 }
+
+// ============================================================================
+// // 生命周期
+// ============================================================================
+
+// ============================================================================
+// // 生命周期
+// ============================================================================
 
 onMounted(() => {
   loadPlans()

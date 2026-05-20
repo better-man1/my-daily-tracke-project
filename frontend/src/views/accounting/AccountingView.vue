@@ -1,3 +1,23 @@
+<!--
+/**
+ * ============================================================================
+ * AccountingView.vue — 记账管理页面组件
+ * ============================================================================
+ *
+ * 【组件说明】
+ * 每日记账页面，管理收支记录、月度统计、分类筛选、预算设置。
+ *
+ * 【主要功能】
+ * - 收支记录列表展示（按月份分组）
+ * - 月度收支统计卡片（收入/支出/结余）
+ * - 类型筛选（全部/收入/支出）
+ * - 月度预算设置与进度展示
+ * - 记账表单（新增/编辑模式）
+ * - Excel 导出功能
+ * ============================================================================
+ */
+-->
+
 <template>
   <div class="accounting-view">
     <div class="page-header">
@@ -238,6 +258,14 @@ import { accountingApi } from '@/api/accounting'
 import type { AccountingItem } from '@/api/accounting'
 import dayjs from 'dayjs'
 
+// ============================================================================
+// // 状态
+// ============================================================================
+
+// ============================================================================
+// // 状态
+// ============================================================================
+
 const list = ref<AccountingItem[]>([])
 const monthStats = ref<Record<string, any>>({ totalIncome: 0, totalExpense: 0, balance: 0 })
 const budgetInfo = ref<Record<string, any> | null>(null)
@@ -256,6 +284,22 @@ const categoryOptions = ref<any[]>([])
 const activeNames = ref<string[]>([dayjs().format('YYYY-MM')])
 const editingId = ref<number | null>(null)
 
+/**
+ * 日期选择快捷方式配置
+ *
+ * 功能说明：为日期范围选择器提供预设的快捷选项
+ * 包含四种常见的时间范围：
+ * 1. 近一个月：当前月第一天到当前月最后一天
+ * 2. 近三个月：往前2个月的月首到当前月末
+ * 3. 近半年：如果是上半年（1-6月），取1-6月；否则取7-12月
+ * 4. 近一年：当前年第一天到当前年最后一天
+ *
+ * 技术细节：
+ * - dayjs().startOf('month')：获取当月第一天
+ * - dayjs().endOf('month')：获取当月最后一天
+ * - dayjs().subtract(n, 'month')：往前推n个月
+ * - .toDate()：转换为JavaScript Date对象
+ */
 const shortcuts = [
   {
     text: '近一个月',
@@ -293,12 +337,43 @@ const shortcuts = [
   }
 ]
 
+/**
+ * 打开新增记账弹窗
+ *
+ * 功能说明：初始化记账表单并显示弹窗（新增模式）
+ * 业务逻辑：
+ * 1. 清空编辑ID（设置为null表示新增模式）
+ * 2. 重置表单为默认值：
+ *    - 类型：支出（EXPENSE）
+ *    - 金额：undefined（需要用户输入）
+ *    - 分类：undefined（需要用户选择）
+ *    - 日期：今天
+ *    - 账户：微信
+ *    - 备注：空字符串
+ * 3. 显示弹窗
+ *
+ * 使用场景：用户点击"新增账目"按钮时调用
+ */
 function openAddDialog() {
   editingId.value = null
   Object.assign(form, { type: 'EXPENSE', amount: undefined, categoryId: undefined, accountingDate: dayjs().format('YYYY-MM-DD'), accountType: 'WECHAT', remark: '' })
   showAddDialog.value = true
 }
 
+/**
+ * 打开编辑记账弹窗
+ *
+ * 功能说明：将选中的记账记录数据填充到表单并显示弹窗（编辑模式）
+ * 业务逻辑：
+ * 1. 设置编辑ID为当前记录的ID（用于区分新增/编辑）
+ * 2. 将记录的所有字段填充到表单
+ *    - 包括：类型、金额、分类、日期、账户、备注
+ * 3. 显示弹窗
+ *
+ * 使用场景：用户点击记账卡片的编辑图标时调用
+ *
+ * @param item - 要编辑的记账记录对象
+ */
 function editItem(item: AccountingItem) {
   editingId.value = item.id
   Object.assign(form, {
@@ -312,6 +387,29 @@ function editItem(item: AccountingItem) {
   showAddDialog.value = true
 }
 
+/**
+ * 按月份分组的记账列表
+ *
+ * 功能说明：将记账记录按月份进行分组和排序，用于在折叠面板中展示
+ * 业务逻辑：
+ * 1. 遍历所有记账记录
+ * 2. 使用dayjs提取日期的年月部分（格式：YYYY-MM）作为分组key
+ * 3. 将同一月份的记录放入同一个数组
+ * 4. 对分组进行排序：最近的月份排在前面
+ * 5. 转换为折叠面板需要的格式（包含月份、显示文本、记录列表）
+ *
+ * 返回格式示例：
+ * [
+ *   {
+ *     month: '2024-01',
+ *     displayMonth: '2024年01月',
+ *     items: [AccountingItem, AccountingItem, ...]
+ *   },
+ *   ...
+ * ]
+ *
+ * @returns 分组后的记账列表数组
+ */
 const groupedList = computed(() => {
   const groups: Record<string, AccountingItem[]> = {}
   list.value.forEach((item) => {
@@ -321,7 +419,7 @@ const groupedList = computed(() => {
     }
     groups[month].push(item)
   })
-  
+
   const result = Object.keys(groups)
     .sort((a, b) => b.localeCompare(a))
     .map((month) => ({
@@ -333,12 +431,39 @@ const groupedList = computed(() => {
   return result
 })
 
+/**
+ * 计算指定类型的总金额
+ *
+ * 功能说明：统计一组记账记录中特定类型（收入/支出）的总额
+ * 业务逻辑：
+ * 1. 过滤出指定类型的记录
+ * 2. 累加所有记录的金额
+ * 3. 返回累计总额
+ *
+ * 使用场景：在月度分组头部显示该月的收入/支出总额
+ *
+ * @param items - 记账记录数组
+ * @param type - 类型：'INCOME'（收入）或 'EXPENSE'（支出）
+ * @returns 总金额
+ */
 function calculateTotal(items: AccountingItem[], type: 'INCOME' | 'EXPENSE') {
   return items
     .filter((item) => item.type === type)
     .reduce((sum, item) => sum + Number(item.amount), 0)
 }
 
+/**
+ * 计算余额（收入 - 支出）
+ *
+ * 功能说明：统计一组记录的净收支情况
+ * 业务逻辑：收入总额 - 支出总额
+ *
+ * 使用场景：在月度分组头部显示该月的结余/赤字情况
+ * 正数表示结余，负数表示赤字
+ *
+ * @param items - 记账记录数组
+ * @returns 净收支金额（正数为结余，负数为赤字）
+ */
 function calculateBalance(items: AccountingItem[]) {
   return calculateTotal(items, 'INCOME') - calculateTotal(items, 'EXPENSE')
 }
@@ -368,6 +493,24 @@ function formatAmount(val: any) {
   return Number(val ?? 0).toFixed(2)
 }
 
+// ============================================================================
+// // 数据加载
+// ============================================================================
+
+/**
+ * 加载记账列表
+ *
+ * 功能说明：根据当前选择的日期范围、收支类型加载记账记录
+ * 业务逻辑：
+ * 1. 设置加载状态为true
+ * 2. 调用accountingApi.page()分页接口获取数据
+ * 3. 使用dateRange和filterType作为筛选条件
+ * 4. 将获取的记录保存到list响应式变量中
+ *
+ * 使用场景：组件初始化、日期范围改变、筛选条件改变时调用
+ *
+ * @returns Promise<void>
+ */
 async function loadList() {
   loading.value = true
   try {
@@ -384,6 +527,20 @@ async function loadList() {
   }
 }
 
+/**
+ * 加载月度统计数据
+ *
+ * 功能说明：获取当月的收支统计信息和预算信息
+ * 业务逻辑：
+ * 1. 使用dayjs获取当前年份和月份
+ * 2. 调用accountingApi.monthlyStats()获取本月收支汇总
+ * 3. 尝试获取本月预算信息（可能未设置，需要捕获异常）
+ * 4. 更新monthStats和budgetInfo响应式变量
+ *
+ * 使用场景：组件初始化、新增/修改/删除记账记录后调用
+ *
+ * @returns Promise<void>
+ */
 async function loadMonthStats() {
   const now = dayjs()
   monthStats.value = await accountingApi.monthlyStats(now.year(), now.month() + 1)
@@ -394,12 +551,42 @@ async function loadMonthStats() {
   }
 }
 
+/**
+ * 打开预算设置弹窗
+ *
+ * 功能说明：初始化预算表单并显示弹窗
+ * 业务逻辑：
+ * 1. 设置预算表单的月份为当前月
+ * 2. 如果已有预算信息，则预填充金额；否则默认为3000
+ * 3. 显示预算弹窗
+ *
+ * 使用场景：用户点击"设置预算"或"修改预算"按钮时调用
+ */
 function openBudgetDialog() {
   budgetForm.month = dayjs().format('YYYY-MM')
   budgetForm.amount = budgetInfo.value?.totalBudget || 3000
   showBudgetDialog.value = true
 }
 
+// ============================================================================
+// // 表单提交
+// ============================================================================
+
+/**
+ * 保存预算设置
+ *
+ * 功能说明：将用户设置的月度预算保存到后端
+ * 业务逻辑：
+ * 1. 设置保存状态为true
+ * 2. 解析月份字符串获取年份和月份（格式：YYYY-MM）
+ * 3. 调用accountingApi.setBudget()提交预算数据
+ * 4. 成功后显示提示消息并关闭弹窗
+ * 5. 重新加载月度统计数据
+ *
+ * 使用场景：用户在预算弹窗中点击"保存"按钮时调用
+ *
+ * @returns Promise<void>
+ */
 async function saveBudget() {
   savingBudget.value = true
   try {
@@ -418,6 +605,24 @@ async function saveBudget() {
   }
 }
 
+/**
+ * 保存记账记录（新增或编辑）
+ *
+ * 功能说明：将用户填写的记账表单数据保存到后端
+ * 业务逻辑：
+ * 1. 先进行表单验证
+ * 2. 设置保存状态为true
+ * 3. 根据editingId判断是新增还是编辑
+ *    - 如果有editingId，调用accountingApi.update()更新记录
+ *    - 否则调用accountingApi.create()创建新记录
+ * 4. 成功后显示提示消息并关闭弹窗
+ * 5. 重置表单并清空编辑ID
+ * 6. 并行重新加载列表和月度统计数据
+ *
+ * 使用场景：用户在记账弹窗中点击"确定"按钮时调用
+ *
+ * @returns Promise<void>
+ */
 async function saveItem() {
   await formRef.value?.validate()
   saving.value = true
@@ -438,8 +643,23 @@ async function saveItem() {
   }
 }
 
+/**
+ * 删除记账记录
+ *
+ * 功能说明：删除指定的记账记录并更新统计数据
+ * 业务逻辑：
+ * 1. 弹出确认对话框（二次确认）
+ * 2. 调用accountingApi.delete()删除记录
+ * 3. 成功后显示提示消息
+ * 4. 并行重新加载列表和月度统计数据
+ *
+ * 使用场景：用户点击记账卡片的删除图标时调用
+ *
+ * @param id - 要删除的记账记录ID
+ * @returns Promise<void>
+ */
 async function deleteItem(id: number) {
-  await ElMessageBox.confirm('确认删除？', '提示', { 
+  await ElMessageBox.confirm('确认删除？', '提示', {
     type: 'warning',
     customClass: 'delete-confirm-box'
   })
@@ -448,9 +668,28 @@ async function deleteItem(id: number) {
   await Promise.all([loadList(), loadMonthStats()])
 }
 
+/**
+ * 加载记账分类列表
+ *
+ * 功能说明：获取所有可用的记账分类（用于新增/编辑记账时的下拉选择）
+ * 业务逻辑：调用accountingApi.getCategories()获取分类树形数据
+ * 分类数据格式：支持父子级联（如"生活" -> "餐饮"、"交通"等）
+ *
+ * 使用场景：组件初始化时调用，为记账表单的分类选择器提供选项
+ *
+ * @returns Promise<void>
+ */
 async function loadCategories() {
   categoryOptions.value = await accountingApi.getCategories()
 }
+
+// ============================================================================
+// // 生命周期
+// ============================================================================
+
+// ============================================================================
+// // 生命周期
+// ============================================================================
 
 onMounted(() => {
   loadList()

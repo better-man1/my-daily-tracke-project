@@ -1,3 +1,16 @@
+<!--
+/**
+ * ============================================================================
+ * CommandPalette.vue — 命令面板/快速操作对话框
+ * ============================================================================
+ *
+ * 【组件说明】
+ * 提供类似 VS Code 命令面板的快速操作入口。
+ * 支持默认快捷命令、实时搜索、键盘导航。
+ * ============================================================================
+ */
+-->
+
 <template>
   <el-dialog
     :model-value="visible"
@@ -81,6 +94,14 @@ import { ref, computed, watch } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import type { PlanItem } from '@/api/plan'
 
+// ============================================================================
+// // 状态
+// ============================================================================
+
+// ============================================================================
+// // 状态
+// ============================================================================
+
 const props = defineProps<{
   visible: boolean
   tasks: PlanItem[]
@@ -106,6 +127,30 @@ const quickCommands = [
   { id: 'clear-completed', name: '清除已完成', description: '清除所有已完成的任务', icon: '🧹', shortcut: 'Shift+C' }
 ]
 
+/**
+ * 搜索结果列表
+ *
+ * 功能说明：根据用户输入实时搜索任务和命令
+ * 业务逻辑：
+ * 1. 如果没有输入，返回空数组
+ * 2. 将输入转为小写进行不区分大小写的搜索
+ * 3. 搜索任务：
+ *    - 过滤标题包含关键词的任务
+ *    - 转换为统一格式：id、name、description、icon、type、task
+ *    - 图标根据完成状态显示不同emoji
+ * 4. 搜索命令：
+ *    - 过滤名称或描述包含关键词的命令
+ *    - 转换为统一格式：id、name、description、icon、type、command
+ * 5. 合并任务结果和命令结果
+ *
+ * 返回格式示例：
+ * [
+ *   { id: 'task-1', name: '完成报告', description: 'P0 · 工作', icon: '📋', type: 'task', task: {...} },
+ *   { id: 'cmd-delete', name: '删除任务', description: '删除选中的任务', icon: '🗑️', type: 'command', command: {...} }
+ * ]
+ *
+ * @returns 搜索结果数组
+ */
 const searchResults = computed(() => {
   if (!searchQuery.value) return []
 
@@ -141,22 +186,74 @@ const searchResults = computed(() => {
   return [...taskResults, ...commandResults]
 })
 
+/**
+ * 当前显示的列表
+ *
+ * 功能说明：根据是否有搜索词返回对应的数据源
+ * 业务逻辑：
+ * - 有搜索词：返回searchResults（搜索结果）
+ * - 无搜索词：返回quickCommands（快捷命令）
+ *
+ * 使用场景：渲染命令列表时使用
+ *
+ * @returns 当前要显示的列表数据
+ */
 const currentList = computed(() => {
   return searchQuery.value ? searchResults.value : quickCommands
 })
 
+// ============================================================================
+// // 交互处理
+// ============================================================================
+
+/**
+ * 处理搜索输入
+ *
+ * 功能说明：搜索框内容变化时的处理
+ * 业务逻辑：重置选中索引为0（选中第一个结果）
+ *
+ * 使用场景：用户在搜索框输入内容时触发
+ */
 function handleSearch() {
   selectedIndex.value = 0
 }
 
+/**
+ * 向上导航
+ *
+ * 功能说明：键盘向上键的处理，选中上一项
+ * 业务逻辑：选中索引减1，最小值为0
+ *
+ * 使用场景：用户按↑键时触发
+ */
 function handleKeyUp() {
   selectedIndex.value = Math.max(0, selectedIndex.value - 1)
 }
 
+/**
+ * 向下导航
+ *
+ * 功能说明：键盘向下键的处理，选中下一项
+ * 业务逻辑：选中索引加1，最大值为列表长度-1
+ *
+ * 使用场景：用户按↓键时触发
+ */
 function handleKeyDown() {
   selectedIndex.value = Math.min(currentList.value.length - 1, selectedIndex.value + 1)
 }
 
+/**
+ * 处理回车键
+ *
+ * 功能说明：执行当前选中的项
+ * 业务逻辑：
+ * 1. 获取当前选中的项
+ * 2. 根据类型执行不同操作：
+ *    - task：调用selectResult选中任务
+ *    - command：调用executeCommand执行命令
+ *
+ * 使用场景：用户按Enter键时触发
+ */
 function handleEnter() {
   const item = currentList.value[selectedIndex.value]
   if (item) {
@@ -168,11 +265,36 @@ function handleEnter() {
   }
 }
 
+/**
+ * 执行命令
+ *
+ * 功能说明：触发命令执行事件并关闭面板
+ * 业务逻辑：
+ * 1. 向父组件发出executeCommand事件，传递命令ID
+ * 2. 关闭命令面板
+ *
+ * 使用场景：用户点击命令项或按Enter键时调用
+ *
+ * @param cmd - 命令对象
+ */
 function executeCommand(cmd: any) {
   emit('executeCommand', cmd.id)
   handleClose()
 }
 
+/**
+ * 选中搜索结果
+ *
+ * 功能说明：处理搜索结果的选中操作
+ * 业务逻辑：
+ * 1. 如果是任务类型，发出selectTask事件
+ * 2. 如果是命令类型，执行该命令
+ * 3. 关闭命令面板
+ *
+ * 使用场景：用户点击搜索结果项时调用
+ *
+ * @param result - 搜索结果对象
+ */
 function selectResult(result: any) {
   if (result.type === 'task' && result.task) {
     emit('selectTask', result.task)
@@ -182,6 +304,17 @@ function selectResult(result: any) {
   }
 }
 
+/**
+ * 关闭命令面板
+ *
+ * 功能说明：清理状态并关闭弹窗
+ * 业务逻辑：
+ * 1. 更新visible状态为false
+ * 2. 清空搜索词
+ * 3. 重置选中索引
+ *
+ * 使用场景：用户点击关闭按钮、按Esc键、执行命令后调用
+ */
 function handleClose() {
   emit('update:visible', false)
   searchQuery.value = ''

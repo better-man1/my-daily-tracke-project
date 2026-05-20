@@ -1,3 +1,17 @@
+<!--
+/**
+ * ============================================================================
+ * goal.vue — 目标管理页面
+ * ============================================================================
+ *
+ * 【页面说明】展示个人OKR目标列表，按周期类型筛选，含进度条和关键结果
+ * 【路由路径】/sub-pages/goal/goal
+ * 【页面传参】无
+ * 【关键 API】onShow
+ * ============================================================================
+ */
+-->
+
 <template>
   <view class="page-container">
     <dt-navbar title="目标管理" show-back />
@@ -94,8 +108,11 @@
 </template>
 
 <script setup lang="ts">
+// Vue 3 Composition API
 import { ref, computed } from 'vue'
+// Uni-app 生命周期
 import { onShow } from '@dcloudio/uni-app'
+// 目标 API — 获取列表
 import { goalApi, type GoalItem } from '@/api/goal'
 
 const allGoals = ref<GoalItem[]>([])
@@ -136,11 +153,19 @@ function typeLabel(type: string) {
   return map[type] || type
 }
 
+
+// ============================================================================
+// 数据加载
+// ============================================================================
 async function loadGoals() {
   const res = await goalApi.list({}).catch(() => [])
   allGoals.value = res || []
 }
 
+
+// ============================================================================
+// 生命周期
+// ============================================================================
 onShow(() => {
   loadGoals()
 })

@@ -1,6 +1,37 @@
-/* DailyTracker 全局公共样式 */
+/**
+ * ============================================================================
+ * common.scss — 全局公共样式文件
+ * ============================================================================
+ *
+ * 【文件说明】
+ * 包含全局通用的样式类，在 App.vue 中通过 @import 引入，对所有页面生效。
+ * 提供了页面基础、安全区适配、卡片、按钮、标签、动画等通用组件样式。
+ *
+ * 【小程序样式与 H5 的差异】
+ * 1. page 选择器: 小程序中每个页面的根节点是 <page>，类似 H5 的 <body>。
+ *    所以这里用 page {} 来设置全局页面样式，H5 中对应的应该是 body {}。
+ *
+ * 2. 不支持 * 选择器: 小程序不支持 * { box-sizing: border-box } 等通配符选择器，
+ *    需要逐个指定或使用 view、text 等标签选择器。
+ *
+ * 3. 不支持 Web Components: 小程序没有 <div>、<span>，对应的是 <view>、<text>。
+ *    Uni-app 编译时会自动将 div 转为 view，span 转为 text。
+ *
+ * 4. CSS 动画限制: 小程序的 CSS 动画性能不如 H5，复杂动画可能掉帧。
+ *    建议使用 CSS3 transform 和 opacity 做动画（GPU 加速）。
+ *
+ * 5. 选择器限制: 小程序不支持属性选择器 [attr]、不支持 ::before/::after 的
+ *    content 使用复杂表达式（部分平台）。
+ *
+ * 【env() 安全区说明】
+ * env(safe-area-inset-bottom): 获取底部安全区域高度（iPhone X 等刘海屏设备）。
+ * 小程序中必须在页面底部留出安全距离，否则内容会被 Home Indicator 遮挡。
+ * H5 中也需要考虑（viewport-fit=cover 时），但小程序更常见。
+ * ============================================================================
+ */
 
-/* ---- 页面基础 ---- */
+/* ── 页面基础样式 ────────────────────────────────────────────────── */
+/* page 是小程序每个页面的根节点，等同于 H5 中的 body */
 page {
   font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, 'PingFang SC',
     'Microsoft YaHei', sans-serif;
@@ -10,7 +41,7 @@ page {
   line-height: 1.6;
 }
 
-/* 暗色模式 */
+/* 暗色模式 — 跟随系统自动切换 */
 @media (prefers-color-scheme: dark) {
   page {
     color: #F1F5F9;
@@ -18,7 +49,9 @@ page {
   }
 }
 
-/* ---- 安全区适配 ---- */
+/* ── 安全区适配 ──────────────────────────────────────────────────── */
+/* 【重要】iPhone X 及以上机型底部有 Home Indicator（横条），
+   需要用 env(safe-area-inset-bottom) 留出安全距离，否则按钮等会被遮挡 */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -27,7 +60,8 @@ page {
   padding-top: env(safe-area-inset-top);
 }
 
-/* ---- 通用容器 ---- */
+/* ── 通用容器 ──────────────────────────────────────────────────── */
+/* 小程序页面不自动撑满屏幕，需要手动设置 min-height: 100vh */
 .page-container {
   min-height: 100vh;
   padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
@@ -38,7 +72,8 @@ page {
   padding: 0 32rpx;
 }
 
-/* ---- 卡片 ---- */
+/* ── 卡片 ──────────────────────────────────────────────────────── */
+/* 小程序中的卡片样式，注意要设置 box-sizing: border-box */
 .card {
   background: #FFFFFF;
   border-radius: 24rpx;
@@ -54,7 +89,8 @@ page {
   }
 }
 
-/* ---- 文字工具 ---- */
+/* ── 文字工具类 ──────────────────────────────────────────────────── */
+/* 小程序中使用 text 组件显示文字，不支持 <span>、<p> 等 HTML 标签 */
 .text-primary { color: #6366F1; }
 .text-success { color: #10B981; }
 .text-warning { color: #F59E0B; }
@@ -76,7 +112,8 @@ page {
   overflow: hidden;
 }
 
-/* ---- 弹性布局工具 ---- */
+/* ── 弹性布局工具类 ──────────────────────────────────────────────── */
+/* 小程序完全支持 Flexbox 布局，但部分旧版本不支持 gap 属性 */
 .flex { display: flex; }
 .flex-col { flex-direction: column; }
 .flex-row { flex-direction: row; }
@@ -119,7 +156,9 @@ page {
 .px-lg { padding-left: 24rpx; padding-right: 24rpx; }
 .px-xl { padding-left: 32rpx; padding-right: 32rpx; }
 
-/* ---- 按钮 ---- */
+/* ── 按钮样式 ──────────────────────────────────────────────────── */
+/* 【重要】小程序中 <button> 组件有默认样式（边框、圆角等），
+   需要用 button::after { border: none } 去除默认边框 */
 .btn-primary {
   display: flex;
   align-items: center;
@@ -160,7 +199,7 @@ page {
   border: none;
 }
 
-/* ---- 标签 ---- */
+/* ── 标签 ──────────────────────────────────────────────────────── */
 .tag {
   display: inline-flex;
   align-items: center;
@@ -190,7 +229,7 @@ page {
   color: #EF4444;
 }
 
-/* ---- 空状态 ---- */
+/* ── 空状态 ──────────────────────────────────────────────────────── */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -210,7 +249,9 @@ page {
   color: #9CA3AF;
 }
 
-/* ---- 动画 ---- */
+/* ── 动画 ────────────────────────────────────────────────────────── */
+/* 【性能提示】小程序中推荐使用 transform 和 opacity 做动画（GPU 加速），
+   避免使用 top/left/width/height 等触发重排的属性 */
 .fade-in {
   animation: fadeIn 0.3s ease-out;
 }
@@ -241,7 +282,7 @@ page {
   }
 }
 
-/* ---- 分割线 ---- */
+/* ── 分割线 ──────────────────────────────────────────────────────── */
 .divider {
   height: 1rpx;
   background: #F3F4F6;

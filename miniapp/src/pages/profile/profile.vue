@@ -1,3 +1,17 @@
+<!--
+/**
+ * ============================================================================
+ * profile.vue — 个人中心（Tab 页）
+ * ============================================================================
+ *
+ * 【页面说明】展示用户信息、使用统计、功能菜单、设置和退出登录
+ * 【路由路径】/pages/profile/profile（Tab 页，uni.switchTab）
+ * 【页面传参】无
+ * 【关键 API】uni.navigateTo / uni.reLaunch / uni.showModal / onShow
+ * ============================================================================
+ */
+-->
+
 <template>
   <view class="page-container">
     <dt-navbar title="我的" />
@@ -101,14 +115,25 @@
 </template>
 
 <script setup lang="ts">
+// Vue 3 Composition API
 import { ref, computed } from 'vue'
+// Uni-app 生命周期
 import { onShow } from '@dcloudio/uni-app'
+// Pinia 用户 Store
 import { useUserStore } from '@/stores/user'
+// 总结 API — 打卡/今日总结
 import { summaryApi } from '@/api/summary'
+// 目标 API — 统计
 import { goalApi } from '@/api/goal'
+// 摘录 API
 import { excerptApi } from '@/api/excerpt'
+// 计划 API
 import { planApi } from '@/api/plan'
 
+
+// ============================================================================
+// 状态与数据
+// ============================================================================
 const userStore = useUserStore()
 
 const statsData = ref<Record<string, number>>({})
@@ -136,6 +161,10 @@ const settingItems = ref([
   { id: 'about', icon: 'ℹ️', label: '关于应用', iconBg: 'rgba(107, 114, 128, 0.1)' }
 ])
 
+
+// ============================================================================
+// 数据加载
+// ============================================================================
 async function loadData() {
   try {
     const [streak, todaySummary] = await Promise.all([
@@ -154,6 +183,10 @@ async function loadData() {
   }
 }
 
+
+// ============================================================================
+// 页面导航
+// ============================================================================
 function goPage(page: string) {
   const map: Record<string, string> = {
     goal: '/sub-pages/goal/goal',
@@ -196,6 +229,10 @@ function handleLogout() {
   })
 }
 
+
+// ============================================================================
+// 生命周期
+// ============================================================================
 onShow(() => {
   if (userStore.isLoggedIn) {
     loadData()

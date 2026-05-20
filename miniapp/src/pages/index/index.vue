@@ -1,3 +1,18 @@
+<!--
+/**
+ * ============================================================================
+ * index.vue — 首页仪表盘（Tab 主页）
+ * ============================================================================
+ *
+ * 【页面说明】应用的主入口 Tab 页，展示每日概览仪表盘
+ * 【路由路径】/pages/index/index（Tab 页，uni.switchTab 切换）
+ * 【页面传参】无
+ * 【Uni-app 关键 API】uni.switchTab / uni.navigateTo / uni.showToast / onShow
+ * 【数据流】onShow 时并发加载仪表盘和计划，异步加载随机摘录
+ * ============================================================================
+ */
+-->
+
 <template>
   <view class="page-container">
     <dt-navbar>
@@ -145,14 +160,25 @@
 </template>
 
 <script setup lang="ts">
+// Vue 3 Composition API — ref 响应式声明，computed 计算属性
 import { ref, computed } from 'vue'
+// Uni-app 生命周期 onShow — Tab 页每次显示时触发
 import { onShow } from '@dcloudio/uni-app'
+// Pinia 用户 Store — 获取登录状态和用户信息
 import { useUserStore } from '@/stores/user'
+// 仪表盘 API — 获取今日概览数据
 import { dashboardApi } from '@/api/dashboard'
+// 计划 API — 获取列表、更新状态
 import { planApi, type PlanItem } from '@/api/plan'
+// 摘录 API — 获取随机摘录
 import { excerptApi, type ExcerptItem } from '@/api/excerpt'
+// 日期工具 — formatDate 格式化、getWeekDay 星期、formatMoney 金额
 import { formatDate, getWeekDay, formatMoney } from '@/utils/date'
 
+
+// ============================================================================
+// 状态与数据
+// ============================================================================
 const userStore = useUserStore()
 
 // 今天的日期信息
@@ -191,6 +217,10 @@ const categoryLabel = (cat: string) => {
 }
 
 // 加载数据
+
+// ============================================================================
+// 数据加载
+// ============================================================================
 async function loadData() {
   try {
     const [dashboard, plans] = await Promise.all([
@@ -210,6 +240,10 @@ async function loadData() {
 }
 
 // 切换计划状态
+
+// ============================================================================
+// 交互操作
+// ============================================================================
 async function togglePlanStatus(item: PlanItem) {
   const newStatus = item.status === 'DONE' ? 'TODO' : 'DONE'
   try {
@@ -226,6 +260,10 @@ async function togglePlanStatus(item: PlanItem) {
   }
 }
 
+
+// ============================================================================
+// 页面导航
+// ============================================================================
 function goTab(name: string) {
   const map: Record<string, string> = {
     plan: '/pages/plan/plan',
@@ -244,6 +282,10 @@ function navigateTo(url: string) {
   uni.navigateTo({ url })
 }
 
+
+// ============================================================================
+// 生命周期
+// ============================================================================
 onShow(() => {
   if (userStore.isLoggedIn) {
     loadData()

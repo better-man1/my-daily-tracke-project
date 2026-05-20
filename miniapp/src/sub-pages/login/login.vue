@@ -1,3 +1,17 @@
+<!--
+/**
+ * ============================================================================
+ * login.vue — 登录/注册页面
+ * ============================================================================
+ *
+ * 【页面说明】用户登录和注册，支持模式切换、密码显隐
+ * 【路由路径】/sub-pages/login/login
+ * 【页面传参】无
+ * 【关键 API】uni.switchTab / uni.showToast / uni.setStorageSync
+ * ============================================================================
+ */
+-->
+
 <template>
   <view class="login-page">
     <!-- 背景装饰 -->
@@ -98,10 +112,17 @@
 </template>
 
 <script setup lang="ts">
+// Vue 3 Composition API
 import { ref } from 'vue'
+// Pinia 用户 Store
 import { useUserStore } from '@/stores/user'
+// 认证 API — 登录/注册
 import { authApi } from '@/api/auth'
 
+
+// ============================================================================
+// 状态与数据
+// ============================================================================
 const userStore = useUserStore()
 const mode = ref<'login' | 'register'>('login')
 const loading = ref(false)
@@ -113,6 +134,10 @@ const form = ref({
   password: ''
 })
 
+
+// ============================================================================
+// 表单提交
+// ============================================================================
 async function handleSubmit() {
   const { username, password, nickname } = form.value
 

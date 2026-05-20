@@ -1,43 +1,278 @@
+# ==============================================================================
+# 文件：application.yml — Spring Boot 主配置文件
+# ==============================================================================
+#
+# 【文件用途】
+# 这是 Spring Boot 应用的主配置文件，定义了服务器端口、数据库连接、
+# MyBatis-Plus ORM 配置、JWT 认证、API 文档、日志等核心设置。
+#
+# 【在项目中的位置】
+# backend/src/main/resources/application.yml
+# Spring Boot 启动时自动加载此文件。
+#
+# 【相关技术知识 — Spring Boot 配置体系】
+#
+# 【配置文件的加载优先级】（从高到低）
+# 1. 命令行参数（--server.port=9090）
+# 2. 系统环境变量（SERVER_PORT=9090）
+# 3. application-{profile}.yml（如 application-dev.yml）
+# 4. application.yml（你正在看的文件）
+#
+# 【YAML 语法基础】
+# - 使用缩进表示层级关系（必须用空格，不能用 Tab）
+# - 冒号后面必须有空格：key: value
+# - # 开头的是注释
+# - 使用 - 表示数组元素
+#
+# ==============================================================================
+
+# ==============================================================================
+# 服务器配置
+# ==============================================================================
 server:
+  # port: 8080 — 服务器监听的端口号。
+  #
+  # 应用启动后，可以通过 http://localhost:8080 访问。
+  # 8080 是 Spring Boot 的默认端口（传统 Java Web 用 80 或 8080）。
+  #
+  # 前端的 Vite 代理配置（proxy）会将 /api 请求转发到这个端口。
   port: 8080
   servlet:
+    # context-path: / — 应用的上下文路径（URL 前缀）。
+    #
+    # "/" 表示应用直接在根路径下提供服务，没有额外前缀。
+    # 如果设为 "/api"，则所有接口需要通过 http://localhost:8080/api/xxx 访问。
+    #
+    # 【注意】
+    # 这里设为 "/"，前端的请求路径 /api/xxx 由后端的 Controller 中的
+    # @RequestMapping("/api") 注解来处理，而不是通过 context-path。
     context-path: /
 
+# ==============================================================================
+# Spring 框架配置
+# ==============================================================================
 spring:
+  # profiles.active: dev — 激活开发环境配置。
+  #
+  # Spring Boot 支持多环境配置（Profile 机制）：
+  #   - application.yml：通用配置（所有环境共享）
+  #   - application-dev.yml：开发环境配置（数据库、Redis 连接等）
+  #   - application-prod.yml：生产环境配置
+  #   - application-test.yml：测试环境配置
+  #
+  # 通过设置 spring.profiles.active 可以切换不同的环境。
+  # 开发时用 dev，部署时改为 prod。
   profiles:
     active: dev
+
   application:
+    # name: daily-tracker-backend — 应用名称。
+    #
+    # 用于服务注册与发现、日志记录、监控等场景。
+    # 在微服务架构中，服务名称是唯一标识。
     name: daily-tracker-backend
+
   jackson:
+    # date-format: yyyy-MM-dd HH:mm:ss — 日期格式化模板。
+    #
+    # Jackson 是 Spring Boot 默认的 JSON 序列化/反序列化库。
+    # 这个配置设置了 Java Date 对象与 JSON 字符串之间的转换格式。
+    #
+    # Java Date → JSON: 2024-01-15 14:30:00
+    # JSON → Java Date: 自动解析 yyyy-MM-dd HH:mm:ss 格式的字符串
+    #
+    # 常见的日期格式：
+    #   yyyy-MM-dd             → 2024-01-15
+    #   yyyy-MM-dd HH:mm:ss   → 2024-01-15 14:30:00
+    #   yyyy/MM/dd HH:mm:ss   → 2024/01/15 14:30:00
+    #   ISO 8601               → 2024-01-15T14:30:00+08:00
     date-format: yyyy-MM-dd HH:mm:ss
+
+    # time-zone: Asia/Shanghai — 时区设置。
+    #
+    # 设置为中国标准时间（东八区，UTC+8）。
+    # 确保日期时间在序列化时使用正确的时区，避免时间偏差。
+    #
+    # 【常见问题】
+    # 如果不设置时区，默认使用 UTC 时间，会比中国时间慢 8 小时。
+    # 例如：数据库中是 14:00，JSON 中可能显示为 06:00（UTC）。
     time-zone: Asia/Shanghai
+
+    # default-property-inclusion: non_null — JSON 序列化时忽略 null 值。
+    #
+    # 默认情况下，Java 对象中值为 null 的字段也会序列化为 JSON：
+    #   { "name": "张三", "age": null, "email": null }
+    #
+    # 设置 non_null 后，null 字段会被自动忽略：
+    #   { "name": "张三" }
+    #
+    # 好处：
+    # - 减少网络传输量
+    # - JSON 更简洁
+    # - 前端不需要额外判断 null
+    #
+    # 其他可选值：
+    #   - always：始终包含（默认）
+    #   - non_null：忽略 null
+    #   - non_empty：忽略 null 和空集合
+    #   - non_absent：忽略 null 和 Optional.empty()
     default-property-inclusion: non_null
 
+# ==============================================================================
+# MyBatis-Plus 配置（ORM 框架）
+# ==============================================================================
+#
+# MyBatis-Plus 是 MyBatis 的增强工具，在 MyBatis 的基础上只做增强不做改变。
+# 简化了开发流程，提供了通用的 CRUD、分页、代码生成器等功能。
+#
+# 【核心特性】
+# - 通用 CRUD：内置通用的 Mapper 和 Service，无需编写基础 SQL
+# - 条件构造器：使用 Lambda 表达式构建查询条件，类型安全
+# - 分页插件：物理分页，支持多种数据库
+# - 代码生成器：根据数据库表自动生成 Entity、Mapper、Service、Controller
+# ==============================================================================
 mybatis-plus:
   configuration:
+    # map-underscore-to-camel-case: true — 开启下划线到驼峰命名自动映射。
+    #
+    # 数据库字段通常使用下划线命名（snake_case）：
+    #   user_name, create_time, is_deleted
+    #
+    # Java 属性通常使用驼峰命名（camelCase）：
+    #   userName, createTime, isDeleted
+    #
+    # 开启此选项后，MyBatis-Plus 会自动进行映射：
+    #   user_name  ↔  userName
+    #   create_time ↔  createTime
+    #
+    # 这样就不需要手动在 SQL 中写 AS 别名了。
     map-underscore-to-camel-case: true
+
+    # log-impl: StdOutImpl — SQL 日志输出到控制台。
+    #
+    # 在开发环境中，将执行的 SQL 语句打印到控制台，方便调试。
+    # 例如：
+    #   ==>  Preparing: SELECT * FROM user WHERE username = ? AND is_deleted = 0
+    #   ==> Parameters: admin(String)
+    #   <==      Total: 1
+    #
+    # 【注意】生产环境中应该关闭或改为文件输出，避免性能损耗。
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
   global-config:
     db-config:
-      logic-delete-field: isDeleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
+      # ====================================================================
+      # 逻辑删除配置
+      # ====================================================================
+      #
+      # 【什么是逻辑删除？】
+      # 逻辑删除不是真正从数据库中删除记录，而是标记一个"已删除"状态。
+      # 查询时自动过滤掉已删除的记录。
+      #
+      # 对比：
+      # - 物理删除：DELETE FROM user WHERE id = 1  （数据永久消失）
+      # - 逻辑删除：UPDATE user SET is_deleted = 1 WHERE id = 1 （数据保留）
+      #
+      # 【好处】
+      # - 数据可以恢复
+      # - 支持审计和追溯
+      # - 维护数据完整性
+      #
+      # MyBatis-Plus 配置后，调用 mapper.deleteById(id) 时会自动执行
+      # UPDATE 而不是 DELETE，调用 selectList() 时会自动加 WHERE is_deleted = 0。
+      logic-delete-field: isDeleted     # Java 实体类中的逻辑删除字段名
+      logic-delete-value: 1             # 已删除的值
+      logic-not-delete-value: 0         # 未删除的值
+
+      # id-type: auto — 主键生成策略。
+      #
+      # auto 表示使用数据库自增主键（AUTO_INCREMENT）。
+      # 插入新记录时不需要指定 ID，数据库会自动生成。
+      #
+      # 其他可选策略：
+      #   - auto：数据库自增
+      #   - assign_id：雪花算法生成分布式 ID（推荐分布式系统使用）
+      #   - assign_uuid：UUID
+      #   - input：手动输入
       id-type: auto
 
-# JWT 配置
+# ==============================================================================
+# JWT 配置（JSON Web Token）
+# ==============================================================================
+#
+# JWT 是一种无状态的认证方案，用户登录后服务器签发一个 Token，
+# 后续请求携带此 Token 进行身份验证。
+#
+# 【认证流程】
+# 1. 用户提交用户名和密码
+# 2. 服务器验证成功，生成 JWT Token 返回给前端
+# 3. 前端将 Token 存储在 localStorage
+# 4. 后续请求在 Header 中携带：Authorization: Bearer <token>
+# 5. 服务器验证 Token 的有效性
+#
+# 【Token 类型】
+# - Access Token：短期令牌，用于日常请求认证
+# - Refresh Token：长期令牌，用于刷新过期的 Access Token
+# ==============================================================================
 jwt:
+  # secret — JWT 签名密钥。
+  #
+  # 用于对 Token 进行签名和验证，确保 Token 没有被篡改。
+  # 【安全警告】生产环境中必须使用高强度密钥并妥善保管，不要提交到公开仓库。
+  # 建议使用至少 256 位（32 字节）的随机密钥。
   secret: dailytracker_jwt_secret_key_2026_please_change_in_production
+
+  # access-token-expiration: 1800000 — Access Token 有效期（毫秒）。
+  #
+  # 1800000 毫秒 = 30 分钟。
+  # Access Token 设置较短的有效期，降低 Token 泄露的风险。
+  # 过期后需要使用 Refresh Token 获取新的 Access Token。
   access-token-expiration: 1800000    # 30分钟
+
+  # refresh-token-expiration: 604800000 — Refresh Token 有效期（毫秒）。
+  #
+  # 604800000 毫秒 = 7 天。
+  # Refresh Token 设置较长的有效期，用户在这段时间内不需要重新登录。
+  # 过期后需要重新输入用户名和密码。
   refresh-token-expiration: 604800000 # 7天
 
-# Knife4j API文档
+# ==============================================================================
+# Knife4j API 文档配置
+# ==============================================================================
+#
+# Knife4j 是 Spring Boot 的 API 文档生成工具（Swagger 的增强版）。
+# 启动后访问 http://localhost:8080/doc.html 可以看到交互式 API 文档。
+#
+# 【功能特性】
+# - 自动生成 API 文档（基于注解）
+# - 在线测试 API（类似 Postman）
+# - 支持请求参数说明和响应示例
+# - 支持分组和排序
+#
+# 【常用注解】
+# - @Tag(name = "用户管理")：Controller 分组（OpenAPI 3）
+# - @Operation(summary = "登录")：接口说明
+# - @Parameter(description = "用户名")：参数说明
 knife4j:
-  enable: true
+  enable: true           # 启用 Knife4j 文档
   setting:
-    language: zh_cn
+    language: zh_cn       # 文档界面语言设为中文
 
-# 日志
+# ==============================================================================
+# 日志配置
+# ==============================================================================
+#
+# 配置不同包/类的日志输出级别。
+# 日志级别从低到高：trace < debug < info < warn < error
+# 设置某个级别后，该级别及更高级别的日志都会输出。
 logging:
   level:
+    # com.dailytracker: debug — 项目代码使用 DEBUG 级别。
+    # 输出详细的调试信息，包括 SQL 参数、方法调用等。
+    # 开发时使用 debug 级别，方便排查问题。
     com.dailytracker: debug
+
+    # org.springframework.security: info — Spring Security 使用 INFO 级别。
+    # Spring Security 的 DEBUG 日志非常冗长（每次请求都输出大量信息），
+    # 所以设为 info 级别，只输出重要信息（如认证失败、权限拒绝等）。
     org.springframework.security: info

@@ -1,11 +1,40 @@
-// uni-app 全局 Scss 变量 — 此文件会被自动注入到每个组件的 <style> 中
-// 主色调
+/**
+ * ============================================================================
+ * uni.scss — Uni-app 全局 SCSS 变量文件
+ * ============================================================================
+ *
+ * 【文件说明】
+ * 这是 Uni-app 的特殊文件，会被自动注入到每个 .vue 组件的 <style lang="scss"> 中。
+ * 无需手动 @import，框架编译时会自动处理。
+ *
+ * 【与 H5 前端的差异】
+ * - H5 (Vite/Webpack): 需要在 vite.config.ts 中配置 css.preprocessorOptions.additionalData
+ *   来自动注入全局 SCSS 变量。
+ * - Uni-app: 只需将变量放在 src/uni.scss 中即可，框架自动处理。
+ *
+ * 【rpx 单位说明（小程序特有）】
+ * rpx (responsive pixel) 是微信小程序独创的响应式长度单位：
+ * - 规定屏幕宽度固定为 750rpx（无论实际像素宽度）
+ * - 在 iPhone 6 上（375px 宽）: 1rpx = 0.5px，即 1px = 2rpx
+ * - 在 iPhone 6 Plus 上（414px 宽）: 1rpx ≈ 0.552px
+ * - 换算公式: 1rpx = 屏幕宽度 / 750
+ *
+ * 设计稿通常基于 750px 宽度，这样 1:1 对应 rpx，无需换算。
+ *
+ * 【设计规范参考】
+ * - 小程序设计指南: https://developers.weixin.qq.com/miniprogram/design/
+ * ============================================================================
+ */
+
+// ── 主色调 ─────────────────────────────────────────────────────
+// 使用 Indigo 色系作为品牌主色，传达专业、可靠的品牌感
 $dt-primary: #6366F1;
 $dt-primary-light: #818CF8;
 $dt-primary-dark: #4F46E5;
 $dt-primary-bg: rgba(99, 102, 241, 0.08);
 
-// 功能色
+// ── 功能色 ──────────────────────────────────────────────────────
+// 用于表示成功、警告、危险、信息等语义状态
 $dt-success: #10B981;
 $dt-success-light: #34D399;
 $dt-warning: #F59E0B;
@@ -14,7 +43,7 @@ $dt-danger: #EF4444;
 $dt-danger-light: #F87171;
 $dt-info: #6B7280;
 
-// 中性色
+// ── 中性色（用于文字、背景、边框等基础元素）──────────────────────────
 $dt-text-primary: #1F2937;
 $dt-text-secondary: #6B7280;
 $dt-text-placeholder: #9CA3AF;
@@ -25,21 +54,25 @@ $dt-bg-page: #F5F7FA;
 $dt-bg-card: #FFFFFF;
 $dt-bg-hover: #F9FAFB;
 
-// 暗色模式
+// ── 暗色模式 ─────────────────────────────────────────────────────
+// 小程序支持跟随系统暗色模式，通过 @media (prefers-color-scheme: dark) 实现
+// 【与 H5 差异】小程序的暗色模式需要适配更多组件（如导航栏、tabBar 等）
 $dt-dark-bg-page: #0F172A;
 $dt-dark-bg-card: #1E293B;
 $dt-dark-text-primary: #F1F5F9;
 $dt-dark-text-secondary: #94A3B8;
 $dt-dark-border: #334155;
 
-// 圆角
+// ── 圆角 ─────────────────────────────────────────────────────────
+// 使用 rpx 单位确保在不同屏幕密度下比例一致
 $dt-radius-sm: 12rpx;
 $dt-radius-md: 16rpx;
 $dt-radius-lg: 24rpx;
 $dt-radius-xl: 32rpx;
 $dt-radius-full: 9999rpx;
 
-// 间距
+// ── 间距 ─────────────────────────────────────────────────────────
+// 基于 8rpx 的倍数体系，保持视觉节奏一致
 $dt-space-xs: 8rpx;
 $dt-space-sm: 12rpx;
 $dt-space-md: 16rpx;
@@ -47,7 +80,9 @@ $dt-space-lg: 24rpx;
 $dt-space-xl: 32rpx;
 $dt-space-2xl: 48rpx;
 
-// 字体大小
+// ── 字体大小 ─────────────────────────────────────────────────────
+// 小程序中文字号使用 rpx，可确保在不同设备上视觉大小一致
+// 对比 H5：H5 通常使用 px、rem 或 vw 作为字号单位
 $dt-font-xs: 22rpx;
 $dt-font-sm: 24rpx;
 $dt-font-md: 28rpx;
@@ -56,7 +91,9 @@ $dt-font-xl: 36rpx;
 $dt-font-2xl: 44rpx;
 $dt-font-3xl: 56rpx;
 
-// 阴影
+// ── 阴影 ─────────────────────────────────────────────────────────
+// 【注意】小程序中 box-shadow 性能较差，在列表项中大量使用可能影响滚动流畅度
+// 建议：在列表项中使用 1rpx border 替代阴影，仅在卡片级别使用阴影
 $dt-shadow-sm: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
 $dt-shadow-md: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
 $dt-shadow-lg: 0 8rpx 32rpx rgba(0, 0, 0, 0.12);

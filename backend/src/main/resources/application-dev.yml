@@ -1,31 +1,211 @@
+# ==============================================================================
+# 文件：application-dev.yml — 开发环境配置文件
+# ==============================================================================
+#
+# 【文件用途】
+# 这是 Spring Boot 开发环境（dev profile）的专属配置文件。
+# 包含数据库连接、Redis 缓存、MinIO 对象存储、微信小程序等环境相关的配置。
+# 这些配置因环境不同而变化，因此放在独立的 profile 文件中。
+#
+# 【在项目中的位置】
+# backend/src/main/resources/application-dev.yml
+# 当 application.yml 中设置 spring.profiles.active=dev 时，此文件自动加载。
+#
+# 【激活方式】
+# - 在 application.yml 中设置：spring.profiles.active: dev
+# - 或启动时传入参数：java -jar app.jar --spring.profiles.active=dev
+# - 或设置环境变量：SPRING_PROFILES_ACTIVE=dev
+#
+# 【环境配置的覆盖规则】
+# application-dev.yml 中的配置会覆盖 application.yml 中的同名配置。
+# 例如：如果两个文件都定义了 server.port，以 application-dev.yml 为准。
+#
+# 【安全提醒】
+# 此文件包含敏感信息（数据库密码、密钥等），生产环境应使用：
+#   - 环境变量注入
+#   - 配置中心（如 Spring Cloud Config、Nacos）
+#   - 密钥管理服务（如 Vault）
+# 切勿将生产密码提交到 Git 仓库。
+#
+# ==============================================================================
+
 spring:
+  # ==============================================================================
+  # 数据源配置（MySQL + HikariCP 连接池）
+  # ==============================================================================
+  #
+  # 【技术栈说明】
+  # - MySQL：关系型数据库，存储应用的业务数据
+  # - HikariCP：高性能 JDBC 连接池（Spring Boot 默认连接池）
+  #
+  # 【为什么需要连接池？】
+  # 每次数据库操作都创建新连接非常耗时（TCP 三次握手 + 认证）。
+  # 连接池预先创建一组连接，使用时直接取出，用完归还，大幅提升性能。
+  #
+  # 【HikariCP 的优势】
+  # - 速度极快（约 0.1ms 获取连接）
+  # - 代码精简（仅约 2000 行）
+  # - Spring Boot 2.x+ 默认连接池
+  # ==============================================================================
   datasource:
+    # url — 数据库连接 URL。
+    #
+    # 格式：jdbc:mysql://主机:端口/数据库名?参数
+    #
+    # 参数说明：
+    #   - useSSL=false：关闭 SSL 加密连接（开发环境为了简化配置）
+    #   - characterEncoding=UTF-8：使用 UTF-8 编码，支持中文
+    #   - serverTimezone=Asia/Shanghai：服务器时区设为上海（东八区）
+    #   - allowPublicKeyRetrieval=true：允许公钥检索（MySQL 8.0+ 需要）
     url: jdbc:mysql://localhost:3306/daily_tracker?useSSL=false&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+
+    # username / password — 数据库登录凭据。
+    # 开发环境使用 root 用户和简单密码，生产环境必须使用专用账户。
     username: root
     password: root
+
+    # driver-class-name — JDBC 驱动类名。
+    # com.mysql.cj.jdbc.Driver 是 MySQL Connector/J 8.0+ 的驱动类。
+    # （旧版 MySQL 驱动是 com.mysql.jdbc.Driver，已废弃）
     driver-class-name: com.mysql.cj.jdbc.Driver
+
+    # HikariCP 连接池配置
     hikari:
+      # maximum-pool-size: 10 — 最大连接数。
+      #
+      # 连接池中允许的最大连接数量。
+      # 设置建议：
+      #   公式：连接数 = ((核心数 * 2) + 有效磁盘数)
+      #   例如 4 核 CPU：约 10 个连接
+      #   过多连接会浪费数据库资源，过少会导致请求排队等待。
       maximum-pool-size: 10
+
+      # minimum-idle: 5 — 最小空闲连接数。
+      #
+      # 连接池中保持的最小空闲连接数量。
+      # 即使没有数据库请求，池中也至少保留 5 个连接，
+      # 确保突发请求时可以立即响应，不需要等待创建新连接。
       minimum-idle: 5
+
+      # connection-timeout: 30000 — 连接超时时间（毫秒）。
+      #
+      # 30 秒内无法获取可用连接则抛出异常。
+      # 如果经常超时，说明连接数不够用或存在慢查询。
       connection-timeout: 30000
+
+  # ==============================================================================
+  # Redis 配置（缓存 + 会话存储）
+  # ==============================================================================
+  #
+  # 【Redis 在本项目中的作用】
+  # - 缓存热点数据（如用户信息、配置数据），减少数据库查询
+  # - 存储 Refresh Token（JWT 刷新令牌），支持 Token 的主动失效
+  # - 可选：存储验证码、限流计数等临时数据
+  #
+  # 【Redis 的特点】
+  # - 内存数据库，读写速度极快（微秒级）
+  # - 支持多种数据结构（字符串、哈希、列表、集合、有序集合等）
+  # - 支持数据持久化（RDB 快照 + AOF 日志）
+  # - 支持过期时间（TTL），适合做缓存和临时数据
+  # ==============================================================================
   data:
     redis:
+      # host: localhost — Redis 服务器地址。
+      # 开发环境通常在本机运行 Redis。
       host: localhost
+
+      # port: 6379 — Redis 默认端口号。
+      # 6379 是 Redis 的默认端口。
       port: 6379
+
+      # password — Redis 连接密码。
+      # 为空表示没有设置密码（开发环境常见）。
+      # 生产环境必须设置密码。
       password:
+
+      # database: 0 — Redis 数据库编号。
+      # Redis 默认有 16 个数据库（0-15），通过编号选择。
+      # 不同应用可以使用不同的数据库编号来隔离数据。
       database: 0
+
+      # Lettuce 客户端连接池配置
+      #
+      # 【Lettuce vs Jedis】
+      # Spring Boot 2.x+ 默认使用 Lettuce 作为 Redis 客户端：
+      # - Lettuce：基于 Netty，异步非阻塞，线程安全，一个连接支持多个线程
+      # - Jedis：同步阻塞，每个线程需要独立的连接
+      #
+      # 对于大部分场景，Lettuce 性能更好。
       lettuce:
         pool:
+          # max-active: 8 — 连接池最大连接数。
+          # 同时最多 8 个连接可用。
           max-active: 8
+
+          # max-idle: 8 — 最大空闲连接数。
+          # 空闲时保持 8 个连接，与 max-active 相同，避免频繁创建/销毁连接。
           max-idle: 8
+
+          # min-idle: 0 — 最小空闲连接数。
+          # 设为 0 表示空闲时可以完全释放所有连接。
           min-idle: 0
 
+# ==============================================================================
+# MinIO 对象存储配置
+# ==============================================================================
+#
+# 【什么是 MinIO？】
+# MinIO 是一个高性能的对象存储服务器，兼容 Amazon S3 API。
+# 用于存储文件（如头像、附件、图片等），类似于私有化的 AWS S3。
+#
+# 【为什么用对象存储而不是本地文件系统？】
+# - 可扩展：独立于应用服务器，可以单独扩容
+# - 高可用：支持分布式部署和数据冗余
+# - 安全：支持访问控制和加密
+# - 方便：提供 HTTP API 上传/下载文件
+#
+# 【使用场景】
+# - 用户头像上传
+# - 每日总结中的附件
+# - 导出的 Excel 文件临时存储
+# ==============================================================================
 minio:
+  # endpoint: http://localhost:9000 — MinIO 服务器地址。
+  # 开发环境在本机运行 MinIO，默认端口 9000。
   endpoint: http://localhost:9000
+
+  # access-key / secret-key — MinIO 的访问密钥对。
+  # 类似于用户名和密码，用于身份验证。
+  # 默认安装后为 minioadmin / minioadmin。
+  # 【安全警告】生产环境必须修改！
   access-key: minioadmin
   secret-key: minioadmin
+
+  # bucket-name: daily-tracker — 存储桶名称。
+  # 存储桶（Bucket）是对象的容器，类似于文件夹的概念。
+  # 所有文件都上传到这个桶中。
   bucket-name: daily-tracker
 
+# ==============================================================================
+# 微信小程序配置
+# ==============================================================================
+#
+# 【微信登录流程（小程序端）】
+# 1. 小程序调用 wx.login() 获取临时登录凭证 code
+# 2. 前端将 code 发送给后端
+# 3. 后端使用 code + app-id + app-secret 请求微信服务器
+# 4. 微信服务器返回用户的 openid（唯一标识）和 session_key
+# 5. 后端根据 openid 查找或创建用户，签发 JWT Token 返回前端
+#
+# 【配置说明】
+# - app-id：微信小程序的 AppID（在小程序管理后台获取）
+# - app-secret：微信小程序的 AppSecret（在小程序管理后台获取）
+#
+# 【安全提醒】
+# AppSecret 是核心机密，绝对不能泄露。生产环境应使用环境变量注入。
+# 这里使用占位符 "your_app_id" 和 "your_app_secret"，
+# 开发时需要替换为真实的值。
+# ==============================================================================
 wx:
-  app-id: your_app_id
-  app-secret: your_app_secret
+  app-id: your_app_id        # 微信小程序 AppID（需要替换为真实值）
+  app-secret: your_app_secret # 微信小程序 AppSecret（需要替换为真实值）

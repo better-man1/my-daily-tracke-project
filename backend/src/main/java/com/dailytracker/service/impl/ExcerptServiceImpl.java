@@ -29,16 +29,35 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * 每日摘录服务实现
+ * 每日摘录服务实现类（Excerpt Service Implementation）
+ *
+ * 【类设计说明】
+ * 本类是 ExcerptService 接口的具体实现，负责摘录/读书笔记模块的全部业务逻辑。
+ * 包括摘录 CRUD、收藏管理、标签管理、多条件筛选分页、全文搜索、Markdown 导出等。
+ *
+ * 【注解解释】
+ * @Slf4j      - Lombok 注解，自动生成 SLF4J 日志记录器
+ * @Service    - Spring 注解，标记为业务层 Bean
+ * @RequiredArgsConstructor - Lombok 注解，通过构造器注入依赖
+ *
+ * 【核心设计】
+ * - 多对多关联管理：通过 ExcerptTagRel 中间表管理摘录和标签的关联关系
+ * - 标签使用计数：每次关联标签时自动递增 usageCount，支持按使用频率排序
+ * - 全文搜索：使用 SQL LIKE 模糊匹配（适用于中小数据量场景）
+ * - 数据导出：格式化为 Markdown 格式，便于备份和跨平台使用
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ExcerptServiceImpl implements ExcerptService {
 
+    /** 摘录数据访问层 */
     private final ExcerptMapper excerptMapper;
+    /** 标签数据访问层 */
     private final TagMapper tagMapper;
+    /** 摘录-标签关联数据访问层 */
     private final ExcerptTagRelMapper excerptTagRelMapper;
+    /** Jackson JSON 序列化工具 */
     private final ObjectMapper objectMapper;
 
     @Override
@@ -179,6 +198,14 @@ public class ExcerptServiceImpl implements ExcerptService {
         return tagToMap(tag);
     }
 
+    /**
+     * Tag 实体转 Map（私有工具方法）
+     *
+     * 将标签实体转换为前端友好的 Map 结构。
+     *
+     * @param t 标签实体
+     * @return 包含 id、name、color、usageCount 的 Map
+     */
     private Map<String, Object> tagToMap(Tag t) {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("id", t.getId());
@@ -231,8 +258,15 @@ public class ExcerptServiceImpl implements ExcerptService {
         return sb.toString();
     }
 
-    // =================== 私有方法 ===================
+    // =================== 私有辅助方法 ===================
 
+    /**
+     * 查询并校验摘录归属（私有方法）
+     *
+     * @param id 摘录ID
+     * @return Excerpt 摘录实体
+     * @throws BusinessException 摘录不存在或不属于当前用户时抛出异常
+     */
     private Excerpt getAndValidate(Long id) {
         Long userId = SecurityUtils.getCurrentUserId();
         Excerpt excerpt = excerptMapper.selectOne(
@@ -245,6 +279,15 @@ public class ExcerptServiceImpl implements ExcerptService {
         return excerpt;
     }
 
+    /**
+     * 保存摘录与标签的关联关系（私有方法）
+     *
+     * 批量创建关联记录，同时递增每个标签的使用计数。
+     *
+     * @param excerptId 摘录ID
+     * @param tagIds    标签ID列表
+     * @param userId    用户ID（用于校验标签归属）
+     */
     private void saveTagRelations(Long excerptId, List<Long> tagIds, Long userId) {
         tagIds.forEach(tagId -> {
             ExcerptTagRel rel = new ExcerptTagRel();
@@ -260,6 +303,15 @@ public class ExcerptServiceImpl implements ExcerptService {
         });
     }
 
+    /**
+     * 实体转响应 DTO（私有方法）
+     *
+     * 将摘录实体转换为响应 DTO，同时查询关联的标签列表。
+     * 标签查询通过中间表（excerpt_tag_rel）关联。
+     *
+     * @param excerpt 摘录实体
+     * @return ExcerptResponse 响应 DTO（含标签列表）
+     */
     private ExcerptResponse toResponse(Excerpt excerpt) {
         ExcerptResponse response = new ExcerptResponse();
         BeanUtils.copyProperties(excerpt, response);
@@ -282,6 +334,12 @@ public class ExcerptServiceImpl implements ExcerptService {
         return response;
     }
 
+    /**
+     * 对象转 JSON 字符串（私有工具方法）
+     *
+     * @param obj 待序列化的对象
+     * @return JSON 字符串，失败时返回 null
+     */
     private String toJson(Object obj) {
         try {
             return objectMapper.writeValueAsString(obj);

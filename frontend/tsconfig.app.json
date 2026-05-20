@@ -1,17 +1,156 @@
 {
+  /**
+   * ============================================================================
+   * 文件：tsconfig.app.json — 应用源码的 TypeScript 配置
+   * ============================================================================
+   *
+   * 【文件用途】
+   * 专门用于编译 src/ 目录下的应用源码（.ts、.tsx、.vue 文件）。
+   * 这些代码最终运行在浏览器环境中。
+   *
+   * 【在项目中的位置】
+   * frontend/tsconfig.app.json
+   * 被 tsconfig.json 通过 references 引用。
+   * ============================================================================
+   */
+
+  /**
+   * "extends" — 继承另一个配置文件作为基础配置。
+   *
+   * '@vue/tsconfig/tsconfig.dom.json' 是 @vue/tsconfig 包提供的预设配置，
+   * 包含了 Vue 3 + 浏览器环境推荐的 TypeScript 配置：
+   *   - 目标编译版本
+   *   - DOM 类型支持
+   *   - 模块解析策略
+   *   - JSX 支持（用于 .vue 文件的 TSX 写法）
+   *
+   * 【知识扩展：extends 的继承规则】
+   * - 数组/对象类型的配置：子配置会覆盖或合并父配置
+   * - 基本类型的配置：子配置直接覆盖父配置
+   */
   "extends": "@vue/tsconfig/tsconfig.dom.json",
+
+  /**
+   * "compilerOptions" — 编译器选项，控制 TypeScript 编译器的行为。
+   */
   "compilerOptions": {
+    /**
+     * "tsBuildInfoFile" — 增量编译信息文件的存储路径。
+     *
+     * TypeScript 的增量编译功能会缓存上一次编译的结果，
+     * 下次编译时只重新编译修改过的文件，大幅提升编译速度。
+     *
+     * 这里将缓存文件放在 node_modules/.tmp/ 下，避免污染项目源码目录。
+     */
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+
+    /**
+     * "types" — 指定需要包含的全局类型声明包。
+     *
+     * "vite/client" 提供 Vite 特有的类型声明：
+     *   - import.meta.env 的类型（环境变量）
+     *   - *.vue 模块的类型声明
+     *   - 静态资源导入的类型（如 import url from './image.png'）
+     *
+     * 【注意】
+     * 指定了 types 后，TypeScript 只会自动包含这里列出的类型包。
+     * 如果不指定，TypeScript 会自动包含 node_modules/@types/ 下所有包。
+     */
     "types": ["vite/client"],
+
+    /**
+     * "ignoreDeprecations" — 忽略特定版本的废弃警告。
+     *
+     * "6.0" 表示忽略 TypeScript 6.0 中引入的废弃 API 警告。
+     * 这在升级 TypeScript 版本时很有用，避免大量废弃警告干扰开发。
+     */
     "ignoreDeprecations": "6.0",
+
+    /**
+     * "baseUrl" — 模块解析的基础目录。
+     *
+     * 设置为 "."（项目根目录），与 paths 配合使用来解析路径别名。
+     */
     "baseUrl": ".",
+
+    /**
+     * "paths" — 模块路径映射（路径别名）。
+     *
+     * "@/*" 映射到 "./src/*"，让 TypeScript 编译器知道：
+     *   import { xxx } from '@/stores/user'
+     * 实际解析为：
+     *   import { xxx } from './src/stores/user'
+     *
+     * 【重要】
+     * 这里的配置必须与 vite.config.ts 中的 resolve.alias 保持一致！
+     * Vite 负责运行时的模块解析，TypeScript 负责编译时的类型检查。
+     * 两者必须使用相同的映射规则，否则可能出现：
+     *   - Vite 能运行但 IDE 报错（路径找不到）
+     *   - IDE 不报错但运行报错
+     */
     "paths": {
       "@/*": ["./src/*"]
     },
+
+    /**
+     * "noUnusedLocals" — 是否检查未使用的局部变量。
+     *
+     * false 表示不检查。设为 false 是为了在快速开发时减少干扰，
+     * 但建议在正式项目中设为 true，帮助发现冗余代码。
+     */
     "noUnusedLocals": false,
+
+    /**
+     * "noUnusedParameters" — 是否检查未使用的函数参数。
+     *
+     * false 表示不检查。有些回调函数的参数可能不需要全部使用，
+     * 设为 false 可以避免需要用 _ 前缀标记未使用参数。
+     */
     "noUnusedParameters": false,
+
+    /**
+     * "erasableSyntaxOnly" — 只允许可擦除的 TypeScript 语法。
+     *
+     * true 表示 TypeScript 编译器只允许那些可以通过简单删除
+     * 就能转换为 JavaScript 的语法（如类型注解、接口声明）。
+     *
+     * 不允许的语法包括：enum（枚举）、namespace（命名空间）等，
+     * 这些需要 TypeScript 编译器生成额外的 JavaScript 代码。
+     *
+     * 这是因为 Vite 使用 esbuild 进行转译（不进行完整的 TS 编译），
+     * esbuild 只支持"可擦除"的 TypeScript 语法。
+     */
     "erasableSyntaxOnly": true,
+
+    /**
+     * "noFallthroughCasesInSwitch" — 禁止 switch 语句的 case 穿透。
+     *
+     * true 表示如果某个 case 没有 break/return，编译器会报错。
+     * 这可以防止因为忘记写 break 而导致的逻辑错误。
+     *
+     * 示例：
+     * switch (status) {
+     *   case 'active': doSomething();  // 错误！缺少 break
+     *   case 'inactive': doOther();    // 会意外执行
+     * }
+     */
     "noFallthroughCasesInSwitch": true
   },
+
+  /**
+   * "include" — 指定需要编译的文件范围。
+   *
+   * - "src/**/*.ts" → src 目录下所有 .ts 文件
+   * - "src/**/*.tsx" → src 目录下所有 .tsx 文件（TSX 是 TypeScript 版 JSX）
+   * - "src/**/*.vue" → src 目录下所有 .vue 单文件组件
+   *
+   * 【glob 模式说明】
+   * ** 表示匹配任意层级的子目录
+   * * 表示匹配任意文件名
+   *
+   * 【对比 exclude】
+   * include 的反面是 exclude，用于排除不需要编译的文件。
+   * 常见排除项：node_modules、dist、**/*.spec.ts（测试文件）
+   */
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
 }

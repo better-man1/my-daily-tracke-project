@@ -1,3 +1,23 @@
+<!--
+/**
+ * ============================================================================
+ * ProfileView.vue — 个人中心页面组件
+ * ============================================================================
+ *
+ * 【组件说明】
+ * 用户个人资料管理页面。
+ *
+ * 【主要功能】
+ * - 用户信息展示与编辑
+ * - 头像上传
+ * - 修改密码
+ * - 使用统计数据
+ * - 全量数据导出
+ * - 退出登录
+ * ============================================================================
+ */
+-->
+
 <template>
   <div class="profile-view">
     <div class="page-header">
@@ -108,6 +128,14 @@ import { useUserStore } from '@/stores/user'
 import { userApi } from '@/api/user'
 import { Camera } from '@element-plus/icons-vue'
 
+// ============================================================================
+// // 状态
+// ============================================================================
+
+// ============================================================================
+// // 状态
+// ============================================================================
+
 const userStore = useUserStore()
 const router = useRouter()
 const saving = ref(false)
@@ -154,6 +182,23 @@ const pwdRules = {
 
 const pwdFormRef = ref<FormInstance>()
 
+// ============================================================================
+// // 数据加载
+// ============================================================================
+
+/**
+ * 加载用户个人资料
+ *
+ * 功能说明：从后端获取用户的详细信息
+ * 业务逻辑：
+ * 1. 调用userApi.getProfile()获取用户数据
+ * 2. 提取email、phone、signature字段
+ * 3. 同时填充到profileData和editForm（编辑表单）
+ *
+ * 使用场景：组件初始化时调用
+ *
+ * @returns Promise<void>
+ */
 async function loadProfile() {
   const data = await userApi.getProfile()
   profileData.value = {
@@ -169,6 +214,14 @@ async function loadProfile() {
   })
 }
 
+// ============================================================================
+// // 交互处理
+// ============================================================================
+
+// ============================================================================
+// // 交互处理
+// ============================================================================
+
 async function handleUpdateProfile() {
   saving.value = true
   try {
@@ -181,6 +234,14 @@ async function handleUpdateProfile() {
     saving.value = false
   }
 }
+
+// ============================================================================
+// // 导航
+// ============================================================================
+
+// ============================================================================
+// // 导航
+// ============================================================================
 
 async function handleChangePassword() {
   await pwdFormRef.value?.validate()
@@ -199,8 +260,19 @@ async function handleChangePassword() {
   }
 }
 
+/**
+ * 退出登录
+ *
+ * 功能说明：清除登录状态并跳转到登录页
+ * 业务逻辑：
+ * 1. 弹出确认对话框
+ * 2. 调用userStore.logout()清除token和用户信息
+ * 3. 跳转到登录页面
+ *
+ * 使用场景：用户点击"退出登录"按钮时调用
+ */
 async function handleLogout() {
-  await ElMessageBox.confirm('确认退出登录？', '提示', { 
+  await ElMessageBox.confirm('确认退出登录？', '提示', {
     type: 'warning',
     customClass: 'logout-confirm-box'
   })
@@ -208,6 +280,20 @@ async function handleLogout() {
   router.push('/login')
 }
 
+/**
+ * 头像上传前的校验
+ *
+ * 功能说明：校验上传文件的格式和大小
+ * 业务逻辑：
+ * 1. 检查文件类型：只允许JPG/PNG/WebP格式
+ * 2. 检查文件大小：不能超过2MB
+ * 3. 任一校验不通过则返回false阻止上传
+ *
+ * 使用场景：用户选择头像文件后自动调用
+ *
+ * @param file - 文件对象
+ * @returns 是否通过校验
+ */
 const beforeAvatarUpload = (file: any) => {
   const isJPGorPNG = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp'
   const isLt2M = file.size / 1024 / 1024 < 2
@@ -221,10 +307,25 @@ const beforeAvatarUpload = (file: any) => {
   return isJPGorPNG && isLt2M
 }
 
+/**
+ * 处理头像上传
+ *
+ * 功能说明：将用户选择的上传图片发送到后端并更新头像
+ * 业务逻辑：
+ * 1. 创建FormData对象并添加文件
+ * 2. 调用userApi.updateAvatar()上传
+ * 3. 成功后更新store中的avatar字段
+ * 4. 显示成功或失败提示
+ *
+ * 使用场景：用户通过el-upload组件选择文件后自动调用
+ *
+ * @param options - 上传选项对象，包含file字段
+ * @returns Promise<void>
+ */
 const handleAvatarUpload = async (options: any) => {
   const formData = new FormData()
   formData.append('file', options.file)
-  
+
   try {
     const avatarUrl = await userApi.updateAvatar(formData)
     userStore.updateUserInfo({ avatar: avatarUrl })
@@ -235,6 +336,22 @@ const handleAvatarUpload = async (options: any) => {
   }
 }
 
+/**
+ * 导出全量用户数据
+ *
+ * 功能说明：将用户的所有数据导出为JSON文件下载
+ * 业务逻辑：
+ * 1. 调用userApi.exportData()获取所有数据
+ * 2. 将数据格式化为JSON字符串（缩进2个空格）
+ * 3. 创建Blob对象（类型为application/json）
+ * 4. 创建临时下载链接并触发点击
+ * 5. 清理临时链接和URL对象
+ * 6. 生成文件名格式：daily-tracker-data-YYYY-MM-DD.json
+ *
+ * 使用场景：用户点击"导出全量数据"按钮时调用
+ *
+ * @returns Promise<void>
+ */
 async function handleExport() {
   exporting.value = true
   try {
@@ -256,6 +373,14 @@ async function handleExport() {
     exporting.value = false
   }
 }
+
+// ============================================================================
+// // 生命周期
+// ============================================================================
+
+// ============================================================================
+// // 生命周期
+// ============================================================================
 
 onMounted(loadProfile)
 </script>

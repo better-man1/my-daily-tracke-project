@@ -1,3 +1,17 @@
+<!--
+/**
+ * ============================================================================
+ * excerpt-add.vue — 新增摘录页面
+ * ============================================================================
+ *
+ * 【页面说明】创建一条摘录，输入内容、感悟、来源信息
+ * 【路由路径】/sub-pages/excerpt-add/excerpt-add
+ * 【页面传参】无
+ * 【关键 API】uni.navigateBack / uni.showToast / picker
+ * ============================================================================
+ */
+-->
+
 <template>
   <view class="page-container">
     <dt-navbar title="新增摘录" show-back />
@@ -92,8 +106,11 @@
 </template>
 
 <script setup lang="ts">
+// Vue 3 Composition API
 import { ref } from 'vue'
+// 摘录 API — 创建
 import { excerptApi } from '@/api/excerpt'
+// 日期工具
 import { getToday } from '@/utils/date'
 
 const loading = ref(false)
@@ -116,6 +133,10 @@ const sourceTypes = [
   { icon: '📦', label: '其他', value: 'OTHER' }
 ]
 
+
+// ============================================================================
+// 表单提交
+// ============================================================================
 async function handleSubmit() {
   if (!form.value.content.trim()) {
     uni.showToast({ title: '请输入摘录内容', icon: 'none' })

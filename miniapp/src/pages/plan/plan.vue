@@ -1,3 +1,18 @@
+<!--
+/**
+ * ============================================================================
+ * plan.vue — 计划管理页面（Tab 页）
+ * ============================================================================
+ *
+ * 【页面说明】展示指定日期的计划列表，支持日期翻页、状态筛选、切换完成/延期
+ * 【路由路径】/pages/plan/plan（Tab 页，uni.switchTab）
+ * 【页面传参】无
+ * 【关键 API】uni.switchTab / uni.navigateTo / uni.showModal / onShow
+ * 【数据流】onShow 并发加载列表和统计，操作后局部刷新
+ * ============================================================================
+ */
+-->
+
 <template>
   <view class="page-container">
     <dt-navbar title="计划管理">
@@ -122,10 +137,15 @@
 </template>
 
 <script setup lang="ts">
+// Vue 3 Composition API
 import { ref, computed } from 'vue'
+// Uni-app 生命周期
 import { onShow } from '@dcloudio/uni-app'
+// 计划 API — 列表/统计/更新/延期
 import { planApi, type PlanItem, type PlanStatistics } from '@/api/plan'
+// 日期工具
 import { formatDate, getWeekDay, formatDateCN } from '@/utils/date'
+// dayjs — 轻量日期处理库
 import dayjs from 'dayjs'
 
 const today = formatDate()
@@ -142,6 +162,19 @@ const filters = [
   { label: '已取消', value: 'CANCELLED' }
 ]
 
+/**
+ * 显示日期文本
+ *
+ * 功能说明：将日期转换为更友好的显示格式
+ * 业务逻辑：
+ * - 今天：显示"今天"
+ * - 昨天/明天：显示相对日期
+ * - 其他：显示中文格式（如"2024年1月1日"）
+ *
+ * 使用场景：在日期选择器中心显示
+ *
+ * @returns 格式化后的日期字符串
+ */
 const displayDate = computed(() => {
   if (currentDate.value === today) return '今天'
   const d = dayjs(currentDate.value)
@@ -152,8 +185,29 @@ const displayDate = computed(() => {
   return formatDateCN(currentDate.value)
 })
 
+/**
+ * 星期几文本
+ *
+ * 功能说明：获取当前日期对应的星期几
+ * 使用场景：在日期选择器中心显示星期信息
+ *
+ * @returns 星期几文本（如"星期一"）
+ */
 const weekdayStr = computed(() => getWeekDay(currentDate.value))
 
+/**
+ * 完成率样式类
+ *
+ * 功能说明：根据完成率返回对应的颜色类名
+ * 业务逻辑：
+ * - >= 80%：text-success（绿色）
+ * - >= 50%：text-primary（主色）
+ * - < 50%：text-warning（橙色）
+ *
+ * 使用场景：在统计栏中为完成率添加颜色
+ *
+ * @returns 颜色类名
+ */
 const rateClass = computed(() => {
   const rate = stats.value?.completionRate || 0
   if (rate >= 80) return 'text-success'
@@ -161,30 +215,104 @@ const rateClass = computed(() => {
   return 'text-warning'
 })
 
+/**
+ * 筛选后的计划列表
+ *
+ * 功能说明：根据当前筛选条件过滤计划列表
+ * 业务逻辑：
+ * - 筛选条件为"全部"时返回所有计划
+ * - 否则只返回状态匹配的计划
+ *
+ * 使用场景：渲染计划列表时使用
+ *
+ * @returns 过滤后的计划数组
+ */
 const filteredPlans = computed(() => {
   if (activeFilter.value === 'ALL') return plans.value
   return plans.value.filter(p => p.status === activeFilter.value)
 })
 
+/**
+ * 分类标签映射
+ *
+ * 功能说明：将分类英文代码转换为中文标签
+ * 映射关系：
+ * - WORK → 工作
+ * - STUDY → 学习
+ * - LIFE → 生活
+ * - HEALTH → 健康
+ * - 其他 → 原值
+ *
+ * 使用场景：在计划卡片上显示分类标签
+ *
+ * @param cat - 分类英文代码
+ * @returns 分类中文名称
+ */
 const categoryLabel = (cat: string) => {
   const map: Record<string, string> = { WORK: '工作', STUDY: '学习', LIFE: '生活', HEALTH: '健康' }
   return map[cat] || cat
 }
 
+/**
+ * 切换日期
+ *
+ * 功能说明：向前或向后切换一天
+ * 业务逻辑：
+ * 1. 使用dayjs计算新日期
+ * 2. 更新currentDate状态
+ * 3. 重新加载该日期的计划数据
+ *
+ * 使用场景：用户点击日期箭头按钮时调用
+ *
+ * @param delta - 切换天数（-1表示前一天，1表示后一天）
+ */
 function changeDate(delta: number) {
   currentDate.value = dayjs(currentDate.value).add(delta, 'day').format('YYYY-MM-DD')
   loadData()
 }
 
+
+// ============================================================================
+// 页面导航
+// ============================================================================
+
+/**
+ * 跳转到今天
+ *
+ * 功能说明：重置日期为今天并重新加载数据
+ * 使用场景：用户点击"今天"按钮时调用
+ */
 function goToday() {
   currentDate.value = today
   loadData()
 }
 
+/**
+ * 显示日期选择器
+ *
+ * 功能说明：弹出系统日期选择器让用户选择日期
+ * 注意：预留接口，待后续实现
+ */
 function showDatePicker() {
   // 使用 uni 内置日期选择器
 }
 
+
+// ============================================================================
+// 数据加载
+// ============================================================================
+
+/**
+ * 加载计划数据和统计信息
+ *
+ * 功能说明：并发请求当前日期的计划列表和统计数据
+ * 业务逻辑：
+ * 1. 并行调用两个接口：计划列表和统计数据
+ * 2. 更新plans和stats响应式变量
+ * 3. 错误处理：记录错误日志但不中断流程
+ *
+ * 使用场景：页面显示、日期改变、计划操作后调用
+ */
 async function loadData() {
   try {
     const [planList, planStats] = await Promise.all([
@@ -198,6 +326,26 @@ async function loadData() {
   }
 }
 
+
+// ============================================================================
+// 交互操作
+// ============================================================================
+
+/**
+ * 切换任务完成状态
+ *
+ * 功能说明：点击复选框切换任务的完成/未完成状态
+ * 业务逻辑：
+ * 1. 计算新状态（DONE ↔ TODO）
+ * 2. 调用API更新状态
+ * 3. 本地更新状态（乐观更新）
+ * 4. 刷新统计数据
+ * 5. 失败时显示错误提示
+ *
+ * 使用场景：用户点击任务复选框时调用
+ *
+ * @param item - 计划任务对象
+ */
 async function toggleStatus(item: PlanItem) {
   const newStatus = item.status === 'DONE' ? 'TODO' : 'DONE'
   try {
@@ -211,6 +359,20 @@ async function toggleStatus(item: PlanItem) {
   }
 }
 
+/**
+ * 延期计划
+ *
+ * 功能说明：将计划延期到明天
+ * 业务逻辑：
+ * 1. 弹出确认对话框
+ * 2. 用户确认后调用延期API
+ * 3. 成功后显示提示并刷新列表
+ * 4. 失败时显示错误提示
+ *
+ * 使用场景：用户点击任务右侧的延期箭头按钮时调用
+ *
+ * @param item - 计划任务对象
+ */
 async function postponePlan(item: PlanItem) {
   uni.showModal({
     title: '延期计划',
@@ -229,12 +391,28 @@ async function postponePlan(item: PlanItem) {
   })
 }
 
+/**
+ * 跳转到新增计划页面
+ *
+ * 功能说明：打开计划新增页面，默认日期为当前选择日期
+ * 使用场景：用户点击浮动添加按钮或导航栏添加按钮时调用
+ */
 function goAdd() {
   uni.navigateTo({
     url: `/sub-pages/plan-add/plan-add?date=${currentDate.value}`
   })
 }
 
+/**
+ * 跳转到计划详情（编辑）页面
+ *
+ * 功能说明：打开计划编辑页面，复用新增页面组件
+ * 业务逻辑：传递计划ID和日期参数
+ *
+ * 使用场景：用户点击任务卡片时调用
+ *
+ * @param item - 计划任务对象
+ */
 function goDetail(item: PlanItem) {
   // 简单编辑——复用新增页面
   uni.navigateTo({
@@ -242,6 +420,10 @@ function goDetail(item: PlanItem) {
   })
 }
 
+
+// ============================================================================
+// 生命周期
+// ============================================================================
 onShow(() => {
   loadData()
 })

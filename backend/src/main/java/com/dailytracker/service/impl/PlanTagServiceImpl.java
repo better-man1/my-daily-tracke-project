@@ -23,15 +23,33 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 计划标签服务实现
+ * 计划标签服务实现类（Plan Tag Service Implementation）
+ *
+ * 【类设计说明】
+ * 本类是 PlanTagService 接口的具体实现，负责每日计划模块的标签管理功能。
+ * 包括标签的 CRUD、任务与标签的关联管理、以及通过原生 SQL 的 JOIN 查询。
+ *
+ * 【注解解释】
+ * @Slf4j      - Lombok 注解，自动生成 SLF4J 日志记录器
+ * @Service    - Spring 注解，标记为业务层 Bean
+ * @RequiredArgsConstructor - Lombok 注解，通过构造器注入依赖
+ *
+ * 【核心设计】
+ * - 唯一名称约束：同一用户下不允许创建同名标签
+ * - INSERT IGNORE 策略：批量添加标签关联时使用 INSERT IGNORE 避免重复
+ * - 原生 SQL 查询：getPlanTags 使用 JOIN 查询提高性能
+ * - JdbcTemplate：用于执行原生 SQL 和批量操作
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class PlanTagServiceImpl implements PlanTagService {
 
+    /** 计划标签数据访问层 */
     private final PlanTagMapper tagMapper;
+    /** 计划-标签关联数据访问层 */
     private final PlanTagRelationMapper relationMapper;
+    /** Spring JDBC 模板（用于执行原生 SQL 和批量操作） */
     private final JdbcTemplate jdbcTemplate;
 
     @Override
@@ -189,6 +207,12 @@ public class PlanTagServiceImpl implements PlanTagService {
         }, planId);
     }
 
+    /**
+     * PlanTag 实体转 TagResponse DTO（私有工具方法）
+     *
+     * @param tag 计划标签实体
+     * @return TagResponse 响应 DTO
+     */
     private TagResponse toResponse(PlanTag tag) {
         TagResponse response = new TagResponse();
         BeanUtils.copyProperties(tag, response);
