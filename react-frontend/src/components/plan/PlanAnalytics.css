@@ -1,0 +1,92 @@
+/**
+ * ============================================================================
+ * PlanAnalytics.css — 计划数据分析组件样式
+ * ============================================================================
+ */
+
+.plan-analytics .time-selector {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.plan-analytics .quick-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.plan-analytics .quick-stats .stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.plan-analytics .quick-stats .stat-card:hover {
+  border-color: #6366f1;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+}
+
+.plan-analytics .quick-stats .stat-card .stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.plan-analytics .quick-stats .stat-card .stat-content .stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary, #1f2937);
+  line-height: 1.2;
+}
+
+.plan-analytics .quick-stats .stat-card .stat-content .stat-label {
+  font-size: 13px;
+  color: var(--text-secondary, #6b7280);
+  margin-top: 4px;
+}
+
+.plan-analytics .charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .plan-analytics .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.plan-analytics .charts-grid .chart-card {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  padding: 20px;
+  min-height: 350px;
+}
+
+.plan-analytics .charts-grid .chart-card .chart-header {
+  margin-bottom: 16px;
+}
+
+.plan-analytics .charts-grid .chart-card .chart-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+  margin: 0;
+}
+
+.plan-analytics .charts-grid .chart-card .chart-container {
+  height: 280px;
+}

@@ -258,6 +258,14 @@ public class AccountingController {
         return Result.success(accountingService.monthlyStats(year, month));
     }
 
+    @Operation(summary = "月统计（兼容旧路径）")
+    @GetMapping("/monthly-statistics")
+    public Result<AccountingStatsResponse> monthlyStatistics(
+            @RequestParam int year,
+            @RequestParam int month) {
+        return Result.success(accountingService.monthlyStats(year, month));
+    }
+
     /**
      * 获取指定年份的账目统计
      *

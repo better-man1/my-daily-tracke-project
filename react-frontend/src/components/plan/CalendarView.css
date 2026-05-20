@@ -1,0 +1,330 @@
+/**
+ * ============================================================================
+ * CalendarView.css — 日历视图组件样式
+ * ============================================================================
+ */
+
+.calendar-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.calendar-header .current-month {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+  min-width: 120px;
+  text-align: center;
+}
+
+.calendar-grid {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.week-header {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: rgba(99, 102, 241, 0.05);
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+
+.week-header .weekday {
+  padding: 12px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-secondary, #6b7280);
+}
+
+.calendar-body {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: minmax(100px, 1fr);
+}
+
+.calendar-day {
+  border-right: 1px solid var(--border, #e5e7eb);
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 100px;
+}
+
+.calendar-day:hover {
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.calendar-day.other-month {
+  opacity: 0.3;
+}
+
+.calendar-day.today {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+.calendar-day.selected {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: #6366f1;
+}
+
+.calendar-day .day-number {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+  margin-bottom: 8px;
+}
+
+.calendar-day .day-plans {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.calendar-day .plan-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-left: 3px solid #6366f1;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.calendar-day .plan-chip.priority-p0 {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.calendar-day .plan-chip.priority-p1 {
+  background: rgba(249, 115, 22, 0.1);
+}
+
+.calendar-day .plan-chip.priority-p2 {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.calendar-day .plan-chip.priority-p3 {
+  background: rgba(107, 114, 128, 0.1);
+}
+
+.calendar-day .plan-chip.done {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.calendar-day .plan-chip:hover {
+  transform: translateX(2px);
+}
+
+.calendar-day .plan-chip .plan-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-day .plan-chip .plan-subtask {
+  font-size: 10px;
+  color: var(--text-secondary, #6b7280);
+  margin-left: 4px;
+}
+
+.calendar-day .more-plans {
+  font-size: 11px;
+  color: #6366f1;
+  cursor: pointer;
+  text-align: center;
+  padding: 2px;
+}
+
+.calendar-day .more-plans:hover {
+  text-decoration: underline;
+}
+
+.day-details {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.day-details .details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.day-details .details-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+}
+
+.day-details .day-plans-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.day-details .plan-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.day-details .plan-item:hover {
+  border-color: #6366f1;
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.day-details .plan-item.done {
+  opacity: 0.6;
+}
+
+.day-details .plan-item.done .plan-main .plan-title {
+  text-decoration: line-through;
+}
+
+.day-details .plan-item .plan-info {
+  flex: 1;
+}
+
+.day-details .plan-item .plan-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.day-details .plan-item .plan-main .plan-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary, #1f2937);
+}
+
+.day-details .plan-item .plan-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+}
+
+.day-details .plan-item .plan-meta .plan-category {
+  padding: 2px 6px;
+  background: rgba(99, 102, 241, 0.1);
+  border-radius: 4px;
+  color: #6366f1;
+}
+
+.day-details .plan-item .plan-status .status-icon {
+  font-size: 20px;
+}
+
+.day-details .plan-item .plan-status .status-icon.done {
+  color: #10b981;
+}
+
+.day-details .plan-item .plan-status .status-icon.inprogress {
+  color: #f59e0b;
+}
+
+.day-details .plan-item .plan-status .status-icon.todo {
+  color: var(--text-muted, #9ca3af);
+}
+
+.day-details .empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted, #9ca3af);
+}
+
+.plan-detail .detail-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.plan-detail .detail-header .detail-priority {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.plan-detail .detail-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+}
+
+.plan-detail .detail-desc {
+  color: var(--text-secondary, #6b7280);
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+
+.plan-detail .detail-meta {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.plan-detail .detail-meta .meta-item {
+  display: flex;
+  gap: 8px;
+}
+
+.plan-detail .detail-meta .meta-label {
+  color: var(--text-secondary, #6b7280);
+  min-width: 60px;
+}
+
+.plan-detail .detail-subtasks {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+  padding: 12px;
+}
+
+.plan-detail .detail-subtasks .subtask-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--text-primary, #1f2937);
+}
+
+.plan-detail .detail-subtasks .subtask-progress .progress-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.plan-detail .detail-subtasks .subtask-progress .progress-fill {
+  height: 100%;
+  background: #6366f1;
+  transition: width 0.3s ease;
+}

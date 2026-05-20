@@ -1,0 +1,97 @@
+/**
+ * ============================================================================
+ * TagManager.css — 标签管理组件样式
+ * ============================================================================
+ */
+
+.tag-manager .tag-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.tag-manager .tag-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+}
+
+.tag-manager .tag-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tag-manager .tag-list .tag-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tag-manager .tag-list .tag-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tag-manager .tag-list .tag-item.selected {
+  background: rgba(99, 102, 241, 0.1);
+  border-color: #6366f1;
+}
+
+.tag-manager .tag-list .tag-item .tag-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tag-manager .tag-list .tag-item .tag-name {
+  flex: 1;
+  font-size: 14px;
+  color: var(--text-primary, #1f2937);
+}
+
+.tag-manager .tag-list .tag-item .tag-more {
+  color: var(--text-muted, #9ca3af);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.tag-manager .tag-list .tag-item .tag-more:hover {
+  color: var(--text-primary, #1f2937);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tag-manager .color-picker {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.tag-manager .color-picker .color-option {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.tag-manager .color-picker .color-option.selected {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.tag-manager .color-picker .color-option:hover {
+  transform: scale(1.1);
+}

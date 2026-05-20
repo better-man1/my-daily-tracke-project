@@ -38,6 +38,7 @@ lerna-debug.log*
 *.jar
 *.war
 *.ear
+.m2/
 
 # Environment variables
 .env

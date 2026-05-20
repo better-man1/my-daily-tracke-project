@@ -11,6 +11,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -129,6 +130,15 @@ public class GlobalExceptionHandler {
             joiner.add(fieldError.getField() + ": " + fieldError.getDefaultMessage());
         }
         return Result.fail(ResultCode.BAD_REQUEST, joiner.toString());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Result<Void> handleTypeMismatchException(MethodArgumentTypeMismatchException e) {
+        String message = e.getName() + ": 参数类型错误";
+        log.warn("参数类型转换失败: name={}, value={}, requiredType={}",
+                e.getName(), e.getValue(), e.getRequiredType());
+        return Result.fail(ResultCode.BAD_REQUEST, message);
     }
 
     /**
