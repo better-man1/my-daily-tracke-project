@@ -1,457 +1,53 @@
 {
-  /**
-   * ============================================================================
-   * 文件：package.json — Node.js 项目的元数据和依赖管理文件
-   * ============================================================================
-   *
-   * 【文件用途】
-   * package.json 是每个 Node.js 项目的核心配置文件，它定义了：
-   *   - 项目的基本信息（名称、版本、描述等）
-   *   - 可执行的脚本命令（npm run dev、npm run build 等）
-   *   - 项目依赖的第三方包（dependencies 和 devDependencies）
-   *   - 开发工具的配置（ESLint、Prettier、Husky 等）
-   *
-   * 【在项目中的位置】
-   * frontend/package.json
-   * 位于前端项目根目录。运行 npm install 时，npm 会根据此文件下载所有依赖包到 node_modules 目录。
-   *
-   * 【相关技术知识】
-   *
-   * 【npm vs yarn vs pnpm】
-   * - npm：Node.js 自带的包管理器，最常用
-   * - yarn：Facebook 开发，安装更快、支持离线缓存
-   * - pnpm：使用硬链接，节省磁盘空间，安装速度最快
-   * 三者都使用 package.json 作为配置文件，可以互相切换。
-   *
-   * 【dependencies vs devDependencies】
-   * - dependencies（运行时依赖）：应用在生产环境中运行时需要的包
-   *   如 vue、element-plus、axios 等
-   * - devDependencies（开发时依赖）：只在开发和构建时需要的包
-   *   如 vite、typescript、eslint 等
-   * 运行 npm install --production 时只会安装 dependencies。
-   *
-   * 【语义化版本号（Semantic Versioning）】
-   * 版本号格式：主版本号.次版本号.修订号（如 3.5.32）
-   *   - 主版本号：不兼容的 API 变更（破坏性更新）
-   *   - 次版本号：向下兼容的功能新增
-   *   - 修订号：向下兼容的 Bug 修复
-   *
-   * 版本前缀说明：
-   *   - ^3.5.32：兼容更新，允许 >=3.5.32 且 <4.0.0 的版本
-   *   - ~3.5.32：小版本更新，允许 >=3.5.32 且 <3.6.0 的版本
-   *   - 3.5.32：精确版本，锁定为指定版本
-   * ============================================================================
-   */
-
-  /**
-   * "name" — 项目名称。
-   * 必须是小写字母，可以包含连字符(-)和点号(.)。
-   * 用于 npm 注册表中的唯一标识（如果发布为 npm 包的话）。
-   */
   "name": "frontend",
-
-  /**
-   * "private" — 标记项目是否为私有。
-   * true 表示这是一个私有项目，不会被意外发布到 npm 注册表。
-   * 对于应用项目（而非库项目），通常都设为 true。
-   */
   "private": true,
-
-  /**
-   * "version" — 当前项目版本号。
-   * 遵循语义化版本规范（SemVer）。
-   * 初始版本通常为 0.0.0，表示项目还在开发初期。
-   */
   "version": "0.0.0",
-
-  /**
-   * "type" — 指定项目的模块系统类型。
-   *
-   * "module" 表示项目使用 ES Module 语法（import/export）。
-   * 如果不指定，默认使用 CommonJS（require/module.exports）。
-   *
-   * 【ES Module vs CommonJS】
-   * ES Module：import { ref } from 'vue'         ← 现代标准
-   * CommonJS：const { ref } = require('vue')      ← Node.js 传统方式
-   *
-   * Vite 原生只支持 ES Module，所以必须设为 "module"。
-   */
   "type": "module",
-
-  /**
-   * "scripts" — 可执行的脚本命令。
-   * 通过 `npm run <脚本名>` 来执行。
-   */
   "scripts": {
-    /**
-     * "dev": "vite" — 启动 Vite 开发服务器。
-     * 运行命令：npm run dev
-     * 效果：启动热更新开发服务器，访问 http://localhost:5173
-     *
-     * 【底层执行过程】
-     * 1. npm 查找 package.json 中的 scripts.dev
-     * 2. 在 node_modules/.bin/ 中找到 vite 命令
-     * 3. 执行 vite 命令，启动开发服务器
-     */
     "dev": "vite",
-
-    /**
-     * "build": "vue-tsc -b && vite build" — 生产环境构建。
-     * 运行命令：npm run build
-     *
-     * 构建分为两步（用 && 连接，前一步成功才执行后一步）：
-     *
-     * 第一步：vue-tsc -b
-     *   vue-tsc 是 TypeScript 类型检查工具（Vue 版 tsc）。
-     *   -b (build) 标志启用项目引用模式（读取 tsconfig.json 的 references）。
-     *   它会检查所有 .ts 和 .vue 文件的类型是否正确。
-     *   如果有类型错误，构建会在此步骤终止，不会继续打包。
-     *
-     * 第二步：vite build
-     *   使用 Rollup 进行生产打包，输出到 dist/ 目录。
-     *   包括代码压缩、tree-shaking、代码分割、资源优化等。
-     *
-     * 【为什么先检查类型再打包？】
-     * 这样可以确保打包的代码没有类型错误，提高代码质量。
-     * 如果不需要类型检查，可以直接运行 vite build（更快）。
-     */
     "build": "vue-tsc -b && vite build",
-
-    /**
-     * "preview": "vite preview" — 预览生产构建结果。
-     * 运行命令：npm run preview
-     * 在本地启动一个静态文件服务器，服务 dist/ 目录的内容。
-     * 用于在部署前验证生产构建是否正确。
-     */
     "preview": "vite preview",
-
-    /**
-     * "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix"
-     * — 运行 ESLint 代码检查。
-     *
-     * ESLint 是 JavaScript/TypeScript 的静态代码分析工具，用于：
-     *   - 发现代码中的潜在错误
-     *   - 统一代码风格
-     *   - 强制执行最佳实践
-     *
-     * 参数说明：
-     *   .         → 检查当前目录下的所有文件
-     *   --ext     → 指定要检查的文件扩展名
-     *   --fix     → 自动修复可以修复的问题
-     */
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
-
-    /**
-     * "format": "prettier --write src/"
-     * — 运行 Prettier 代码格式化。
-     *
-     * Prettier 是一个"有主见"的代码格式化工具，自动调整：
-     *   - 缩进（空格/Tab）
-     *   - 行宽
-     *   - 引号类型
-     *   - 分号使用
-     *   - 换行位置
-     *
-     * --write 表示直接修改文件（不仅仅是检查）。
-     * src/ 表示只格式化 src 目录下的文件。
-     */
     "format": "prettier --write src/",
-
-    /**
-     * "prepare": "husky"
-     * — 安装 Git 钩子。
-     *
-     * Husky 是一个 Git hooks 管理工具，可以在 Git 操作（如 commit、push）
-     * 前自动执行检查脚本。
-     *
-     * prepare 是 npm 的生命周期钩子，在 npm install 之后自动执行。
-     * 这确保了每个开发者在安装依赖后，Git hooks 就自动配置好了。
-     *
-     * 【常用的 Git Hooks 配合】
-     * - pre-commit：提交前运行 lint-staged（只检查暂存区的文件）
-     * - commit-msg：检查提交信息格式（配合 commitlint）
-     */
     "prepare": "husky"
   },
-
-  /**
-   * "dependencies" — 运行时依赖。
-   * 这些包会被打包到最终的生产代码中，直接影响应用的大小和性能。
-   * 安装命令：npm install <包名>
-   */
   "dependencies": {
-    /**
-     * @element-plus/icons-vue — Element Plus 的图标库。
-     * 提供了 200+ 个精心设计的 SVG 图标，以 Vue 组件形式使用。
-     * 版本 ^2.3.2：兼容 2.3.x 的最新补丁版本。
-     */
     "@element-plus/icons-vue": "^2.3.2",
-
-    /**
-     * @vueuse/core — Vue Composition API 工具集。
-     *
-     * 提供了大量开箱即用的组合式函数（Composables），例如：
-     *   - useDark()：暗黑模式切换
-     *   - useStorage()：响应式的 localStorage
-     *   - useMouse()：鼠标位置追踪
-     *   - useClipboard()：剪贴板操作
-     *   - useIntersectionObserver()：元素可见性检测
-     *
-     * 类似于 Vue 版的 lodash，但每个函数都是按需导入的。
-     */
     "@vueuse/core": "^14.2.1",
-
-    /**
-     * axios — 最流行的 HTTP 请求库。
-     *
-     * 【核心特性】
-     * - 支持 Promise API（then/catch 或 async/await）
-     * - 支持请求/响应拦截器（添加 token、统一错误处理）
-     * - 支持取消请求（AbortController）
-     * - 自动转换 JSON 数据
-     * - 防止 XSRF 攻击
-     *
-     * 【基本使用】
-     * const res = await axios.get('/api/users')
-     * const res = await axios.post('/api/users', { name: '张三' })
-     */
     "axios": "^1.15.2",
-
-    /**
-     * dayjs — 轻量级日期处理库（详见 main.ts 中的注释）。
-     */
     "dayjs": "^1.11.20",
-
-    /**
-     * echarts — Apache ECharts，强大的数据可视化图表库。
-     *
-     * 支持丰富的图表类型：折线图、柱状图、饼图、散点图、地图、
-     * 雷达图、热力图、关系图等，以及各种交互效果和动画。
-     *
-     * 本项目用于数据看板页面展示统计图表。
-     *
-     * 【体积说明】
-     * ECharts 体积较大（约 1MB），本项目通过 Vite 的代码分割将其
-     * 单独打包为一个 chunk，只在访问看板页时才加载。
-     */
     "echarts": "^6.0.0",
-
-    /**
-     * element-plus — Vue 3 组件库（Element UI 的升级版）。
-     *
-     * 【核心特性】
-     * - 60+ 高质量组件（按钮、表单、表格、弹窗、导航等）
-     * - 完整的 TypeScript 类型支持
-     * - 支持按需导入（tree-shaking）
-     * - 支持国际化（多语言）
-     * - 支持暗黑模式
-     * - 支持自定义主题（SCSS 变量覆盖）
-     *
-     * 本项目通过 unplugin-vue-components 实现自动按需导入，
-     * 无需手动 import 每个组件，同时保持最小的打包体积。
-     */
     "element-plus": "^2.13.7",
-
-    /**
-     * file-saver — 文件保存到本地的工具库。
-     * 用于在前端实现"导出/下载"功能，如导出 Excel、导出 PDF 等。
-     * 底层使用 Blob 和 URL.createObjectURL 实现。
-     */
     "file-saver": "^2.0.5",
-
-    /**
-     * pinia — Vue 3 官方状态管理库（详见 main.ts 中的注释）。
-     */
     "pinia": "^3.0.4",
-
-    /**
-     * sortablejs — 拖拽排序库。
-     * 提供流畅的拖拽排序体验，支持列表、网格等多种布局。
-     * 常用于任务列表的拖拽排序、看板的列间拖拽等场景。
-     */
     "sortablejs": "^1.15.7",
-
-    /**
-     * vue — Vue.js 3 框架核心。
-     *
-     * Vue 3 的核心特性：
-     * - Composition API（组合式 API）
-     * - 更好的 TypeScript 支持
-     * - 更小的打包体积（约 33KB gzip）
-     * - 更快的虚拟 DOM
-     * - Teleport、Suspense、Fragment 等新组件
-     * - 多根节点组件支持
-     */
     "vue": "^3.5.32",
-
-    /**
-     * vue-router — Vue.js 官方路由管理器（详见 router/index.ts 中的注释）。
-     */
     "vue-router": "^4.6.4",
-
-    /**
-     * xlsx — Excel 文件解析和生成库（SheetJS）。
-     * 可以在浏览器中读取和创建 .xlsx、.xls 等 Excel 文件。
-     * 常用于数据导入/导出功能。
-     */
     "xlsx": "^0.18.5"
   },
-
-  /**
-   * "devDependencies" — 开发时依赖。
-   * 这些包只在开发和构建过程中使用，不会被打包到最终的生产代码中。
-   * 安装命令：npm install -D <包名>（或 npm install --save-dev <包名>）
-   */
   "devDependencies": {
-    /**
-     * @commitlint/cli + @commitlint/config-conventional — Git 提交信息规范检查工具。
-     *
-     * commitlint 用于检查 git commit message 是否符合规范格式。
-     * @commitlint/config-conventional 提供了 Angular 团队的提交规范：
-     *   格式：<type>(<scope>): <subject>
-     *   示例：feat(plan): 添加拖拽排序功能
-     *         fix(login): 修复登录失败的问题
-     *         docs(readme): 更新安装说明
-     *
-     * type 可选值：
-     *   feat     — 新功能
-     *   fix      — Bug 修复
-     *   docs     — 文档变更
-     *   style    — 代码格式（不影响功能）
-     *   refactor — 代码重构
-     *   perf     — 性能优化
-     *   test     — 测试相关
-     *   chore    — 构建/工具变更
-     */
     "@commitlint/cli": "^20.5.3",
     "@commitlint/config-conventional": "^20.5.3",
-
-    /**
-     * @iconify-json/ep — Element Plus 图标的 Iconify 数据集。
-     * 包含 Element Plus 所有图标的 SVG 数据，配合 unplugin-icons 使用。
-     */
     "@iconify-json/ep": "^1.2.4",
-
-    /**
-     * @types/node — Node.js 的 TypeScript 类型声明文件。
-     * 让 TypeScript 编译器识别 Node.js 特有的 API（如 __dirname、process 等）。
-     * 主要用于 vite.config.ts 等构建脚本的类型检查。
-     */
     "@types/node": "^24.12.2",
-
-    /**
-     * @typescript-eslint/* — TypeScript 的 ESLint 解析器和规则插件。
-     * 让 ESLint 能够理解和检查 TypeScript 代码。
-     */
     "@typescript-eslint/eslint-plugin": "^8.59.1",
     "@typescript-eslint/parser": "^8.59.1",
-
-    /**
-     * @vitejs/plugin-vue — Vite 的 Vue 插件（详见 vite.config.ts 中的注释）。
-     */
     "@vitejs/plugin-vue": "^6.0.6",
-
-    /**
-     * @vue/tsconfig — Vue 3 推荐的 TypeScript 配置预设。
-     * 提供了 tsconfig.dom.json 等预设配置，避免手动配置常用的编译选项。
-     */
     "@vue/tsconfig": "^0.9.1",
-
-    /**
-     * eslint — JavaScript/TypeScript 静态代码分析工具（详见 scripts.lint 注释）。
-     */
     "eslint": "^8.57.1",
-
-    /**
-     * eslint-config-prettier — 关闭 ESLint 中与 Prettier 冲突的规则。
-     * ESLint 负责代码质量检查，Prettier 负责代码格式化。
-     * 这个包确保两者不会因为格式规则冲突而互相报错。
-     */
     "eslint-config-prettier": "^10.1.8",
-
-    /**
-     * eslint-plugin-prettier — 让 ESLint 运行 Prettier 并报告格式问题。
-     * 配合 eslint-config-prettier 使用，将 Prettier 规则集成到 ESLint 中。
-     */
     "eslint-plugin-prettier": "^5.5.5",
-
-    /**
-     * eslint-plugin-vue — Vue.js 的 ESLint 插件。
-     * 提供了 Vue 特有的代码检查规则，如：
-     *   - 检查模板语法错误
-     *   - 检查组件命名规范
-     *   - 检查 v-for 是否有 :key
-     *   - 检查 props 类型定义
-     */
     "eslint-plugin-vue": "^10.9.0",
-
-    /**
-     * husky — Git hooks 管理工具（详见 scripts.prepare 注释）。
-     */
     "husky": "^9.1.7",
-
-    /**
-     * lint-staged — 只对 Git 暂存区的文件运行 lint 检查。
-     *
-     * 【为什么需要 lint-staged？】
-     * 如果项目有很多文件，每次提交都对所有文件运行 ESLint 会很慢。
-     * lint-staged 只检查你本次修改的文件，大幅提升效率。
-     *
-     * 通常在 package.json 或 .lintstagedrc 中配置：
-     *   "lint-staged": {
-     *     "*.{js,ts,vue}": ["eslint --fix", "prettier --write"]
-     *   }
-     */
     "lint-staged": "^16.4.0",
-
-    /**
-     * prettier — 代码格式化工具（详见 scripts.format 注释）。
-     */
     "prettier": "^3.8.3",
-
-    /**
-     * sass — SCSS/Sass CSS 预处理器的 Dart 实现。
-     * Vite 遇到 .scss 文件时会调用 sass 编译为标准 CSS。
-     */
     "sass": "^1.99.0",
-
-    /**
-     * typescript — TypeScript 编译器。
-     * 提供 tsc 命令用于类型检查，vue-tsc 依赖它工作。
-     * ~6.0.2 表示兼容 6.0.x 的补丁版本（比 ^ 更严格）。
-     */
     "typescript": "~6.0.2",
-
-    /**
-     * unplugin-auto-import — 自动导入 API 的插件（详见 vite.config.ts 中的注释）。
-     */
     "unplugin-auto-import": "^21.0.0",
-
-    /**
-     * unplugin-icons — 图标按需导入插件（详见 vite.config.ts 中的注释）。
-     */
     "unplugin-icons": "^23.0.1",
-
-    /**
-     * unplugin-vue-components — 自动注册组件的插件（详见 vite.config.ts 中的注释）。
-     */
     "unplugin-vue-components": "^32.0.0",
-
-    /**
-     * vite — 下一代前端构建工具（详见 vite.config.ts 中的注释）。
-     */
     "vite": "^8.0.10",
-
-    /**
-     * vite-plugin-compression — Gzip 压缩插件（详见 vite.config.ts 中的注释）。
-     */
     "vite-plugin-compression": "^0.5.1",
-
-    /**
-     * vue-tsc — Vue 的 TypeScript 类型检查工具。
-     * 基于 tsc（TypeScript 编译器），增加了对 .vue 文件的类型检查支持。
-     * 用于 npm run build 时的类型检查步骤。
-     */
     "vue-tsc": "^3.2.7"
   }
 }
