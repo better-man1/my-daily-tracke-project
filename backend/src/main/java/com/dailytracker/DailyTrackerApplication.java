@@ -1,8 +1,12 @@
 package com.dailytracker;
 
+import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.event.EventListener;
+import org.springframework.core.env.Environment;
 
 /**
  * DailyTracker 应用程序的主启动类（入口类）
@@ -35,6 +39,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  */
 @SpringBootApplication
 @MapperScan("com.dailytracker.mapper")
+@Slf4j
 public class DailyTrackerApplication {
 
     /**
@@ -58,5 +63,29 @@ public class DailyTrackerApplication {
      */
     public static void main(String[] args) {
         SpringApplication.run(DailyTrackerApplication.class, args);
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void onApplicationReady(ApplicationReadyEvent event) {
+        Environment environment = event.getApplicationContext().getEnvironment();
+        String port = environment.getProperty("server.port", "8080");
+        String contextPath = environment.getProperty("server.servlet.context-path", "");
+
+        if ("/".equals(contextPath)) {
+            contextPath = "";
+        }
+
+        String baseUrl = "http://localhost:" + port + contextPath;
+
+        log.info("""
+
+                ============================================================
+                [SUCCESS] Daily Tracker backend started successfully
+                ------------------------------------------------------------
+                API Base URL : {}
+                Knife4j Docs : {}/doc.html
+                Active Profile(s): {}
+                ============================================================
+                """, baseUrl, baseUrl, String.join(", ", environment.getActiveProfiles()));
     }
 }
