@@ -92,6 +92,7 @@
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item command="edit">编辑</el-dropdown-item>
+                  <el-dropdown-item command="copy">复制</el-dropdown-item>
                   <el-dropdown-item command="delete" class="danger">删除</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -177,9 +178,10 @@
             <span class="goal-status text-xs px-2 py-1 rounded-full" :class="row.status.toLowerCase()">{{ statusLabel(row.status) }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120">
+        <el-table-column label="操作" width="180">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleCommand('edit', row)">编辑</el-button>
+            <el-button link type="primary" @click="handleCommand('copy', row)">复制</el-button>
             <el-button link type="danger" @click="handleCommand('delete', row)">删除</el-button>
           </template>
         </el-table-column>
@@ -663,6 +665,19 @@ function handleCommand(cmd: string, goal: GoalItem) {
       endDate: goal.endDate,
       progress: goal.progress,
       keyResults: goal.keyResults ? JSON.parse(JSON.stringify(goal.keyResults)) : []
+    })
+    showDialog.value = true
+  } else if (cmd === 'copy') {
+    editing.value = null
+    Object.assign(form, {
+      parentId: goal.parentId,
+      title: goal.title + ' (副本)',
+      description: goal.description ?? '',
+      goalType: goal.goalType,
+      startDate: goal.startDate,
+      endDate: goal.endDate,
+      progress: 0,
+      keyResults: goal.keyResults ? JSON.parse(JSON.stringify(goal.keyResults)).map((kr: any) => ({...kr, currentValue: 0})) : []
     })
     showDialog.value = true
   } else if (cmd === 'delete') {

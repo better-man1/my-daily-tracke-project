@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { PlusOutlined, EditOutlined, DeleteOutlined, TrophyOutlined } from '@ant-design/icons'
+import { PlusOutlined, EditOutlined, DeleteOutlined, TrophyOutlined, CopyOutlined } from '@ant-design/icons'
 import { Tree, Button, Modal, Form, Input, Select, DatePicker, Space, message, Popconfirm, Card, Row, Col, Statistic } from 'antd'
 import type { DataNode } from 'antd/es/tree'
 import dayjs from 'dayjs'
@@ -103,6 +103,15 @@ const GoalPage: React.FC = () => {
                 handleEdit(goal)
               }}
             />
+            <Button
+              type="link"
+              size="small"
+              icon={<CopyOutlined />}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleCopy(goal)
+              }}
+            />
             <Popconfirm
               title="确定删除此目标及其子目标？"
               onConfirm={(e) => {
@@ -147,6 +156,18 @@ const GoalPage: React.FC = () => {
       ...goal,
       startDate: dayjs(goal.startDate),
       targetDate: dayjs(goal.targetDate)
+    })
+    setModalVisible(true)
+  }
+
+  const handleCopy = (goal: GoalItem) => {
+    setEditingGoal(null)
+    form.setFieldsValue({
+      ...goal,
+      title: goal.title + ' (副本)',
+      startDate: dayjs(goal.startDate),
+      targetDate: goal.targetDate ? dayjs(goal.targetDate) : undefined,
+      progress: 0
     })
     setModalVisible(true)
   }
