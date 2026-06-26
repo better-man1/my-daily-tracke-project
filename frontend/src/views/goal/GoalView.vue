@@ -219,7 +219,7 @@
             <el-form-item label="父级目标">
               <el-select v-model="form.parentId" clearable placeholder="可选" style="width: 100%">
                 <el-option
-                  v-for="g in allGoals"
+                  v-for="g in parentGoalOptions"
                   :key="g.id"
                   :label="`[${typeLabel(g.goalType)}] ${g.title}`"
                   :value="g.id"
@@ -311,7 +311,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance } from 'element-plus'
 import { Plus, MoreFilled, Delete } from '@element-plus/icons-vue'
@@ -330,7 +330,7 @@ import dayjs from 'dayjs'
 const goals = ref<GoalItem[]>([])
 const allGoals = ref<GoalItem[]>([])
 const activeType = ref('')
-const viewMode = ref<'card' | 'tree'>('card')
+const viewMode = ref<'card' | 'tree'>('tree')
 
 /**
  * 卡片视图的目标分组列表
@@ -455,6 +455,53 @@ const statusMap: Record<string, string> = {
   COMPLETED: '已完成',
   ABANDONED: '已放弃'
 }
+const parentTypeMap: Record<string, GoalItem['goalType'] | null> = {
+  FIVE_YEAR: null,
+  YEARLY: 'FIVE_YEAR',
+  MONTHLY: 'YEARLY',
+  WEEKLY: 'MONTHLY'
+}
+
+const parentGoalOptions = computed(() => {
+  const parentType = parentTypeMap[form.goalType]
+  if (!parentType) return []
+
+  const selectedDate = dayjs(form.startDate)
+  return allGoals.value
+    .filter(goal => {
+      if (goal.goalType !== parentType) return false
+      if (editing.value?.id === goal.id) return false
+      if (!selectedDate.isValid()) return true
+
+      const parentStart = dayjs(goal.startDate)
+      if (!parentStart.isValid()) return false
+
+      if (form.goalType === 'WEEKLY') {
+        return parentStart.isSame(selectedDate, 'month')
+      }
+      if (form.goalType === 'MONTHLY') {
+        return parentStart.isSame(selectedDate, 'year')
+      }
+      if (form.goalType === 'YEARLY') {
+        const parentEnd = dayjs(goal.endDate)
+        return parentEnd.isValid()
+          ? !selectedDate.isBefore(parentStart, 'day') && !selectedDate.isAfter(parentEnd, 'day')
+          : parentStart.isSame(selectedDate, 'year')
+      }
+
+      return true
+    })
+    .sort((a, b) => dayjs(a.startDate).valueOf() - dayjs(b.startDate).valueOf())
+})
+
+watch(
+  () => [form.goalType, form.startDate, parentGoalOptions.value.map(goal => goal.id).join(',')],
+  () => {
+    if (form.parentId && !parentGoalOptions.value.some(goal => goal.id === form.parentId)) {
+      form.parentId = null
+    }
+  }
+)
 
 function typeLabel(t: string) {
   return typeMap[t] ?? t
