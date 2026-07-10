@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { PlusOutlined, EditOutlined, DeleteOutlined, TrophyOutlined, CopyOutlined } from '@ant-design/icons'
-import { Tree, Button, Modal, Form, Input, Select, DatePicker, Space, message, Popconfirm, Card, Row, Col, Statistic } from 'antd'
+import { Tree, Button, Modal, Form, Input, Select, DatePicker, Space, message, Popconfirm, Card, Row, Col, Statistic, Tabs, Collapse, Table } from 'antd'
+import type { ColumnsType } from 'antd/es/table'
 import type { DataNode } from 'antd/es/tree'
 import dayjs from 'dayjs'
 import { goalApi, type GoalItem, type CreateGoalRequest } from '@/api/goal'
@@ -38,6 +39,7 @@ const GoalPage: React.FC = () => {
   const [goals, setGoals] = useState<GoalItem[]>([])
   const [modalVisible, setModalVisible] = useState(false)
   const [editingGoal, setEditingGoal] = useState<GoalItem | null>(null)
+  const [activeType, setActiveType] = useState<string>('')
   const [form] = Form.useForm()
   // 总目标、已完成目标及整体进度等统计指标
   const [statistics, setStatistics] = useState<any>(null)
@@ -47,6 +49,9 @@ const GoalPage: React.FC = () => {
   // ============================================================================
   useEffect(() => {
     fetchGoals()
+  }, [activeType])
+
+  useEffect(() => {
     fetchStatistics()
   }, [])
 
@@ -56,7 +61,7 @@ const GoalPage: React.FC = () => {
   const fetchGoals = async () => {
     try {
       setLoading(true)
-      const data = await goalApi.getTree()
+      const data = await goalApi.getTree(activeType || undefined)
       setGoals(data)
     } catch (error) {
       console.error('获取目标失败:', error)
@@ -208,6 +213,89 @@ const GoalPage: React.FC = () => {
     }
   }
 
+  // 分组逻辑
+  const groupedTreeList = React.useMemo(() => {
+    if (!activeType || activeType === 'FIVE_YEAR') return {}
+
+    const groups: any = {}
+    const flatGoals: GoalItem[] = []
+    
+    const flatten = (list: GoalItem[]) => {
+      list.forEach(g => {
+        flatGoals.push(g)
+        if (g.children) flatten(g.children)
+      })
+    }
+    flatten(goals)
+    
+    flatGoals.forEach(goal => {
+      const d = dayjs(goal.startDate)
+      if (!d.isValid()) return
+      
+      const year = d.year() + '年'
+      const month = (d.month() + 1) + '月'
+      const week = '第 ' + Math.ceil(d.date() / 7) + ' 周'
+      
+      if (activeType === 'YEARLY') {
+        if (!groups[year]) groups[year] = []
+        groups[year].push(goal)
+      } else if (activeType === 'MONTHLY') {
+        if (!groups[year]) groups[year] = {}
+        if (!groups[year][month]) groups[year][month] = []
+        groups[year][month].push(goal)
+      } else if (activeType === 'WEEKLY') {
+        if (!groups[year]) groups[year] = {}
+        if (!groups[year][month]) groups[year][month] = {}
+        if (!groups[year][month][week]) groups[year][month][week] = []
+        groups[year][month][week].push(goal)
+      }
+    })
+
+    return groups
+  }, [goals, activeType])
+
+  const tableColumns: ColumnsType<GoalItem> = [
+    {
+      title: '目标名称',
+      dataIndex: 'title',
+      key: 'title',
+      render: (text, record) => (
+        <span>
+          <span style={{ fontWeight: record.status === 'COMPLETED' ? 'normal' : 'bold' }}>{text}</span>
+          {record.description && <span style={{ fontSize: 12, color: '#999', marginLeft: 8 }}>{record.description}</span>}
+        </span>
+      ),
+    },
+    {
+      title: '进度',
+      dataIndex: 'progress',
+      key: 'progress',
+      width: 150,
+      render: (progress, record) => (
+        <span style={{ color: record.status === 'COMPLETED' ? '#52c41a' : '#1890ff' }}>{progress}%</span>
+      ),
+    },
+    {
+      title: '操作',
+      key: 'action',
+      width: 150,
+      render: (_, record) => (
+        <Space size="small">
+          <Button type="link" size="small" icon={<EditOutlined />} onClick={() => handleEdit(record)} />
+          <Button type="link" size="small" icon={<CopyOutlined />} onClick={() => handleCopy(record)} />
+          <Popconfirm
+            title="确定删除此目标？"
+            onConfirm={() => handleDelete(record.id)}
+            okText="确定"
+            cancelText="取消"
+          >
+            <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        </Space>
+      ),
+    }
+  ]
+
   return (
     <div>
       {/* 头部标题控制栏 */}
@@ -262,13 +350,50 @@ const GoalPage: React.FC = () => {
       )}
 
       {/* 目标树形卡片展示区 */}
-      <Card title="目标树" bordered={false} loading={loading}>
-        {/* Antd Tree 树形图组件，通过 treeData 绑定递归生成的数据结构 */}
-        <Tree
-          treeData={convertToTreeData(goals)}
-          showLine            // 开启连线示意图，方便查看父子归属
-          defaultExpandAll    // 默认展开所有分支层级
-        />
+      <Card title="目标树" bordered={false} loading={loading} extra={
+        <Tabs activeKey={activeType} onChange={setActiveType} items={[
+          { key: '', label: '全部' },
+          { key: 'FIVE_YEAR', label: '五年' },
+          { key: 'YEARLY', label: '年度' },
+          { key: 'MONTHLY', label: '月度' },
+          { key: 'WEEKLY', label: '周计划' },
+        ]} style={{ marginBottom: -16 }} />
+      }>
+        {(!activeType || activeType === 'FIVE_YEAR') ? (
+          <Tree
+            treeData={convertToTreeData(goals)}
+            showLine            // 开启连线示意图，方便查看父子归属
+            defaultExpandAll    // 默认展开所有分支层级
+          />
+        ) : (
+          <Collapse defaultActiveKey={Object.keys(groupedTreeList)} ghost style={{ border: 'none' }}>
+            {Object.entries(groupedTreeList).map(([year, yearData]: [string, any]) => (
+              <Collapse.Panel key={year} header={<strong style={{ fontSize: 18, color: '#1890ff' }}>{year}</strong>} style={{ borderBottom: 'none' }}>
+                {activeType === 'YEARLY' ? (
+                  <Table dataSource={yearData as GoalItem[]} columns={tableColumns} rowKey="id" pagination={false} size="small" />
+                ) : (
+                  <Collapse defaultActiveKey={Object.keys(yearData)} ghost style={{ background: 'var(--ant-color-bg-container, #fff)', borderRadius: 12, padding: '8px 16px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)' }}>
+                    {Object.entries(yearData).map(([month, monthData]: [string, any]) => (
+                      <Collapse.Panel key={month} header={<span style={{ fontSize: 16, fontWeight: 'bold' }}>{month}</span>} style={{ borderBottom: 'none', marginBottom: 8 }}>
+                        {activeType === 'MONTHLY' ? (
+                          <Table dataSource={monthData as GoalItem[]} columns={tableColumns} rowKey="id" pagination={false} size="small" />
+                        ) : (
+                          <Collapse defaultActiveKey={Object.keys(monthData)} ghost style={{ marginLeft: 16 }}>
+                            {Object.entries(monthData).map(([week, weekData]: [string, any]) => (
+                              <Collapse.Panel key={week} header={<span style={{ fontWeight: 'bold' }}>{week}</span>} style={{ borderBottom: 'none', marginBottom: 8 }}>
+                                <Table dataSource={weekData as GoalItem[]} columns={tableColumns} rowKey="id" pagination={false} size="small" />
+                              </Collapse.Panel>
+                            ))}
+                          </Collapse>
+                        )}
+                      </Collapse.Panel>
+                    ))}
+                  </Collapse>
+                )}
+              </Collapse.Panel>
+            ))}
+          </Collapse>
+        )}
       </Card>
 
       {/* 新增/编辑目标 Modal */}

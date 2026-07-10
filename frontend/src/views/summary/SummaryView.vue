@@ -24,7 +24,22 @@
         <h1 class="page-title">每日总结</h1>
         <p class="page-subtitle">坚持复盘，持续成长</p>
       </div>
-      <el-button type="primary" size="small" :icon="Plus" @click="openToday">今日总结</el-button>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          format="YYYY-MM-DD"
+          value-format="YYYY-MM-DD"
+          :shortcuts="shortcuts"
+          @change="loadList"
+          style="width: 260px;"
+          size="small"
+        />
+        <el-button type="primary" size="small" :icon="Plus" @click="openToday">今日总结</el-button>
+      </div>
     </div>
 
     <!-- 连续打卡信息 -->
@@ -46,38 +61,61 @@
     </div>
 
     <!-- 情绪趋势图表 -->
-    <div class="card mb-md" style="padding: 16px">
+    <div v-if="false" class="card mb-md" style="padding: 16px">
       <div class="text-sm font-bold text-secondary mb-sm">近 30 天情绪趋势</div>
       <div ref="moodChartRef" style="height: 200px; width: 100%"></div>
     </div>
 
     <!-- 总结列表 -->
-    <div v-loading="loading" class="summary-list">
-      <div v-for="item in list" :key="item.id" class="summary-card card card--glow">
-        <div class="summary-header">
-          <span class="summary-date">{{ item.summaryDate }}</span>
-          <div class="summary-scores">
-            <span class="mood">{{ moodEmoji[item.mood - 1] }}</span>
-            <span class="score">{{ item.score }}/10</span>
-          </div>
-        </div>
-        <div v-if="item.achievement" class="summary-section">
-          <div class="section-title">✅ 今日成就</div>
-          <div class="section-content">{{ item.achievement }}</div>
-        </div>
-        <div v-if="item.improvement" class="summary-section">
-          <div class="section-title">📈 待改进</div>
-          <div class="section-content">{{ item.improvement }}</div>
-        </div>
-        <div v-if="item.tomorrowPlan" class="summary-section">
-          <div class="section-title">📋 明日计划</div>
-          <div class="section-content">{{ item.tomorrowPlan }}</div>
-        </div>
-        <div class="summary-actions">
-          <el-icon class="icon-btn" @click="editItem(item)"><Edit /></el-icon>
-          <el-icon class="icon-btn danger" @click="deleteItem(item.id)"><Delete /></el-icon>
-        </div>
-      </div>
+    <div v-loading="loading" class="summary-list-container">
+      <el-collapse v-model="activeYears" class="custom-collapse" v-if="list.length > 0">
+        <el-collapse-item v-for="yearGroup in groupedList" :key="yearGroup.year" :name="yearGroup.year">
+          <template #title>
+            <div class="group-header">
+              <span class="group-year font-bold text-lg">{{ yearGroup.displayYear }}</span>
+            </div>
+          </template>
+          
+          <el-collapse v-model="activeMonths" class="custom-collapse-sub">
+            <el-collapse-item v-for="monthGroup in yearGroup.months" :key="monthGroup.month" :name="monthGroup.month">
+              <template #title>
+                <div class="group-header" style="padding-left: 16px;">
+                  <span class="group-month font-bold">{{ monthGroup.displayMonth }}</span>
+                  <span class="text-muted ml-sm text-sm">共 {{ monthGroup.items.length }} 篇</span>
+                </div>
+              </template>
+              
+              <div class="summary-list" style="padding-left: 16px;">
+                <div v-for="item in monthGroup.items" :key="item.id" class="summary-card card card--glow">
+                  <div class="summary-header">
+                    <span class="summary-date">{{ item.summaryDate }}</span>
+                    <div class="summary-scores">
+                      <span class="mood">{{ moodEmoji[item.mood - 1] }}</span>
+                      <span class="score">{{ item.score }}/10</span>
+                    </div>
+                  </div>
+                  <div v-if="item.achievement" class="summary-section">
+                    <div class="section-title">✅ 今日成就</div>
+                    <div class="section-content">{{ item.achievement }}</div>
+                  </div>
+                  <div v-if="item.improvement" class="summary-section">
+                    <div class="section-title">📈 待改进</div>
+                    <div class="section-content">{{ item.improvement }}</div>
+                  </div>
+                  <div v-if="item.tomorrowPlan" class="summary-section">
+                    <div class="section-title">📋 明日计划</div>
+                    <div class="section-content">{{ item.tomorrowPlan }}</div>
+                  </div>
+                  <div class="summary-actions">
+                    <el-icon class="icon-btn" @click="editItem(item)"><Edit /></el-icon>
+                    <el-icon class="icon-btn danger" @click="deleteItem(item.id)"><Delete /></el-icon>
+                  </div>
+                </div>
+              </div>
+            </el-collapse-item>
+          </el-collapse>
+        </el-collapse-item>
+      </el-collapse>
 
       <div v-if="!loading && list.length === 0" class="empty-state">
         <div class="empty-icon">✍️</div>
@@ -193,11 +231,80 @@ echarts.use([LineChart, TooltipComponent, GridComponent, GraphicComponent, Canva
 const list = ref<SummaryItem[]>([])
 const streak = ref<Record<string, any>>({})
 const loading = ref(false)
+const dateRange = ref<[string, string] | null>([
+  dayjs().startOf('month').format('YYYY-MM-DD'),
+  dayjs().endOf('month').format('YYYY-MM-DD')
+])
 const saving = ref(false)
 const showDialog = ref(false)
 const editing = ref<SummaryItem | null>(null)
 const formRef = ref<FormInstance>()
 const moodEmoji = ['😢', '😔', '😐', '😊', '😄']
+
+const activeYears = ref<string[]>([dayjs().format('YYYY')])
+const activeMonths = ref<string[]>([dayjs().format('MM')])
+
+const shortcuts = [
+  {
+    text: '近一个月',
+    value: () => {
+      const start = dayjs().startOf('month').toDate()
+      const end = dayjs().endOf('month').toDate()
+      return [start, end]
+    }
+  },
+  {
+    text: '近三个月',
+    value: () => {
+      const start = dayjs().subtract(2, 'month').startOf('month').toDate()
+      const end = dayjs().endOf('month').toDate()
+      return [start, end]
+    }
+  },
+  {
+    text: '近半年',
+    value: () => {
+      const currentMonth = dayjs().month()
+      const isFirstHalf = currentMonth < 6
+      const start = dayjs().month(isFirstHalf ? 0 : 6).startOf('month').toDate()
+      const end = dayjs().month(isFirstHalf ? 5 : 11).endOf('month').toDate()
+      return [start, end]
+    }
+  },
+  {
+    text: '近一年',
+    value: () => {
+      const start = dayjs().startOf('year').toDate()
+      const end = dayjs().endOf('year').toDate()
+      return [start, end]
+    }
+  }
+]
+
+const groupedList = computed(() => {
+  const groups: Record<string, Record<string, SummaryItem[]>> = {}
+  list.value.forEach(item => {
+    const year = dayjs(item.summaryDate).format('YYYY')
+    const month = dayjs(item.summaryDate).format('MM')
+    if (!groups[year]) groups[year] = {}
+    if (!groups[year][month]) groups[year][month] = []
+    groups[year][month].push(item)
+  })
+  
+  return Object.keys(groups)
+    .sort((a, b) => b.localeCompare(a))
+    .map(year => ({
+      year,
+      displayYear: `${year}年度`,
+      months: Object.keys(groups[year])
+        .sort((a, b) => b.localeCompare(a))
+        .map(month => ({
+          month,
+          displayMonth: `${month}月`,
+          items: groups[year][month]
+        }))
+    }))
+})
 
 const isDark = useDark()
 const moodChartRef = ref<HTMLElement>()
@@ -232,7 +339,12 @@ const form = reactive({
 async function loadList() {
   loading.value = true
   try {
-    list.value = await summaryApi.list({ pageNum: 1, pageSize: 20 })
+    const params: any = {}
+    if (dateRange.value && dateRange.value.length === 2) {
+      params.startDate = dateRange.value[0]
+      params.endDate = dateRange.value[1]
+    }
+    list.value = await summaryApi.list(params)
   } finally {
     loading.value = false
   }
@@ -395,7 +507,7 @@ async function deleteItem(id: number) {
   })
   await summaryApi.delete(id)
   ElMessage.success('已删除')
-  loadList()
+  await Promise.all([loadList(), loadStreak(), loadMoodTrend()])
 }
 
 // ============================================================================
@@ -486,8 +598,63 @@ onMounted(() => {
     gap: 12px;
   }
 
+  .summary-list-container {
+    .custom-collapse {
+      border: none;
+      --el-collapse-header-bg-color: transparent;
+      --el-collapse-content-bg-color: transparent;
+      
+      :deep(.el-collapse-item__header) {
+        border-bottom: none;
+        height: auto;
+        padding: 12px 0;
+        line-height: 1.4;
+      }
+
+      :deep(.el-collapse-item__wrap) {
+        border-bottom: none;
+      }
+    }
+
+    .custom-collapse-sub {
+      border: none;
+      --el-collapse-header-bg-color: transparent;
+      --el-collapse-content-bg-color: transparent;
+      margin-bottom: 12px;
+      background: var(--el-bg-color-overlay, #ffffff);
+      border-radius: 12px;
+      padding: 4px 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+
+      :deep(.el-collapse-item__header) {
+        border-bottom: none;
+        height: auto;
+        padding: 12px 0;
+      }
+
+      :deep(.el-collapse-item__wrap) {
+        border-bottom: none;
+      }
+      
+      :deep(.el-collapse-item__content) {
+        padding-bottom: 16px;
+      }
+    }
+
+    .group-header {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      
+      .group-year {
+        color: $primary-light;
+      }
+    }
+  }
+
   .summary-card {
     position: relative;
+    margin-bottom: 16px;
 
     .summary-header {
       display: flex;

@@ -39,9 +39,6 @@
 // AxiosError：错误对象的类型定义
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse, type AxiosError } from 'axios'
 
-// ElMessage：Element Plus 的消息提示组件，用于在页面顶部显示操作反馈
-import { ElMessage } from 'element-plus'
-
 // router：Vue Router 实例，用于在认证失败时跳转到登录页
 import router from '@/router'
 

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
-import { Table, Button, Modal, Form, Input, Rate, DatePicker, Space, message, Popconfirm, Card, Row, Col, Statistic } from 'antd'
+import { Table, Button, Modal, Form, Input, Rate, DatePicker, Space, message, Popconfirm, Card, Row, Col, Statistic, Collapse } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
@@ -40,8 +40,11 @@ const SummaryPage: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false)
   const [editingSummary, setEditingSummary] = useState<SummaryItem | null>(null)
   
-  // 日历过滤月份状态，默认为今天
-  const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs())
+  // 日历过滤范围状态，默认为当月
+  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>([
+    dayjs().startOf('month'),
+    dayjs().endOf('month')
+  ])
   // 打卡统计（连续打卡天数、最长连续打卡天数）
   const [streak, setStreak] = useState<{ currentStreak: number; longestStreak: number } | null>(null)
   
@@ -53,7 +56,7 @@ const SummaryPage: React.FC = () => {
   useEffect(() => {
     fetchSummaries()
     fetchStreak()
-  }, [selectedDate])
+  }, [dateRange])
 
   // ============================================================================
   // // 数据加载方法
@@ -61,8 +64,12 @@ const SummaryPage: React.FC = () => {
   const fetchSummaries = async () => {
     try {
       setLoading(true)
-      const startDate = selectedDate.startOf('month').format('YYYY-MM-DD')
-      const endDate = selectedDate.endOf('month').format('YYYY-MM-DD')
+      let startDate = ''
+      let endDate = ''
+      if (dateRange && dateRange.length === 2) {
+        startDate = dateRange[0].format('YYYY-MM-DD')
+        endDate = dateRange[1].format('YYYY-MM-DD')
+      }
       const data = await summaryApi.list({ startDate, endDate })
       setSummaries(data)
     } catch (error) {
@@ -110,6 +117,7 @@ const SummaryPage: React.FC = () => {
       await summaryApi.delete(id)
       message.success('删除成功')
       fetchSummaries()
+      fetchStreak()
     } catch (error) {
       console.error('删除失败:', error)
     }
@@ -206,6 +214,29 @@ const SummaryPage: React.FC = () => {
     }
   ]
 
+  const groupedSummaries = useMemo(() => {
+    const groups: Record<string, Record<string, SummaryItem[]>> = {}
+    summaries.forEach(item => {
+      const year = dayjs(item.summaryDate).format('YYYY')
+      const month = dayjs(item.summaryDate).format('MM')
+      if (!groups[year]) groups[year] = {}
+      if (!groups[year][month]) groups[year][month] = []
+      groups[year][month].push(item)
+    })
+    
+    return Object.keys(groups)
+      .sort((a, b) => b.localeCompare(a))
+      .map(year => ({
+        year,
+        months: Object.keys(groups[year])
+          .sort((a, b) => b.localeCompare(a))
+          .map(month => ({
+            month,
+            items: groups[year][month]
+          }))
+      }))
+  }, [summaries])
+
   // 心情表情库
   const moodEmojis = ['😞', '😐', '🙂', '😊', '🤩']
 
@@ -215,9 +246,18 @@ const SummaryPage: React.FC = () => {
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2>每日总结</h2>
         <Space>
-          <DatePicker.MonthPicker
-            value={selectedDate}
-            onChange={(date) => date && setSelectedDate(date)}
+          <DatePicker.RangePicker
+            value={dateRange}
+            onChange={(dates) => setDateRange(dates as [Dayjs, Dayjs])}
+            presets={[
+              { label: '近一个月', value: [dayjs().startOf('month'), dayjs().endOf('month')] },
+              { label: '近三个月', value: [dayjs().subtract(2, 'month').startOf('month'), dayjs().endOf('month')] },
+              { label: '近半年', value: [
+                dayjs().month(dayjs().month() < 6 ? 0 : 6).startOf('month'),
+                dayjs().month(dayjs().month() < 6 ? 5 : 11).endOf('month')
+              ]},
+              { label: '近一年', value: [dayjs().startOf('year'), dayjs().endOf('year')] }
+            ]}
           />
           <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
             新建总结
@@ -251,51 +291,81 @@ const SummaryPage: React.FC = () => {
         </Row>
       )}
 
-      {/* 展开式表格 */}
-      <Table
-        columns={columns}
-        dataSource={summaries}
-        rowKey="id"
-        loading={loading}
-        pagination={false}
-        // 核心细节：嵌套数据展开渲染器
-        expandable={{
-          expandedRowRender: (record) => (
-            <div style={{ padding: 16 }}>
-              {/* 利用卡片式网络排布展示感恩、成就、改进等长文字内容 */}
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Card title="今日成就" size="small">
-                    {record.achievement || '暂无'}
-                  </Card>
-                </Col>
-                <Col span={12}>
-                  <Card title="改进空间" size="small">
-                    {record.improvement || '暂无'}
-                  </Card>
-                </Col>
-              </Row>
-              <Row gutter={16} style={{ marginTop: 16 }}>
-                <Col span={12}>
-                  <Card title="明日计划" size="small">
-                    {record.tomorrowPlan || '暂无'}
-                  </Card>
-                </Col>
-                <Col span={12}>
-                  <Card title="感恩事项" size="small">
-                    {record.gratitude || '暂无'}
-                  </Card>
-                </Col>
-              </Row>
-              {record.healthNote && (
-                <Card title="健康记录" size="small" style={{ marginTop: 16 }}>
-                  {record.healthNote}
-                </Card>
-              )}
-            </div>
-          )
-        }}
-      />
+      {/* 展开式列表 (按年月分组) */}
+      {groupedSummaries.length > 0 ? (
+        <Collapse defaultActiveKey={[dayjs().format('YYYY')]} ghost style={{ border: 'none' }}>
+          {groupedSummaries.map(yearGroup => (
+            <Collapse.Panel 
+              key={yearGroup.year} 
+              header={<strong style={{ fontSize: 18, color: '#1890ff' }}>{yearGroup.year}年度</strong>}
+              style={{ borderBottom: 'none' }}
+            >
+              <Collapse 
+                defaultActiveKey={[dayjs().format('MM')]} 
+                ghost
+                style={{
+                  background: 'var(--ant-color-bg-container, #fff)',
+                  borderRadius: 12,
+                  padding: '8px 16px',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)'
+                }}
+              >
+                {yearGroup.months.map(monthGroup => (
+                  <Collapse.Panel 
+                    key={monthGroup.month} 
+                    header={<span><strong style={{ fontSize: 16 }}>{monthGroup.month}月</strong> <span style={{color: '#999', fontSize: 12, marginLeft: 8}}>(共 {monthGroup.items.length} 篇)</span></span>}
+                    style={{ borderBottom: 'none', marginBottom: 8 }}
+                  >
+                    <Table
+                      columns={columns}
+                      dataSource={monthGroup.items}
+                      rowKey="id"
+                      pagination={false}
+                      expandable={{
+                        expandedRowRender: (record) => (
+                          <div style={{ padding: 16 }}>
+                            <Row gutter={16}>
+                              <Col span={12}>
+                                <Card title="今日成就" size="small">
+                                  {record.achievement || '暂无'}
+                                </Card>
+                              </Col>
+                              <Col span={12}>
+                                <Card title="改进空间" size="small">
+                                  {record.improvement || '暂无'}
+                                </Card>
+                              </Col>
+                            </Row>
+                            <Row gutter={16} style={{ marginTop: 16 }}>
+                              <Col span={12}>
+                                <Card title="明日计划" size="small">
+                                  {record.tomorrowPlan || '暂无'}
+                                </Card>
+                              </Col>
+                              <Col span={12}>
+                                <Card title="感恩事项" size="small">
+                                  {record.gratitude || '暂无'}
+                                </Card>
+                              </Col>
+                            </Row>
+                            {record.healthNote && (
+                              <Card title="健康记录" size="small" style={{ marginTop: 16 }}>
+                                {record.healthNote}
+                              </Card>
+                            )}
+                          </div>
+                        )
+                      }}
+                    />
+                  </Collapse.Panel>
+                ))}
+              </Collapse>
+            </Collapse.Panel>
+          ))}
+        </Collapse>
+      ) : (
+        !loading && <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>暂无总结记录</div>
+      )}
 
       {/* 新增/编辑弹窗 */}
       <Modal

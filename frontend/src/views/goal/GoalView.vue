@@ -146,9 +146,9 @@
     </div>
   </div>
 
-  <!-- 树形视图 -->
+  <!-- 树形视图 (全部或五年) -->
       <el-table
-        v-if="viewMode === 'tree'"
+        v-if="viewMode === 'tree' && (!activeType || activeType === 'FIVE_YEAR')"
         :data="goals"
         style="width: 100%; border-radius: 8px;"
         row-key="id"
@@ -186,6 +186,145 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- 时间维度折叠面板视图 -->
+      <div v-if="viewMode === 'tree' && ['YEARLY', 'MONTHLY', 'WEEKLY'].includes(activeType)" class="grouped-tree-view w-full">
+        <el-collapse v-model="activeYears" class="custom-collapse">
+          <el-collapse-item v-for="(yearData, year) in groupedTreeList" :key="year" :name="year">
+            <template #title>
+              <div class="group-header">
+                <span class="group-year font-bold text-lg text-primary">{{ year }}</span>
+              </div>
+            </template>
+            <template v-if="activeType === 'YEARLY'">
+              <el-table :data="yearData" style="width: 100%; border-radius: 8px;" row-key="id" border>
+                <el-table-column prop="title" label="目标名称" min-width="240">
+                  <template #default="{ row }">
+                    <span class="font-bold">{{ row.title }}</span>
+                    <span class="text-xs text-muted ml-sm" v-if="row.description">{{ row.description }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="类型" width="100">
+                  <template #default="{ row }">
+                    <span class="goal-type-badge text-xs px-2 py-1 bg-primary-100 text-primary rounded-full">{{ typeLabel(row.goalType) }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="进度" width="200">
+                  <template #default="{ row }">
+                    <div class="flex items-center gap-sm">
+                      <el-progress :percentage="row.progress" :color="progressColor(row.progress)" style="flex: 1" />
+                    </div>
+                  </template>
+                </el-table-column>
+                <el-table-column label="状态" width="100">
+                  <template #default="{ row }">
+                    <span class="goal-status text-xs px-2 py-1 rounded-full" :class="row.status.toLowerCase()">{{ statusLabel(row.status) }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="180">
+                  <template #default="{ row }">
+                    <el-button link type="primary" @click="handleCommand('edit', row)">编辑</el-button>
+                    <el-button link type="primary" @click="handleCommand('copy', row)">复制</el-button>
+                    <el-button link type="danger" @click="handleCommand('delete', row)">删除</el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </template>
+
+            <template v-else>
+              <el-collapse v-model="activeMonths" class="custom-collapse-sub">
+                <el-collapse-item v-for="(monthData, month) in yearData" :key="month" :name="month">
+                  <template #title>
+                    <div class="group-header" style="padding-left: 12px;">
+                      <span class="group-month font-bold text-base">{{ month }}</span>
+                    </div>
+                  </template>
+                  <template v-if="activeType === 'MONTHLY'">
+                    <el-table :data="monthData" style="width: 100%; border-radius: 8px;" row-key="id" border>
+                      <el-table-column prop="title" label="目标名称" min-width="240">
+                        <template #default="{ row }">
+                          <span class="font-bold">{{ row.title }}</span>
+                          <span class="text-xs text-muted ml-sm" v-if="row.description">{{ row.description }}</span>
+                        </template>
+                      </el-table-column>
+                      <el-table-column label="类型" width="100">
+                        <template #default="{ row }">
+                          <span class="goal-type-badge text-xs px-2 py-1 bg-primary-100 text-primary rounded-full">{{ typeLabel(row.goalType) }}</span>
+                        </template>
+                      </el-table-column>
+                      <el-table-column label="进度" width="200">
+                        <template #default="{ row }">
+                          <div class="flex items-center gap-sm">
+                            <el-progress :percentage="row.progress" :color="progressColor(row.progress)" style="flex: 1" />
+                          </div>
+                        </template>
+                      </el-table-column>
+                      <el-table-column label="状态" width="100">
+                        <template #default="{ row }">
+                          <span class="goal-status text-xs px-2 py-1 rounded-full" :class="row.status.toLowerCase()">{{ statusLabel(row.status) }}</span>
+                        </template>
+                      </el-table-column>
+                      <el-table-column label="操作" width="180">
+                        <template #default="{ row }">
+                          <el-button link type="primary" @click="handleCommand('edit', row)">编辑</el-button>
+                          <el-button link type="primary" @click="handleCommand('copy', row)">复制</el-button>
+                          <el-button link type="danger" @click="handleCommand('delete', row)">删除</el-button>
+                        </template>
+                      </el-table-column>
+                    </el-table>
+                  </template>
+
+                  <template v-else>
+                    <el-collapse v-model="activeWeeks" class="custom-collapse-sub" style="margin-left: 16px;">
+                      <el-collapse-item v-for="(weekData, week) in monthData" :key="week" :name="week">
+                        <template #title>
+                          <div class="group-header">
+                            <span class="group-week font-bold">{{ week }}</span>
+                          </div>
+                        </template>
+                        <el-table :data="weekData" style="width: 100%; border-radius: 8px;" row-key="id" border>
+                          <el-table-column prop="title" label="目标名称" min-width="240">
+                            <template #default="{ row }">
+                              <span class="font-bold">{{ row.title }}</span>
+                              <span class="text-xs text-muted ml-sm" v-if="row.description">{{ row.description }}</span>
+                            </template>
+                          </el-table-column>
+                          <el-table-column label="类型" width="100">
+                            <template #default="{ row }">
+                              <span class="goal-type-badge text-xs px-2 py-1 bg-primary-100 text-primary rounded-full">{{ typeLabel(row.goalType) }}</span>
+                            </template>
+                          </el-table-column>
+                          <el-table-column label="进度" width="200">
+                            <template #default="{ row }">
+                              <div class="flex items-center gap-sm">
+                                <el-progress :percentage="row.progress" :color="progressColor(row.progress)" style="flex: 1" />
+                              </div>
+                            </template>
+                          </el-table-column>
+                          <el-table-column label="状态" width="100">
+                            <template #default="{ row }">
+                              <span class="goal-status text-xs px-2 py-1 rounded-full" :class="row.status.toLowerCase()">{{ statusLabel(row.status) }}</span>
+                            </template>
+                          </el-table-column>
+                          <el-table-column label="操作" width="180">
+                            <template #default="{ row }">
+                              <el-button link type="primary" @click="handleCommand('edit', row)">编辑</el-button>
+                              <el-button link type="primary" @click="handleCommand('copy', row)">复制</el-button>
+                              <el-button link type="danger" @click="handleCommand('delete', row)">删除</el-button>
+                            </template>
+                          </el-table-column>
+                        </el-table>
+                      </el-collapse-item>
+                    </el-collapse>
+                  </template>
+
+                </el-collapse-item>
+              </el-collapse>
+            </template>
+
+          </el-collapse-item>
+        </el-collapse>
+      </div>
 
       <div v-if="!loading && goals.length === 0" class="empty-state">
         <div class="empty-icon">🎯</div>
@@ -314,8 +453,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import type { FormInstance } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { Plus, MoreFilled, Delete } from '@element-plus/icons-vue'
 import { goalApi } from '@/api/goal'
 import type { GoalItem, GoalKr } from '@/api/goal'
@@ -418,6 +556,60 @@ const groupedCardList = computed(() => {
       name: key,
       items: groups[key].sort((a, b) => dayjs(a.startDate).valueOf() - dayjs(b.startDate).valueOf())
     }))
+})
+
+const activeYears = ref<string[]>([])
+const activeMonths = ref<string[]>([])
+const activeWeeks = ref<string[]>([])
+
+const groupedTreeList = computed(() => {
+  if (viewMode.value !== 'tree') return {}
+  if (!activeType.value || activeType.value === 'FIVE_YEAR') return {}
+
+  const groups: any = {}
+  
+  goals.value.forEach(goal => {
+    const d = dayjs(goal.startDate)
+    if (!d.isValid()) return
+    
+    const year = d.year() + '年'
+    const month = (d.month() + 1) + '月'
+    const week = '第 ' + Math.ceil(d.date() / 7) + ' 周'
+    
+    if (activeType.value === 'YEARLY') {
+      if (!groups[year]) groups[year] = []
+      groups[year].push(goal)
+    } else if (activeType.value === 'MONTHLY') {
+      if (!groups[year]) groups[year] = {}
+      if (!groups[year][month]) groups[year][month] = []
+      groups[year][month].push(goal)
+    } else if (activeType.value === 'WEEKLY') {
+      if (!groups[year]) groups[year] = {}
+      if (!groups[year][month]) groups[year][month] = {}
+      if (!groups[year][month][week]) groups[year][month][week] = []
+      groups[year][month][week].push(goal)
+    }
+  })
+
+  activeYears.value = Object.keys(groups)
+  if (activeType.value === 'MONTHLY' || activeType.value === 'WEEKLY') {
+    const months: string[] = []
+    const weeks: string[] = []
+    Object.keys(groups).forEach(y => {
+      Object.keys(groups[y]).forEach(m => {
+        if (!months.includes(m)) months.push(m)
+        if (activeType.value === 'WEEKLY') {
+          Object.keys(groups[y][m]).forEach(w => {
+            if (!weeks.includes(w)) weeks.push(w)
+          })
+        }
+      })
+    })
+    activeMonths.value = months
+    activeWeeks.value = weeks
+  }
+
+  return groups
 })
 
 const stats = ref<Record<string, any>>({})
@@ -1117,6 +1309,52 @@ onMounted(loadGoals)
       .kr-title-input :deep(.el-input__wrapper) {
         background: #1e293b !important;
         border-color: rgba(255,255,255,0.1) !important;
+      }
+    }
+  }
+
+  .grouped-tree-view {
+    margin-top: 16px;
+
+    .custom-collapse {
+      border: none;
+      --el-collapse-header-bg-color: transparent;
+      --el-collapse-content-bg-color: transparent;
+      
+      :deep(.el-collapse-item__header) {
+        border-bottom: none;
+        height: auto;
+        padding: 12px 0;
+        line-height: 1.4;
+      }
+
+      :deep(.el-collapse-item__wrap) {
+        border-bottom: none;
+      }
+    }
+
+    .custom-collapse-sub {
+      border: none;
+      --el-collapse-header-bg-color: transparent;
+      --el-collapse-content-bg-color: transparent;
+      margin-bottom: 12px;
+      background: var(--el-bg-color-overlay, #ffffff);
+      border-radius: 12px;
+      padding: 4px 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+
+      :deep(.el-collapse-item__header) {
+        border-bottom: none;
+        height: auto;
+        padding: 12px 0;
+      }
+
+      :deep(.el-collapse-item__wrap) {
+        border-bottom: none;
+      }
+      
+      :deep(.el-collapse-item__content) {
+        padding-bottom: 16px;
       }
     }
   }
